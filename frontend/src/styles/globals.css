@@ -1,0 +1,202 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Smooth scroll */
+html { scroll-behavior: smooth; }
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;        /* trắng */
+    --foreground: 222 15% 25%;      /* chữ xám đậm */
+    --card: 0 0% 98%;               /* hơi xám nhạt */
+    --card-foreground: 222 15% 25%;
+    --popover: 0 0% 98%;
+    --popover-foreground: 222 15% 25%;
+    --primary: 210 10% 20%;         /* button chính */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 5% 90%;
+    --secondary-foreground: 222 15% 25%;
+    --muted: 210 5% 90%;
+    --muted-foreground: 222 15% 25%;
+    --accent: 210 5% 95%;
+    --accent-foreground: 222 15% 25%;
+    --destructive: 0 60% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 5% 85%;
+    --input: 210 5% 90%;
+    --ring: 210 10% 80%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222 10% 10%;      
+    --foreground: 0 0% 95%;          
+    --card: 222 10% 15%;             
+    --card-foreground: 0 0% 95%;
+    --popover: 222 10% 15%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 210 5% 30%;           
+    --primary-foreground: 0 0% 95%;
+    --secondary: 210 5% 20%;         
+    --secondary-foreground: 0 0% 95%;
+    --muted: 210 5% 20%;
+    --muted-foreground: 0 0% 80%;
+    --accent: 210 5% 25%;
+    --accent-foreground: 0 0% 95%;
+    --destructive: 0 60% 50%;
+    --destructive-foreground: 0 0% 95%;
+    --border: 210 5% 35%;
+    --input: 210 5% 25%;
+    --ring: 210 5% 40%;
+  }
+
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground font-sans; }
+}
+
+/* Components */
+@layer components {
+  /* Glass Card */
+  .glass-card {
+    @apply backdrop-blur-sm bg-gray-50 border border-gray-200 rounded-lg shadow-sm transition-shadow duration-200;
+  }
+  .dark .glass-card {
+    @apply bg-gray-800 border-gray-700 shadow-md;
+  }
+
+  /* Scrollbar */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(120,120,120,0.5) transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(120,120,120,0.5);
+    border-radius: 3px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(120,120,120,0.7);
+  }
+
+  /* Buttons */
+  .btn-primary {
+    @apply bg-gray-200 text-gray-900 font-medium px-6 py-3 rounded-lg 
+           transition-all duration-200 transform hover:bg-gray-300 hover:scale-102 focus:ring-2 focus:ring-gray-400 focus:ring-offset-2;
+  }
+  .dark .btn-primary { @apply bg-gray-800 text-white hover:bg-gray-700 focus:ring-gray-600; }
+
+  .btn-secondary {
+    @apply bg-gray-100 text-gray-900 border border-gray-300 px-6 py-3 rounded-lg 
+           transition-all duration-200 hover:bg-gray-200 focus:ring-2 focus:ring-gray-400;
+  }
+  .dark .btn-secondary { @apply bg-gray-700 text-white border-gray-600 hover:bg-gray-600 focus:ring-gray-600; }
+
+  /* Inputs */
+  .input-field {
+    @apply w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500
+           transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent;
+  }
+  .dark .input-field { @apply bg-gray-900 border-gray-700 text-white placeholder-gray-400 focus:ring-gray-600; }
+
+  /* Card Hover */
+  .card-hover {
+    @apply transition-shadow duration-300 ease-in-out hover:shadow-lg hover:-translate-y-0.5;
+  }
+
+  /* Accent / Highlights */
+  .text-accent { @apply text-gray-700 hover:text-gray-900 transition-colors duration-200; }
+  .dark .text-accent { @apply text-gray-300 hover:text-white; }
+
+  .badge { @apply bg-gray-200 text-gray-900 px-2 py-1 rounded-full text-xs font-medium; }
+  .dark .badge { @apply bg-gray-700 text-white; }
+
+  .highlight { @apply bg-gray-100 text-gray-900 rounded px-1; }
+  .dark .highlight { @apply bg-gray-800 text-white; }
+
+  .post-hover { @apply transition-shadow duration-300 ease-in-out hover:shadow-lg; }
+
+  /* Focus / Hover Effects */
+  .hover-lift { @apply transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:shadow-md; }
+  .focus-ring { @apply focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2; }
+  .dark .focus-ring { @apply focus:ring-gray-600; }
+}
+
+/* Animations */
+@layer utilities {
+  .fade-in { animation: fadeIn 0.5s ease-in-out; }
+  .slide-up { animation: slideUp 0.3s ease-out; }
+  .bounce-in { animation: bounceIn 0.6s ease-out; }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes bounceIn { 0% { opacity: 0; transform: scale(0.3); } 50% { opacity: 1; transform: scale(1.05); } 70% { transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
+}
+
+
+
+.btn-primary, .btn-secondary {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::after, .btn-secondary::after {
+  content: '';
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  background: rgba(0,0,0,0.1);
+  border-radius: 50%;
+  transform: scale(0);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.5s, opacity 1s;
+}
+
+.btn-primary:active::after, .btn-secondary:active::after {
+  transform: scale(3);
+  opacity: 1;
+  transition: 0s;
+}
+.card-hover:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.06);
+  transform: translateY(-2px);
+}
+.toast {
+  @apply fixed bottom-6 left-1/2 transform -translate-x-1/2 px-4 py-3 rounded-lg bg-gray-800 text-white opacity-0 pointer-events-none transition-all duration-500;
+}
+.toast.show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+.toast.hide {
+  opacity: 0;
+  transform: translateX(-50%) translateY(20px);
+}
+.text-accent:hover {
+  color: #111111;
+  text-decoration: underline 1px solid rgba(0,0,0,0.2);
+}
+.dark .text-accent:hover {
+  color: #fff;
+  text-decoration: underline 1px solid rgba(255,255,255,0.2);
+}
+
+
+/* Đảm bảo portal container có z-index cao */
+#portal-root {
+  position: relative;
+  z-index: 9999;
+}
+
+/* Đảm bảo modal hiển thị trên tất cả các phần tử khác */
+.image-modal-container {
+  z-index: 9999 !important;
+}
+
+/* Ngăn body scroll khi modal mở */
+body.modal-open {
+  overflow: hidden;
+}

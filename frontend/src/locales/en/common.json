@@ -1,0 +1,290 @@
+{
+  "welcome_lens_social": "Welcome to HooksDream",
+  "login_to_start": "Login with Web3Auth to start sharing and discovering amazing content",
+  "waiting_for_login": "Waiting for login...",
+  "connected_with_web3auth": "✅ Connected with Web3Auth",
+  "login_with_web3auth": "Login with Web3Auth",
+  "secure_wallet_connection": "Secure your wallet connection with Web3Auth",
+  "agree_terms_prefix": "By connecting, you agree to the",
+  "terms_of_service": "Terms of Service",
+
+  "header": {
+    "searchPlaceholder": "Search posts, profiles...",
+    "user": "User",
+    "profile": "Profile",
+    "search": "Search",
+    "settings": "Settings",
+    "disconnect": "Disconnect",
+    "userMenu": "User Menu"
+  },
+  "settings": {
+    "language": "Language",
+    "back": "Back",
+      "theme": "Theme",
+    "theme.light": "Light",
+    "theme.dark": "Dark"
+  },
+
+   "nav": {
+    "home": "Home",
+    "search": "Search",
+    "notifications": "Notifications",
+    "messages": "Messages",
+    "friends": "Friends"
+  },
+  
+  "feed": {
+    "error": {
+      "title": "Error Loading Posts",
+      "loading": "Failed to load posts"
+    },
+    "empty": {
+      "title": "No posts yet",
+      "description": "Be the first to share something!"
+    },
+    "createPost": {
+      "placeholder": "What's on your mind?",
+      "button": "Create Post"
+    },
+    "actions": {
+      "like": "Like",
+      "unlike": "Unlike",
+      "comment": "Comment",
+      "share": "Share",
+      "save": "Save"
+    },
+    "likes": "likes",
+    "comment": {
+      "placeholder": "Add a comment...",
+      "post": "Post"
+    }
+  },
+  "common": {
+       "like": "Like",
+    "edit": "Edit",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "close": "Close",
+    "tryAgain": "Try Again"
+  },
+
+
+  
+  "createPost": {
+     "uploadVideo": "Upload video",
+    "videoUpload": {
+      "tooLarge": {
+        "title": "Video too large",
+        "description": "Maximum video size is {maxSize}MB"
+      },
+      "invalidFile": {
+        "title": "Invalid file",
+        "description": "Only video files are allowed"
+      },
+      "failedConfirmation": "Video upload failed ({error}). Continue without video?",
+      "failedError": "Video upload failed: {error}",
+      "unknownError": "Unknown error occurred during video upload",
+      "expandEditor": "Expand editor",
+    "collapseEditor": "Collapse editor"
+
+    },
+  
+    "title": "Create Post",
+    "description": "Share your thoughts with the community",
+    "contentPlaceholder": "What's on your mind?",
+    "maxCharacters": "Maximum 500 characters",
+    "post": "Post",
+    "posting": "Posting...",
+    "success": {
+      "title": "Success",
+      "description": "Post created successfully!"
+    },
+    "error": {
+      "title": "Post Error"
+    },
+    "authError": {
+      "title": "Authentication Error",
+      "web3NotConnected": "Please login again (Web3Auth not connected)",
+      "tokenNotFound": "Authentication token not found. Please login again",
+      "sessionExpired": "Your session has expired. Please login again."
+    },
+    "profileError": {
+      "title": "Profile Error",
+      "notFound": "Profile information not found. Please login again"
+    },
+    "validationError": {
+      "title": "Validation Error",
+      "contentOrImageRequired": "Please enter content or add an image"
+    },
+    "imageUpload": {
+      "uploadImage": "Upload image",
+      "tooLarge": {
+        "title": "Image too large",
+        "description": "Image must be smaller than 50MB"
+      },
+      "invalidFile": {
+        "title": "Invalid file",
+        "description": "Please select an image file"
+      },
+      "readError": {
+        "title": "File read error",
+        "description": "Could not read image file"
+      },
+      "failedConfirmation": "Image upload failed. Do you want to post without image?\n\nError: {{error}}",
+      "failedError": "Image upload failed: {{error}}",
+      "invalidDataUrl": "Invalid data URL format",
+      "processingError": "Could not process image. Please try again.",
+      "unknownError": "Unknown error"
+    },
+    "loginRequired": {
+      "title": "Login Required",
+      "description": "Please login to create a post"
+    },
+    "debugInfo": "Debug info",
+    "failedGeneric": "Failed to create post",
+    "unknownError": "An unknown error occurred"
+  },
+  "close": "Close",
+  "user": "User",
+  "userInitial": "U",
+
+
+   "postCard": {
+    "following": "Following",
+    "follow": "Follow",
+    "showLess": "Show less",
+    "showMore": "Show more",
+    "unableToLoadImage": "Unable to load image",
+    "like": "like",
+    "likes": "likes",
+    "comment": "comment",
+    "comments": "comments",
+    "hide": "Hide",
+    "viewAll": "View all",
+    "repost": "Repost",
+    "addComment": "Add a comment...",
+    "post": "Post"
+  },
+
+
+  
+  "edit_profile": {
+    "title": "Edit Profile",
+    "description": "Update your personal information and customize your profile",
+    "fix_errors": "Please fix form errors"
+  },
+  "commonv2": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "save_changes": "Save changes",
+    "saving": "Saving",
+    "saving_short": "Save",
+    "change": "Change",
+    "coming_soon": "Coming Soon"
+  },
+  "tabs": {
+    "basic_info": "Basic Info",
+    "basic_info_desc": "Name, bio, and location",
+    "photos": "Photos",
+    "photos_desc": "Profile and cover images",
+    "social": "Social",
+    "social_desc": "Website and social links",
+    "account": "Account",
+    "account_desc": "Email and contact info"
+  },
+  "account": {
+    "contact_info": "Contact Information",
+    "contact_info_desc": "This information is private and will not be displayed on your public profile.",
+    "email": "Email Address",
+    "email_placeholder": "your@email.com",
+    "email_usage": "Used for important account notifications and password recovery",
+    "phone": "Phone Number",
+    "phone_placeholder": "+1 (123) 456-7890",
+    "phone_usage": "Optional. Used for account verification and security alerts",
+    "privacy_title": "Privacy & Security",
+    "privacy_desc": "Your email and phone number are kept private and secure...",
+    "settings_title": "Account Settings",
+    "settings_desc": "Quick overview of your account security status",
+    "email_verified": "Email Verified",
+    "email_provided": "Email provided",
+    "no_email": "No email set",
+    "phone_added": "Phone Added",
+    "phone_provided": "Phone provided",
+    "no_phone": "No phone set"
+  },
+  "basic": {
+    "display_name": "Display Name",
+    "display_name_placeholder": "Your display name",
+    "display_name_desc": "This is how your name will appear to others",
+    "username": "Username",
+    "username_placeholder": "username",
+    "username_rules": "Only letters, numbers, and underscores allowed",
+    "pronouns": "Pronouns",
+    "pronouns_placeholder": "e.g. she/her, they/them",
+    "pronouns_desc": "Let people know how to refer to you",
+    "bio": "Bio",
+    "bio_placeholder": "Tell us about yourself...",
+    "bio_desc": "Write a short bio about yourself",
+    "location": "Location",
+    "location_placeholder": "Your location",
+    "location_desc": "Where are you located?"
+  },
+  "images": {
+    "profile_pic": "Profile Picture",
+    "change_photo": "Change Photo",
+    "profile_pic_rules": "Square image recommended, at least 200×200px. Max 2MB.",
+    "cover_image": "Cover Image",
+    "no_cover": "No cover image",
+    "change_cover": "Change Cover",
+    "cover_rules": "Recommended: 1200×300px or larger. Max 5MB. This will be displayed at the top of your profile."
+  },
+  "social": {
+    "website": "Website",
+    "website_placeholder": "https://your-website.com",
+    "website_desc": "Add your personal website, portfolio, or blog",
+    "preview_title": "Profile Preview",
+    "default_username": "username",
+    "links_title": "Social Links",
+    "links_desc": "Connect your Twitter, LinkedIn, GitHub, and other social profiles. This feature will be available in a future update."
+  },
+
+   "unfollowConfirm": {
+    "title": "Unfollow User",
+    "description": "Are you sure you want to unfollow @{{username}}?",
+    "confirm": "Unfollow"
+  },
+
+
+
+  "comment": {
+    "likeError": "Failed to like comment",
+    "deleted": "Comment deleted",
+    "deleteError": "Failed to delete comment",
+    "reply": "Reply",
+    "editComment": "Edit comment",
+    "writeReply": "Write a reply...",
+    "hideReplies": "Hide replies",
+    "replies": "replies",
+    "comments": "Comments",
+    "commentPosted": "Comment posted",
+    "commentPostedDesc": "Your comment has been posted successfully",
+    "error": "Error",
+    "errorDesc": "Failed to post comment",
+    "imageUploaded": "Image uploaded",
+    "imageReady": "Image is ready to post",
+    "uploadError": "Upload error",
+    "uploadErrorDesc": "Failed to upload image",
+    "loadError": "Error loading comments",
+    "loadErrorDesc": "Failed to load comments",
+    "loadMore": "Load more",
+    "noComments": "No comments yet",
+    "addComment": "Add a comment...",
+    "replyPosted": "Reply posted",
+    "replyPostedDesc": "Your reply has been posted successfully"
+  }
+
+
+  
+
+
+}

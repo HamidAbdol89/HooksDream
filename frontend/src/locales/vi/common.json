@@ -1,0 +1,291 @@
+{
+  "welcome_lens_social": "Chào mừng đến với HooksDream",
+  "login_to_start": "Đăng nhập với Web3Auth để bắt đầu chia sẻ và khám phá nội dung tuyệt vời",
+  "waiting_for_login": "Đang chờ đăng nhập...",
+  "connected_with_web3auth": "✅ Đã kết nối với Web3Auth",
+  "login_with_web3auth": "Đăng nhập với Web3Auth",
+  "secure_wallet_connection": "Bảo mật kết nối ví của bạn với Web3Auth",
+  "agree_terms_prefix": "Bằng việc kết nối, bạn đồng ý với",
+  "terms_of_service": "Điều khoản dịch vụ",
+
+  "header": {
+    "searchPlaceholder": "Tìm kiếm bài viết, hồ sơ...",
+    "user": "Người dùng",
+    "search": "Tìm kiếm",
+    "profile": "Hồ sơ",
+    "settings": "Cài đặt",
+    "disconnect": "Ngắt kết nối",
+    "userMenu": "Menu người dùng"
+  },
+  "settings": {
+    "language": "Ngôn ngữ",
+    "back": "Quay lại",
+       "theme": "Giao diện",
+    "theme.light": "Sáng",
+    "theme.dark": "Tối"
+  },
+
+   "nav": {
+    "home": "Trang chủ",
+    "search": "Tìm kiếm",
+    "notifications": "Thông báo",
+    "messages": "Tin nhắn",
+    "friends": "Bạn bè"
+  },
+  
+  "feed": {
+    "error": {
+      "title": "Lỗi tải bài viết",
+      "loading": "Không thể tải bài viết"
+    },
+    "empty": {
+      "title": "Chưa có bài viết nào",
+      "description": "Hãy là người đầu tiên chia sẻ điều gì đó!"
+    },
+    "createPost": {
+      "placeholder": "Bạn đang nghĩ gì?",
+      "button": "Đăng bài"
+    },
+    "actions": {
+      "like": "Thích",
+      "unlike": "Bỏ thích",
+      "comment": "Bình luận",
+      "share": "Chia sẻ",
+      "save": "Lưu"
+    },
+    "likes": "lượt thích",
+    "comment": {
+      "placeholder": "Thêm bình luận...",
+      "post": "Gửi"
+    }
+  },
+  "common": {
+    "like": "Thích",
+    "edit": "Chỉnh sửa",
+    "delete": "Xóa",
+    "cancel": "Hủy",
+    "close": "Đóng",
+    "tryAgain": "Thử lại"
+  },
+
+  
+  "createPost": {
+    "uploadVideo": "Tải video lên",
+"videoUpload": {
+  "tooLarge": {
+    "title": "Video quá lớn",
+    "description": "Dung lượng video tối đa là {maxSize}MB",
+        "expandEditor": "Mở rộng trình soạn thảo",
+    "collapseEditor": "Thu gọn trình soạn thảo"
+  },
+  "invalidFile": {
+    "title": "Tệp không hợp lệ",
+    "description": "Chỉ cho phép tệp video"
+  },
+  "failedConfirmation": "Tải video thất bại ({error}). Tiếp tục mà không có video?",
+  "failedError": "Tải video thất bại: {error}",
+  "unknownError": "Đã xảy ra lỗi không xác định khi tải video"
+},
+    "title": "Tạo bài viết",
+    "description": "Chia sẻ suy nghĩ của bạn với cộng đồng",
+    "contentPlaceholder": "Bạn đang nghĩ gì?",
+    "maxCharacters": "Tối đa 500 ký tự",
+    "post": "Đăng bài",
+    "posting": "Đang đăng...",
+    "success": {
+      "title": "Thành công",
+      "description": "Đã tạo bài viết thành công!"
+    },
+    "error": {
+      "title": "Lỗi tạo bài viết"
+    },
+    "authError": {
+      "title": "Lỗi xác thực",
+      "web3NotConnected": "Vui lòng đăng nhập lại (Web3Auth not connected)",
+      "tokenNotFound": "Không tìm thấy token xác thực. Vui lòng đăng nhập lại",
+      "sessionExpired": "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
+    },
+    "profileError": {
+      "title": "Lỗi thông tin",
+      "notFound": "Không tìm thấy thông tin profile. Vui lòng đăng nhập lại"
+    },
+    "validationError": {
+      "title": "Lỗi xác thực",
+      "contentOrImageRequired": "Vui lòng nhập nội dung hoặc thêm hình ảnh"
+    },
+    "imageUpload": {
+      "uploadImage": "Tải ảnh lên",
+      "tooLarge": {
+        "title": "Ảnh quá lớn",
+        "description": "Kích thước ảnh phải nhỏ hơn 50MB"
+      },
+      "invalidFile": {
+        "title": "File không hợp lệ",
+        "description": "Vui lòng chọn file ảnh"
+      },
+      "readError": {
+        "title": "Lỗi đọc file",
+        "description": "Không thể đọc file ảnh"
+      },
+      "failedConfirmation": "Upload ảnh thất bại. Bạn có muốn đăng bài mà không có ảnh không?\n\nLỗi: {{error}}",
+      "failedError": "Upload ảnh thất bại: {{error}}",
+      "invalidDataUrl": "Định dạng data URL không hợp lệ",
+      "processingError": "Không thể xử lý ảnh. Vui lòng thử lại.",
+      "unknownError": "Lỗi không xác định"
+    },
+    "loginRequired": {
+      "title": "Yêu cầu đăng nhập",
+      "description": "Vui lòng đăng nhập để tạo bài viết"
+    },
+    "debugInfo": "Thông tin debug",
+    "failedGeneric": "Tạo bài viết thất bại",
+    "unknownError": "Đã xảy ra lỗi không xác định"
+  },
+  "close": "Đóng",
+  "user": "Người dùng",
+  "userInitial": "N",
+
+   "postCard": {
+    "following": "Đang theo dõi",
+    "follow": "Theo dõi",
+    "showLess": "Ẩn bớt",
+    "showMore": "Xem thêm",
+    "unableToLoadImage": "Không thể tải hình ảnh",
+    "like": "thích",
+    "likes": "thích",
+    "comment": "bình luận",
+    "comments": "bình luận",
+    "hide": "Ẩn",
+    "viewAll": "Xem tất cả",
+    "repost": "Đăng lại",
+    "addComment": "Thêm bình luận...",
+    "post": "Đăng"
+  },
+
+
+
+  
+  "edit_profile": {
+    "title": "Chỉnh sửa Profile",
+    "description": "Cập nhật thông tin cá nhân và tùy chỉnh hồ sơ của bạn",
+    "fix_errors": "Vui lòng sửa các lỗi trên form"
+  },
+  "commonv2": {
+    "cancel": "Hủy",
+    "save": "Lưu",
+    "save_changes": "Lưu thay đổi",
+    "saving": "Đang lưu",
+    "saving_short": "Lưu",
+    "change": "Thay đổi",
+    "coming_soon": "Sắp ra mắt"
+  },
+  "tabs": {
+    "basic_info": "Thông tin cơ bản",
+    "basic_info_desc": "Tên, giới thiệu và vị trí",
+    "photos": "Hình ảnh",
+    "photos_desc": "Ảnh đại diện và ảnh bìa",
+    "social": "Mạng xã hội",
+    "social_desc": "Website và liên kết xã hội",
+    "account": "Tài khoản",
+    "account_desc": "Email và thông tin liên hệ"
+  },
+  "account": {
+    "contact_info": "Thông tin liên hệ",
+    "contact_info_desc": "Thông tin này sẽ được giữ riêng tư và không hiển thị trên hồ sơ công khai.",
+    "email": "Địa chỉ Email",
+    "email_placeholder": "email@củabạn.com",
+    "email_usage": "Dùng cho thông báo quan trọng và khôi phục mật khẩu",
+    "phone": "Số điện thoại",
+    "phone_placeholder": "+84 123 456 789",
+    "phone_usage": "Tùy chọn. Dùng để xác minh tài khoản và cảnh báo bảo mật",
+    "privacy_title": "Quyền riêng tư & Bảo mật",
+    "privacy_desc": "Email và số điện thoại của bạn được giữ riêng tư và an toàn...",
+    "settings_title": "Cài đặt tài khoản",
+    "settings_desc": "Tổng quan nhanh về tình trạng bảo mật tài khoản",
+    "email_verified": "Email đã xác minh",
+    "email_provided": "Email đã cung cấp",
+    "no_email": "Chưa đặt email",
+    "phone_added": "Đã thêm số điện thoại",
+    "phone_provided": "Số điện thoại đã cung cấp",
+    "no_phone": "Chưa đặt số điện thoại"
+  },
+  "basic": {
+    "display_name": "Tên hiển thị",
+    "display_name_placeholder": "Tên hiển thị của bạn",
+    "display_name_desc": "Tên này sẽ hiển thị với mọi người",
+    "username": "Tên người dùng",
+    "username_placeholder": "tennguoidung",
+    "username_rules": "Chỉ cho phép chữ, số và dấu gạch dưới",
+    "pronouns": "Đại từ",
+    "pronouns_placeholder": "ví dụ: cô ấy, họ",
+    "pronouns_desc": "Cho mọi người biết cách gọi bạn",
+    "bio": "Tiểu sử",
+    "bio_placeholder": "Kể cho chúng tôi về bạn...",
+    "bio_desc": "Viết một tiểu sử ngắn về bản thân",
+    "location": "Vị trí",
+    "location_placeholder": "Vị trí của bạn",
+    "location_desc": "Bạn đang ở đâu?"
+  },
+  "images": {
+    "profile_pic": "Ảnh đại diện",
+    "change_photo": "Đổi ảnh",
+    "profile_pic_rules": "Khuyến nghị ảnh vuông, ít nhất 200×200px. Tối đa 2MB.",
+    "cover_image": "Ảnh bìa",
+    "no_cover": "Chưa có ảnh bìa",
+    "change_cover": "Đổi ảnh bìa",
+    "cover_rules": "Khuyến nghị: 1200×300px hoặc lớn hơn. Tối đa 5MB. Sẽ hiển thị ở đầu hồ sơ."
+  },
+  "social": {
+    "website": "Website",
+    "website_placeholder": "https://website-củabạn.com",
+    "website_desc": "Thêm website cá nhân, portfolio hoặc blog",
+    "preview_title": "Xem trước hồ sơ",
+    "default_username": "tennguoidung",
+    "links_title": "Liên kết mạng xã hội",
+    "links_desc": "Kết nối Twitter, LinkedIn, GitHub và các hồ sơ xã hội khác. Tính năng này sẽ có trong bản cập nhật sau."
+  },
+
+
+  "unfollowConfirm": {
+  "title": "Hủy theo dõi người dùng",
+  "description": "Bạn có chắc chắn muốn hủy theo dõi @{{username}} không?",
+  "confirm": "Hủy theo dõi"
+},
+
+
+
+ "comment": {
+    "likeError": "Không thể thích bình luận",
+    "deleted": "Bình luận đã được xóa",
+    "deleteError": "Không thể xóa bình luận",
+    "reply": "Trả lời",
+    "editComment": "Chỉnh sửa bình luận",
+    "writeReply": "Viết trả lời...",
+    "hideReplies": "Ẩn trả lời",
+    "replies": "trả lời",
+    "comments": "Bình luận",
+    "commentPosted": "Đã đăng bình luận",
+    "commentPostedDesc": "Bình luận của bạn đã được đăng thành công",
+    "error": "Lỗi",
+    "errorDesc": "Không thể đăng bình luận",
+    "imageUploaded": "Đã tải ảnh lên",
+    "imageReady": "Ảnh đã sẵn sàng để đăng",
+    "uploadError": "Lỗi tải lên",
+    "uploadErrorDesc": "Không thể tải ảnh lên",
+    "loadError": "Lỗi tải bình luận",
+    "loadErrorDesc": "Không thể tải bình luận",
+    "loadMore": "Tải thêm",
+    "noComments": "Chưa có bình luận nào",
+    "addComment": "Thêm bình luận...",
+    "replyPosted": "Đã trả lời",
+"replyPostedDesc": "Phản hồi của bạn đã được đăng thành công"
+
+  }
+
+
+
+
+
+
+
+}
