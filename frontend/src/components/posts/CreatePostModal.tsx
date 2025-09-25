@@ -4,10 +4,8 @@ import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import { useSocial } from '@/hooks/useSocial';
 import { api } from '@/services/api';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { useToast } from '@/components/ui/use-toast';
 import { useTranslation } from 'react-i18next';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { useSuccessToast } from '@/components/ui/SuccessToast';
 import { SessionWarningModal } from './modalpost/SessionWarningModal';
 import { LoadingModal } from './modalpost/LoadingModal';
 import { PostHeader } from './modalpost/PostHeader';
@@ -52,12 +50,10 @@ const { isConnected, profile: currentUser } = useGoogleAuth();
   const [images, setImages] = useState<(string | File)[]>([]);
   const [video, setVideo] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useMediaQuery('(max-width: 640px)');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isTextExpanded, setIsTextExpanded] = useState(false);
-  const { showSuccess } = useSuccessToast();
   
   const [sessionWarning, setSessionWarning] = useState(false);
 
@@ -124,11 +120,6 @@ const { isConnected, profile: currentUser } = useGoogleAuth();
 
     // Kiểm tra số lượng ảnh tối đa
     if (images.length + files.length > maxImages) {
-      toast({
-        variant: "destructive",
-        title: t('createPost.imageUpload.tooMany.title'),
-        description: t('createPost.imageUpload.tooMany.description', { maxImages }),
-      });
       return;
     }
 
@@ -136,20 +127,10 @@ const { isConnected, profile: currentUser } = useGoogleAuth();
     const validFiles: File[] = [];
     for (const file of files) {
       if (file.size > 10 * 1024 * 1024) { // 10MB per image
-        toast({
-          variant: "destructive",
-          title: t('createPost.imageUpload.tooLarge.title'),
-          description: `${file.name} ${t('createPost.imageUpload.tooLarge.description')}`,
-        });
         continue;
       }
 
       if (!file.type.startsWith('image/')) {
-        toast({
-          variant: "destructive",
-          title: t('createPost.imageUpload.invalidFile.title'),
-          description: `${file.name} ${t('createPost.imageUpload.invalidFile.description')}`,
-        });
         continue;
       }
 
@@ -170,11 +151,6 @@ const { isConnected, profile: currentUser } = useGoogleAuth();
         }
       };
       reader.onerror = () => {
-        toast({
-          variant: "destructive",
-          title: t('createPost.imageUpload.readError.title'),
-          description: `${file.name}: ${t('createPost.imageUpload.readError.description')}`,
-        });
       };
       reader.readAsDataURL(file);
     });
@@ -203,20 +179,10 @@ const { isConnected, profile: currentUser } = useGoogleAuth();
     if (!file) return;
 
     if (file.size > maxVideoSize) {
-      toast({
-        variant: "destructive",
-        title: t('createPost.videoUpload.tooLarge.title'),
-        description: t('createPost.videoUpload.tooLarge.description', { maxSize: maxVideoSize / (1024 * 1024) }),
-      });
       return;
     }
 
     if (!file.type.startsWith('video/')) {
-      toast({
-        variant: "destructive",
-        title: t('createPost.videoUpload.invalidFile.title'),
-        description: t('createPost.videoUpload.invalidFile.description'),
-      });
       return;
     }
 
@@ -234,41 +200,21 @@ const { isConnected, profile: currentUser } = useGoogleAuth();
     
     // Session consistency check
     if (!currentUser || (!profile && !currentUser)) {
-      toast({ 
-        variant: 'destructive',
-        title: t('createPost.sessionError.title'), 
-        description: t('createPost.sessionError.inconsistent')
-      });
       clearAllCache();
       return;
     }
     
     if (!isConnected) {
-      toast({ 
-        variant: 'destructive',
-        title: t('createPost.authError.title'), 
-        description: t('createPost.authError.web3NotConnected') 
-      });
       return;
     }
 
     const token = getAuthToken();
     
     if (!token) {
-      toast({ 
-        variant: 'destructive',
-        title: t('createPost.authError.title'), 
-        description: t('createPost.authError.tokenNotFound') 
-      });
       return;
     }
 
     if (!content.trim() && images.length === 0 && !video) {
-      toast({ 
-        variant: 'destructive',
-        title: t('createPost.validationError.title'), 
-        description: t('createPost.validationError.contentOrMediaRequired') 
-      });
       return;
     }
 
@@ -370,10 +316,7 @@ const { isConnected, profile: currentUser } = useGoogleAuth();
       setVideo(null);
       setIsTextExpanded(false);
 
-      showSuccess(
-        t('createPost.success.title'),
-        t('createPost.success.description'),
-      );
+
       
     } catch (err) {
       console.error('❌ Create post error:', err);
@@ -385,12 +328,6 @@ const { isConnected, profile: currentUser } = useGoogleAuth();
       } else if (typeof err === 'string') {
         errorMessage = err;
       }
-      
-      toast({
-        variant: 'destructive',
-        title: t('createPost.failed.title'),
-        description: errorMessage,
-      });
     } finally {
       setIsSubmitting(false);
     }

@@ -7,7 +7,6 @@ import { Header } from "@/components/layout/Header";
 import SidebarLeft from "@/components/layout/SidebarLeft";
 import { SidebarRight } from "@/components/layout/SidebarRight";
 import { Feed } from "../pages/FeedPage";
-import { NotificationToast } from "@/components/notifications/NotificationToast";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 import ProfilePage from "@/pages/ProfilePage";
 import { UnfollowConfirmProvider } from "@/contexts/UnfollowConfirmContext";
@@ -54,7 +53,6 @@ const ProtectedApp: React.FC = () => {
           </div>
         </main>
 
-        <NotificationToast />
       </div>
     </UnfollowConfirmProvider>
   );

@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { UserPlus, UserCheck, Loader2 } from 'lucide-react';
 import { useFollow } from '@/hooks/useFollow';
-import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { UnfollowConfirmDialog } from '@/components/dialogs/UnfollowConfirmDialog';
 
@@ -64,11 +63,7 @@ export const FollowButton: React.FC<FollowButtonProps> = ({
   };
 
   return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      transition={{ duration: 0.2 }}
-    >
+    <div>
       <Button
         variant={isFollowing ? 'secondary' : 'default'}
         size={size}
@@ -86,34 +81,23 @@ export const FollowButton: React.FC<FollowButtonProps> = ({
         {isLoading ? (
           <Loader2 className="w-4 h-4 animate-spin mr-2" />
         ) : showIcon ? (
-          <motion.div
-            key={isFollowing ? 'following' : 'not-following'}
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.2 }}
-            className="mr-2"
-          >
+          <div className="mr-2">
             {isFollowing ? (
               <UserCheck className="w-4 h-4" />
             ) : (
               <UserPlus className="w-4 h-4" />
             )}
-          </motion.div>
+          </div>
         ) : null}
         
-        <motion.span
-          key={`${isFollowing}-${followerCount}`}
-          initial={{ y: -10, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        >
+        <span>
           {isFollowing ? 'Đã theo dõi' : 'Theo dõi'}
           {showCount && followerCount > 0 && (
             <span className="ml-1 text-xs opacity-75">
               ({followerCount})
             </span>
           )}
-        </motion.span>
+        </span>
       </Button>
 
       {/* Unfollow Confirmation Dialog */}
@@ -124,7 +108,7 @@ export const FollowButton: React.FC<FollowButtonProps> = ({
         username={username}
         isLoading={isLoading}
       />
-    </motion.div>
+    </div>
   );
 };
 

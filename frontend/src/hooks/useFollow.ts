@@ -1,8 +1,7 @@
 // hooks/useFollow.ts - Hook quản lý follow state với Socket.IO
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/services/api';
-import { useFollowSocket } from './useSocket';
-import { useToast } from '@/components/ui/use-toast';
+import { useFollowSocket } from '@/hooks/useSocket';
 
 interface UseFollowProps {
   userId: string;
@@ -18,7 +17,6 @@ export const useFollow = ({
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
   const [followerCount, setFollowerCount] = useState(initialFollowerCount);
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
   
   // Socket.IO for real-time updates
   const { onFollowUpdate, emitFollow } = useFollowSocket();
@@ -32,7 +30,7 @@ export const useFollow = ({
           setIsFollowing(response.data.isFollowing);
         }
       } catch (error) {
-        console.error('Error checking follow status:', error);
+        // Silent fail
       }
     };
 
@@ -46,7 +44,6 @@ export const useFollow = ({
     onFollowUpdate((data) => {
       // Update if this is about the current user
       if (data.targetUserId === userId || data.followingId === userId) {
-        console.log('🔄 Follow update received:', data);
         setIsFollowing(data.isFollowing);
         setFollowerCount(data.followerCount);
       }
@@ -76,29 +73,20 @@ export const useFollow = ({
         setIsFollowing(response.data.isFollowing);
         setFollowerCount(response.data.followerCount);
         
-        toast({
-          title: response.data.isFollowing ? 'Followed!' : 'Unfollowed!',
-          description: response.message,
-        });
+        // Success - no toast needed
       } else {
         throw new Error(response.message || 'Follow action failed');
       }
     } catch (error) {
-      console.error('Follow error:', error);
-      
       // Revert optimistic update on error
       setIsFollowing(!newIsFollowing);
       setFollowerCount(followerCount);
       
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to update follow status',
-        variant: 'destructive',
-      });
+      // Error - silent fail
     } finally {
       setIsLoading(false);
     }
-  }, [userId, isFollowing, followerCount, isLoading, emitFollow, toast]);
+  }, [userId, isFollowing, followerCount, isLoading, emitFollow]);
 
   return {
     isFollowing,

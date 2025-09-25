@@ -5,7 +5,6 @@ import { useTranslation } from "react-i18next";
 import { api } from '@/services/api';
 import { Loader2, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { useToast } from '@/components/ui/use-toast';
 import { UserProfile } from '@/types/user';
 
 interface CommentInputProps {
@@ -24,8 +23,7 @@ export const CommentInput: React.FC<CommentInputProps> = ({
   currentUser
 }) => {
   const { t } = useTranslation("common");
-  const { toast } = useToast();
-  const [content, setContent] = useState('');
+    const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [image, setImage] = useState<string>('');
 // Sửa phần handleSubmit trong CommentInput.tsx
@@ -53,17 +51,8 @@ const handleSubmit = async (e: React.FormEvent) => {
     setContent('');
     setImage('');
     onCommentCreated();
-    toast({
-      title: parentCommentId ? t('comment.replyPosted') : t('comment.commentPosted'),
-      description: parentCommentId ? t('comment.replyPostedDesc') : t('comment.commentPostedDesc'),
-    });
   } catch (error) {
     console.error('Error creating comment:', error);
-    toast({
-      title: t('comment.error'),
-      description: t('comment.errorDesc'),
-      variant: 'destructive'
-    });
   } finally {
     setIsSubmitting(false);
   }
@@ -76,18 +65,8 @@ const handleSubmit = async (e: React.FormEvent) => {
       // Giả sử bạn có hàm upload ảnh cho comment
       // const imageUrl = await commentApi.uploadCommentImage(file);
       // setImage(imageUrl);
-      
-      toast({
-        title: t('comment.imageUploaded'),
-        description: t('comment.imageReady'),
-      });
     } catch (error) {
       console.error('Error uploading image:', error);
-      toast({
-        title: t('comment.uploadError'),
-        description: t('comment.uploadErrorDesc'),
-        variant: 'destructive'
-      });
     }
   };
 

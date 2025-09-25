@@ -9,7 +9,6 @@ import { UserProfile } from '@/types/user';
 import { useCommentSocket } from '@/hooks/useSocket';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
-import { useToast } from '@/components/ui/use-toast';
 import { Comment as CommentType } from '@/components/comment/types/comment'; 
 
 interface CommentSectionProps {
@@ -24,8 +23,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
   showInput = true // Default to true for backward compatibility
 }) => {
   const { t } = useTranslation('common');
-  const { toast } = useToast();
-  const [comments, setComments] = useState<CommentType[]>([]);
+    const [comments, setComments] = useState<CommentType[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -60,11 +58,6 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
       }
     } catch (error) {
       console.error('Error loading comments:', error);
-      toast({
-        title: t('comment.loadError'),
-        description: t('comment.loadErrorDesc'),
-        variant: 'destructive'
-      });
     } finally {
       setLoading(false);
       setIsLoadingMore(false);

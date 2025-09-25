@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/Button';
 import { useTranslation } from 'react-i18next';
 import { api } from '@/services/api';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
-import { useToast } from '@/components/ui/use-toast';
 
 import { 
   Heart, 
@@ -16,7 +15,7 @@ import {
   Reply,
   ImageIcon
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -121,7 +120,6 @@ export const Comment: React.FC<CommentProps> = ({
   currentUser 
 }) => {
   const { t } = useTranslation('common');
-  const { toast } = useToast();
   const [isLiking, setIsLiking] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -168,10 +166,6 @@ export const Comment: React.FC<CommentProps> = ({
 
   const handleLike = async () => {
     if (!fallbackUser) {
-      toast({
-        title: t('auth.loginRequired'),
-        variant: 'destructive'
-      });
       return;
     }
     
@@ -199,11 +193,6 @@ export const Comment: React.FC<CommentProps> = ({
       // Revert optimistic update on error
       setLocalIsLiked(!newIsLiked);
       setLocalLikeCount(localLikeCount);
-      
-      toast({
-        title: t('comment.likeError'),
-        variant: 'destructive'
-      });
     } finally {
       setIsLiking(false);
     }
@@ -213,14 +202,8 @@ export const Comment: React.FC<CommentProps> = ({
     try {
       await api.comments.deleteComment(postId, comment._id);
       onCommentUpdate();
-      toast({
-        title: t('comment.deleted'),
-      });
     } catch (error) {
-      toast({
-        title: t('comment.deleteError'),
-        variant: 'destructive'
-      });
+      // Silent fail
     }
   };
 
@@ -326,14 +309,8 @@ export const Comment: React.FC<CommentProps> = ({
                     });
                     setIsEditing(false);
                     onCommentUpdate();
-                    toast({
-                      title: t('comment.updated'),
-                    });
                   } catch (error) {
-                    toast({
-                      title: t('comment.updateError'),
-                      variant: 'destructive'
-                    });
+                    // Silent fail
                   }
                 }}
                 onCancel={() => setIsEditing(false)}
@@ -359,52 +336,29 @@ export const Comment: React.FC<CommentProps> = ({
 
           {/* Comment Actions */}
           <div className="flex items-center space-x-4 mt-2">
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              transition={{ duration: 0.2 }}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLike}
+              disabled={isLiking}
+              className={`h-8 px-2 text-xs transition-colors duration-200 ${
+                localIsLiked ? 'text-red-500 hover:text-red-600' : 'text-muted-foreground hover:text-red-500'
+              }`}
             >
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLike}
-                disabled={isLiking}
-                className={`h-8 px-2 text-xs transition-all duration-300 ${
-                  localIsLiked ? 'text-red-500 hover:text-red-600' : 'text-muted-foreground hover:text-red-500'
-                }`}
-              >
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={localIsLiked ? 'liked' : 'unliked'}
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.8, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="flex items-center"
-                  >
-                    <motion.div
-                      animate={localIsLiked ? { 
-                        scale: [1, 1.3, 1],
-                        rotate: [0, 15, -10, 0]
-                      } : {}}
-                      transition={{ duration: 0.4 }}
-                    >
-                      <Heart className={`w-4 h-4 mr-1 transition-all duration-300 ${
-                        localIsLiked ? 'fill-current text-red-500' : ''
-                      }`} />
-                    </motion.div>
-                    <motion.span
-                      key={localLikeCount}
-                      initial={{ y: -10, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      {localLikeCount > 0 ? localLikeCount : t('common.like')}
-                    </motion.span>
-                  </motion.div>
-                </AnimatePresence>
-              </Button>
-            </motion.div>
+              <div className="flex items-center">
+                <motion.div
+                  animate={localIsLiked ? { scale: [1, 1.2, 1] } : {}}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Heart className={`w-4 h-4 mr-1 transition-colors duration-200 ${
+                    localIsLiked ? 'fill-current text-red-500' : ''
+                  }`} />
+                </motion.div>
+                <span>
+                  {localLikeCount > 0 ? localLikeCount : t('common.like')}
+                </span>
+              </div>
+            </Button>
 
             <Button
               variant="ghost"

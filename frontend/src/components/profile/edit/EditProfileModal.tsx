@@ -10,8 +10,6 @@ import { Button } from '@/components/ui/Button';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Check, Loader2, AlertTriangle } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
-
 import { ProfileTabs } from './ProfileTabs';
 import { BasicInfoForm } from './forms/BasicInfoForm';
 import { ImagesForm } from './forms/ImagesForm';
@@ -32,8 +30,7 @@ interface EditProfileModalProps {
 }
 
 export default function EditProfileModal({ isOpen, onClose, user, onSave }: EditProfileModalProps) {
-  const { toast } = useToast();
-  const {
+    const {
     formData,
     errors,
     isLoading,
@@ -57,21 +54,11 @@ export default function EditProfileModal({ isOpen, onClose, user, onSave }: Edit
       const result = await handleSubmit(e);
       
       if (result) {
-        toast({
-          title: t("edit_profile.success_title") || "Thành công",
-          description: t("edit_profile.success_message") || "Thông tin profile đã được cập nhật",
-        });
-        
         // Close modal after successful save
         onClose();
       }
     } catch (error) {
       console.error('Failed to update profile:', error);
-      toast({
-        title: t("edit_profile.error_title") || "Lỗi",
-        description: t("edit_profile.error_message") || "Không thể cập nhật profile",
-        variant: 'destructive',
-      });
     }
   };
 

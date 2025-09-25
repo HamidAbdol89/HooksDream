@@ -1,6 +1,6 @@
 // src/components/posts/PostCard.tsx
 import React, { useState, useEffect } from 'react';
-import { PostHeader } from '@/components/posts/PostHeader';
+import { PostHeader } from './PostHeader';
 import { PostContent } from '@/components/posts/PostContent';
 import { PostMedia } from '@/components/posts/PostMedia';
 import { PostActions } from '@/components/posts/PostActions';
@@ -14,7 +14,6 @@ import { Post } from '@/types/post';
 import { PostLikesDialog } from './PostLikesDialog';
 import { UserProfile } from '@/types/user';
 import { api } from '@/services/api'; // THÊM IMPORT
-import { useToast } from '@/components/ui/use-toast'; // THÊM IMPORT
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 
 interface PostCardProps {
@@ -42,7 +41,6 @@ export const PostCard: React.FC<PostCardProps> = ({
   currentUser,
   onPostUpdate // NHẬN PROP MỚI
 }) => {
-  const { toast } = useToast(); // THÊM TOAST
   const {
     isExpanded,
     setIsExpanded,

@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { useToast } from '@/components/ui/use-toast';
 import { validateProfile, MAX_AVATAR_SIZE, MAX_COVER_SIZE } from '@/utils/profileValidation';
 import { useAppStore, User } from '@/store/useAppStore';
 import { useParams } from 'react-router-dom';
@@ -32,8 +31,7 @@ interface UseEditProfileProps {
 }
 
 export function useEditProfile({ isOpen, user, onSave, onClose }: UseEditProfileProps) {
-  const { toast } = useToast();
-  const { address } = useParams();
+    const { address } = useParams();
   const { 
     user: globalUser, 
     updateUser, 
@@ -92,11 +90,6 @@ export function useEditProfile({ isOpen, user, onSave, onClose }: UseEditProfile
         }
       } catch (err) {
         console.error('Failed to load user:', err);
-        toast({
-          title: 'Lỗi',
-          description: 'Không thể tải thông tin user',
-          variant: 'destructive',
-        });
       }
     };
 
@@ -252,23 +245,12 @@ const handleImageUpload = async (
       setTimeout(() => {
         notifyProfileUpdate();
       }, 1000);
-      
-      toast({ 
-        title: 'Thành công', 
-        description: 'Ảnh đã được tải lên và lưu thành công',
-      });
-
       console.log('🎉 Image upload completed successfully');
     } else {
       throw new Error(result?.message || 'Upload failed');
     }
   } catch (error) {
     console.error('❌ Image upload failed:', error);
-    toast({
-      title: 'Lỗi',
-      description: error instanceof Error ? error.message : 'Không thể tải ảnh lên',
-      variant: 'destructive',
-    });
   } finally {
     setTimeout(() => {
       isUploadingRef.current = false;
@@ -285,11 +267,6 @@ const handleImageUpload = async (
     setErrors(validationErrors);
 
     if (Object.keys(validationErrors).length > 0) {
-      toast({
-        title: 'Lỗi xác thực',
-        description: 'Vui lòng kiểm tra và sửa các lỗi trên form',
-        variant: 'destructive',
-      });
       return null;
     }
 
@@ -306,20 +283,9 @@ const handleImageUpload = async (
       
       // Trigger profile update notification
       notifyProfileUpdate();
-      
-      toast({
-        title: 'Cập nhật thành công',
-        description: 'Thông tin profile của bạn đã được lưu',
-      });
-      
       return formData;
     } catch (error) {
       console.error('Failed to update profile:', error);
-      toast({
-        title: 'Lỗi',
-        description: 'Không thể cập nhật profile',
-        variant: 'destructive',
-      });
       throw error;
     } finally {
       setIsLoading(false);
