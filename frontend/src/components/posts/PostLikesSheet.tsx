@@ -1,12 +1,13 @@
-// src/components/posts/PostLikesDialog.tsx
+// src/components/posts/PostLikesSheet.tsx
 import React, { useEffect, useMemo } from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogClose
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetClose
+} from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Profile } from "@/store/useAppStore";
 import { useTranslation } from "react-i18next";
@@ -14,13 +15,13 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useUnfollowConfirm } from '@/contexts/UnfollowConfirmContext';
 import { UserCard } from '@/components/profile/index/UserCard';
 import { X, Heart } from 'lucide-react';
-import '@/components/posts/PostLikesDialog.css';
 
-interface PostLikesDialogProps {
+interface PostLikesSheetProps {
   postId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentUserId?: string;
+  trigger?: React.ReactNode;
 }
 
 interface LikeUser extends Profile {
@@ -28,11 +29,12 @@ interface LikeUser extends Profile {
   isFollowing?: boolean;
 }
 
-export const PostLikesDialog: React.FC<PostLikesDialogProps> = ({
+export const PostLikesSheet: React.FC<PostLikesSheetProps> = ({
   postId,
   open,
   onOpenChange,
-  currentUserId
+  currentUserId,
+  trigger
 }) => {
   const { t } = useTranslation("common");
   const queryClient = useQueryClient();
@@ -118,7 +120,7 @@ export const PostLikesDialog: React.FC<PostLikesDialogProps> = ({
     }));
   }, [likesData, currentUserFollowing, currentUserId]);
 
-  // Refetch khi dialog mở
+  // Refetch khi sheet mở
   useEffect(() => {
     if (open) {
       refetch();
@@ -177,62 +179,77 @@ export const PostLikesDialog: React.FC<PostLikesDialogProps> = ({
     }
   };
 
+  const defaultTrigger = (
+    <button className="flex items-center space-x-1 text-muted-foreground hover:text-foreground transition-colors">
+      <Heart className="w-4 h-4 text-red-500 fill-current" />
+      <span className="text-sm">{t('postCard.likes')}</span>
+    </button>
+  );
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="post-likes-dialog sm:max-w-lg sm:w-[90vw] lg:max-w-xl lg:w-[80vw] xl:max-w-2xl xl:w-[75vw] sm:max-h-[80vh] lg:max-h-[85vh] max-w-full max-h-full w-full h-full sm:w-auto sm:h-auto p-0 gap-0 sm:rounded-xl">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetTrigger asChild>
+        {trigger || defaultTrigger}
+      </SheetTrigger>
+      
+      <SheetContent 
+        side="bottom" 
+        className="h-[70vh] max-h-[70vh] rounded-t-xl border-t border-border/20 p-0 overflow-hidden"
+      >
         {/* Header */}
-<DialogHeader className="relative flex items-center justify-center px-4 py-3 sm:px-6 sm:py-4 border-b border-border/30 shrink-0">
-  {/* Title */}
-  <DialogTitle className="flex items-center space-x-2 sm:space-x-3 text-base sm:text-xl font-semibold">
-    <Heart className="w-4 h-4 sm:w-5 sm:h-5 text-red-500 fill-current" />
-    <span>{t('postCard.likes')}</span>
-    {usersWithStatus.length > 0 && (
-      <span className="text-xs sm:text-base text-muted-foreground font-normal">
-        ({usersWithStatus.length})
-      </span>
-    )}
-  </DialogTitle>
-
- 
-</DialogHeader>
-
-
-
+        <SheetHeader className="px-4 py-3 border-b border-border/20 bg-background/95 backdrop-blur-sm sticky top-0 z-10">
+          <div className="flex items-center justify-between">
+            <SheetTitle className="flex items-center space-x-2 text-lg font-semibold">
+              <Heart className="w-5 h-5 text-red-500 fill-current" />
+              <span>
+                {t('postCard.likes')}
+                {usersWithStatus.length > 0 && (
+                  <span className="ml-2 text-sm text-muted-foreground font-normal">
+                    ({usersWithStatus.length})
+                  </span>
+                )}
+              </span>
+            </SheetTitle>
+            
+            <SheetClose asChild>
+              <button 
+                className="p-2 hover:bg-accent rounded-full transition-colors"
+                aria-label={t('common.close')}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </SheetClose>
+          </div>
+        </SheetHeader>
 
         {/* Content */}
-        <div className="post-likes-dialog-content flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto">
           {isLoading ? (
-            <div className="space-y-1 p-2 sm:p-0">
+            <div className="space-y-1 p-4">
               {Array.from({ length: 8 }).map((_, index) => (
-                <div key={index} className="flex items-center space-x-3 p-3 sm:p-4">
-                  <Skeleton className="h-8 w-8 sm:h-12 sm:w-12 rounded-full flex-shrink-0" />
+                <div key={index} className="flex items-center space-x-3 p-3">
+                  <Skeleton className="h-12 w-12 rounded-full flex-shrink-0" />
                   <div className="space-y-1 flex-1 min-w-0">
-                    <Skeleton className="h-3 sm:h-4 w-full max-w-[160px] sm:max-w-[250px]" />
-                    <Skeleton className="h-2 sm:h-3 w-3/4 max-w-[120px] sm:max-w-[200px]" />
+                    <Skeleton className="h-4 w-full max-w-[250px]" />
+                    <Skeleton className="h-3 w-3/4 max-w-[200px]" />
                   </div>
-                  <Skeleton className="h-6 w-16 sm:h-8 sm:w-20 rounded-full flex-shrink-0" />
+                  <Skeleton className="h-8 w-20 rounded-full flex-shrink-0" />
                 </div>
               ))}
             </div>
           ) : error ? (
-            <div className="text-center text-red-500 py-8 text-sm sm:text-base">
+            <div className="text-center text-red-500 py-8 px-4">
               {error instanceof Error ? error.message : 'Server error'}
             </div>
           ) : usersWithStatus.length === 0 ? (
-            <div className="text-center text-muted-foreground py-12 text-sm sm:text-base">
+            <div className="text-center text-muted-foreground py-12 px-4">
               <Heart className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
               <p>{t('postCard.noLikes')}</p>
             </div>
           ) : (
             <div className="space-y-0">
-              {usersWithStatus.map((user: Profile, index) => (
-                <div
-                  key={user._id}
-                  className="user-card-item opacity-0"
-                  style={{
-                    animationDelay: `${0.1 + index * 0.05}s`
-                  }}
-                >
+              {usersWithStatus.map((user: Profile) => (
+                <div key={user._id} className="border-b border-border/10 last:border-b-0">
                   <UserCard
                     user={user}
                     onFollowToggle={() => handleFollowToggle(user._id, user.username)}
@@ -243,7 +260,9 @@ export const PostLikesDialog: React.FC<PostLikesDialogProps> = ({
             </div>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 };
+
+export default PostLikesSheet;

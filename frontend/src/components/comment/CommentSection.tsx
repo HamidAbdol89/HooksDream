@@ -1,4 +1,4 @@
-// src/components/posts/CommentSection.tsx - Updated
+// src/components/comment/CommentSection.tsx - Clean version with shimmer loading
 import React, { useState, useEffect } from 'react';
 import { Comment } from './Comment';
 import { CommentInput } from './CommentInput';
@@ -6,201 +6,173 @@ import { api } from '@/services/api';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 import { UserProfile } from '@/types/user';
-import { useCommentSocket } from '@/hooks/useSocket';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
-import { Comment as CommentType } from '@/components/comment/types/comment'; 
+import { Comment as CommentType } from '@/components/comment/types/comment';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface CommentSectionProps {
   postId: string;
   currentUser?: UserProfile;
-  showInput?: boolean; // New prop to control input display
+  showInput?: boolean;
 }
+
+// Shimmer loading component for comments
+const CommentSkeleton = () => (
+  <div className="flex space-x-3 p-4 animate-pulse">
+    <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
+    <div className="flex-1 space-y-2">
+      <div className="flex items-center space-x-2">
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-3 w-16" />
+      </div>
+      <Skeleton className="h-4 w-full max-w-md" />
+      <Skeleton className="h-4 w-3/4 max-w-sm" />
+      <div className="flex space-x-4 mt-2">
+        <Skeleton className="h-6 w-12" />
+        <Skeleton className="h-6 w-12" />
+      </div>
+    </div>
+  </div>
+);
+
+// Batch loading shimmer
+const BatchLoadingSkeleton = ({ count = 3 }: { count?: number }) => (
+  <div className="space-y-0">
+    {Array.from({ length: count }).map((_, i) => (
+      <CommentSkeleton key={i} />
+    ))}
+  </div>
+);
 
 export const CommentSection: React.FC<CommentSectionProps> = ({ 
   postId, 
   currentUser,
-  showInput = true // Default to true for backward compatibility
+  showInput = true
 }) => {
   const { t } = useTranslation('common');
-    const [comments, setComments] = useState<CommentType[]>([]);
+  const [comments, setComments] = useState<CommentType[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  
-  // Socket.IO for real-time updates
-  const { onCommentCreated, onCommentDeleted, onReplyCreated } = useCommentSocket(postId);
 
-  const loadComments = async (pageNum: number = 1, append: boolean = false) => {
+  // Load initial comments
+  const loadComments = async (pageNum = 1, append = false) => {
     try {
+      if (!append) setLoading(true);
+      else setIsLoadingMore(true);
+
       const response = await api.comments.getComments(postId, {
         page: pageNum,
         limit: 10
       });
 
-      if (response.success && Array.isArray(response.data)) {
-        const validComments = response.data.filter((comment: CommentType) => 
-          comment && comment.userId && comment._id
-        );
+      if (response.success) {
+        const newComments = response.data || [];
         
         if (append) {
-          setComments(prev => [...prev, ...validComments]);
+          setComments(prev => [...prev, ...newComments]);
         } else {
-          setComments(validComments);
+          setComments(newComments);
         }
         
-        setHasMore(response.data.length === 10);
-        
-        if (!append) {
-          setPage(1);
-        }
+        setHasMore(newComments.length === 10);
       }
     } catch (error) {
-      console.error('Error loading comments:', error);
+      // Silent fail
     } finally {
       setLoading(false);
       setIsLoadingMore(false);
     }
   };
 
-  useEffect(() => {
-    loadComments(1, false);
-  }, [postId]);
-
-  // Socket.IO real-time listeners
-  useEffect(() => {
-    // Listen for new comments
-    onCommentCreated((data) => {
-      console.log('🔄 Real-time comment created:', data);
-      if (data.postId === postId) {
-        // Add new comment to the beginning of the list
-        setComments(prev => [data.comment, ...prev]);
-      }
-    });
-
-    // Listen for comment deletions
-    onCommentDeleted((data) => {
-      console.log('🔄 Real-time comment deleted:', data);
-      if (data.postId === postId) {
-        setComments(prev => prev.filter(comment => comment._id !== data.commentId));
-      }
-    });
-
-    // Listen for new replies
-    onReplyCreated((data) => {
-      console.log('🔄 Real-time reply created:', data);
-      if (data.postId === postId) {
-        // Refresh comments to show new reply count
-        loadComments(1, false);
-      }
-    });
-  }, [postId, onCommentCreated, onCommentDeleted, onReplyCreated]);
-
-  // Listen for comment created events
-  useEffect(() => {
-    const handleCommentCreated = (event: CustomEvent) => {
-      if (event.detail?.postId === postId) {
-        loadComments(1, false);
-        setPage(1);
-      }
-    };
-
-    window.addEventListener('commentCreated', handleCommentCreated as EventListener);
-    return () => {
-      window.removeEventListener('commentCreated', handleCommentCreated as EventListener);
-    };
-  }, [postId]);
-
-  const handleLoadMore = () => {
-    const nextPage = page + 1;
-    setIsLoadingMore(true);
-    setPage(nextPage);
-    loadComments(nextPage, true);
+  // Load more comments (pagination)
+  const loadMoreComments = () => {
+    if (!isLoadingMore && hasMore) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      loadComments(nextPage, true);
+    }
   };
 
-  const handleCommentCreated = () => {
-    loadComments(1, false);
+  // Refresh comments
+  const refreshComments = () => {
     setPage(1);
+    loadComments(1, false);
   };
+
+  // Initial load
+  useEffect(() => {
+    loadComments();
+  }, [postId]);
 
   if (loading) {
     return (
-      <div className="p-4 flex justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      <div className="mt-4">
+        <BatchLoadingSkeleton count={5} />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Comment Input - Only show if showInput is true */}
+    <div className="mt-4">
+      {/* Comment Input */}
       {showInput && (
-        <div className="p-4 border-b border-border/30">
+        <div className="mb-4">
           <CommentInput
             postId={postId}
-            onCommentCreated={handleCommentCreated}
-            placeholder={t('comment.addComment')}
+            onCommentCreated={refreshComments}
             currentUser={currentUser}
           />
         </div>
       )}
 
-      {/* Comments List */}
-      <div className="flex-1 overflow-y-auto">
-        <AnimatePresence mode="popLayout">
-          <div className="space-y-1">
-            {comments.map((comment, index) => (
-              comment && comment.userId && comment._id ? (
-                <motion.div
-                  key={comment._id}
-                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                  transition={{ 
-                    duration: 0.3, 
-                    delay: index * 0.05,
-                    type: "spring",
-                    stiffness: 100
-                  }}
-                  layout
-                >
-                  <Comment
-                    comment={comment}
-                    postId={postId}
-                    onCommentUpdate={handleCommentCreated}
-                    currentUser={currentUser}
-                  />
-                </motion.div>
-              ) : null
-            ))}
+      {/* Comments List - No animations, just simple rendering */}
+      <div className="space-y-0">
+        {comments.map((comment) => (
+          <div key={comment._id} className="border-b border-border/10 last:border-b-0">
+            <Comment
+              comment={comment}
+              postId={postId}
+              onCommentUpdate={refreshComments}
+              currentUser={currentUser}
+            />
           </div>
-        </AnimatePresence>
-
-        {/* Load More */}
-        {hasMore && (
-          <div className="p-4 border-t border-border/30">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleLoadMore}
-              disabled={isLoadingMore}
-              className="w-full"
-            >
-              {isLoadingMore ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              ) : null}
-              {t('comment.loadMore')}
-            </Button>
-          </div>
-        )}
-
-        {comments.length === 0 && !loading && (
-          <div className="p-8 text-center text-muted-foreground">
-            {t('comment.noComments')}
-          </div>
-        )}
+        ))}
       </div>
+
+      {/* Load More Button */}
+      {hasMore && comments.length > 0 && (
+        <div className="mt-4 text-center">
+          <Button
+            variant="ghost"
+            onClick={loadMoreComments}
+            disabled={isLoadingMore}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            {isLoadingMore ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                {t('common.loading')}
+              </>
+            ) : (
+              t('comment.loadMore')
+            )}
+          </Button>
+        </div>
+      )}
+
+      {/* Loading more shimmer */}
+      {isLoadingMore && (
+        <BatchLoadingSkeleton count={3} />
+      )}
+
+      {/* Empty state */}
+      {!loading && comments.length === 0 && (
+        <div className="text-center py-8 text-muted-foreground">
+          <p>{t('comment.noComments')}</p>
+        </div>
+      )}
     </div>
   );
 };

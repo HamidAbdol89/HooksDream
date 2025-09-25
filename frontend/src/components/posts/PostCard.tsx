@@ -11,7 +11,6 @@ import { ImageModal } from './ImageModal';
 import { usePostInteractions } from '@/components/posts/hooks/usePostInteractions';
 import { useImageModal } from '@/components/posts/hooks/useImageModal';
 import { Post } from '@/types/post';
-import { PostLikesDialog } from './PostLikesDialog';
 import { UserProfile } from '@/types/user';
 import { api } from '@/services/api'; // THÊM IMPORT
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
@@ -170,8 +169,8 @@ useEffect(() => {
           post={{ ...post, commentCount }} // CẬP NHẬT POST OBJECT
           showComments={showComments}
           onToggleComments={() => setShowComments(!showComments)}
-          onShowLikes={handleShowLikes}
-           commentCount={commentCount}
+          currentUserId={currentUserHashId}
+          commentCount={commentCount}
         />
 
         {/* Comment Input */}
@@ -190,13 +189,6 @@ useEffect(() => {
         />
       )}
 
-      {/* Likes Dialog */}
-      <PostLikesDialog
-        postId={post._id}
-        open={showLikesDialog}
-        onOpenChange={setShowLikesDialog}
-        currentUserId={currentUserHashId} 
-      />
     </article>
   );
 };
