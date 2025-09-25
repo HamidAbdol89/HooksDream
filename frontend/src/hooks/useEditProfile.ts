@@ -97,7 +97,7 @@ export function useEditProfile({ isOpen, user, onSave, onClose }: UseEditProfile
     if (isOpen && !resolvedUser) {
       loadUser();
     }
-  }, [isOpen, address, toast, API_BASE]);
+  }, [isOpen, address, API_BASE]);
 
   // ✅ FIX: Cải thiện logic sync với globalUser
   useEffect(() => {
