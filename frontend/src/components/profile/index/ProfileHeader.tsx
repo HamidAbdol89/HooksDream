@@ -31,7 +31,6 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           avatar={user.avatar}
           displayName={user.displayName}
         />
-
         <div className="flex-1 md:ml-6">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between">
             <ProfileInfo user={user} />
@@ -42,6 +41,8 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
               isFollowing={user.isFollowing}
               onEditProfile={onEditProfile}
               onFollow={onFollow}
+              userId={user._id}
+              followerCount={user.followerCount}
             />
           </div>
         </div>

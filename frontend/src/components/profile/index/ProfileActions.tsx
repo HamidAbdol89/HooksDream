@@ -1,20 +1,25 @@
 import React from 'react';
-import { Edit3, UserPlus, MoreHorizontal, MessageCircle, Share2, UserCheck } from 'lucide-react';
+import { Edit3, MoreHorizontal, MessageCircle, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { FollowButton } from '@/components/ui/FollowButton';
 
 interface ProfileActionsProps {
   isOwnProfile: boolean;
   isFollowing?: boolean;
   onEditProfile: () => void;
-  onFollow: () => void;
+  onFollow?: () => void;
+  userId?: string;
+  followerCount?: number;
 }
 
 export const ProfileActions: React.FC<ProfileActionsProps> = ({
   isOwnProfile,
   isFollowing,
   onEditProfile,
-  onFollow
+  onFollow,
+  userId,
+  followerCount
 }) => {
   // Show edit profile button only for own profile
   if (isOwnProfile) {
@@ -35,14 +40,16 @@ export const ProfileActions: React.FC<ProfileActionsProps> = ({
   // Show follow/unfollow buttons for other users
   return (
     <div className="flex justify-center items-center space-x-2 px-2 mb-4">
-      <Button 
-        onClick={onFollow}
-        variant={isFollowing ? "outline" : "default"}
-        className="flex items-center justify-center space-x-1 rounded-full py-1 px-3 text-xs font-medium md:py-2 md:px-4 md:text-sm"
-      >
-        {isFollowing ? <UserCheck className="h-3 w-3 md:h-4 md:w-4" /> : <UserPlus className="h-3 w-3 md:h-4 md:w-4" />}
-        <span>{isFollowing ? 'Đang theo dõi' : 'Theo dõi'}</span>
-      </Button>
+      {userId && (
+        <FollowButton
+          userId={userId}
+          initialIsFollowing={isFollowing}
+          initialFollowerCount={followerCount}
+          username={userId} // TODO: Pass actual username
+          size="sm"
+          className="py-1 px-3 text-xs font-medium md:py-2 md:px-4 md:text-sm"
+        />
+      )}
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

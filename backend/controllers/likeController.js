@@ -30,7 +30,6 @@ exports.toggleLike = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Like post error:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'

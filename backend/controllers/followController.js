@@ -8,8 +8,6 @@ exports.followUser = async (req, res) => {
         const { userId } = req.params;
         const currentUserId = req.userId; // ✅ Dùng req.userId từ authMiddleware
         
-        console.log('🔄 Follow request:', { currentUserId, targetUserId: userId });
-        
         if (userId === currentUserId) {
             return res.status(400).json(
                 createResponse(false, 'Cannot follow yourself', null, null, 400)
@@ -45,8 +43,7 @@ exports.followUser = async (req, res) => {
             ]);
             
             isFollowing = false;
-            console.log('✅ Unfollowed successfully');
-        } else {
+            } else {
             // Follow
             await Follow.create({
                 follower: currentUserId,
@@ -60,8 +57,7 @@ exports.followUser = async (req, res) => {
             ]);
             
             isFollowing = true;
-            console.log('✅ Followed successfully');
-        }
+            }
         
         // Lấy số lượng mới nhất
         const [updatedTargetUser, updatedCurrentUser] = await Promise.all([
@@ -99,8 +95,7 @@ exports.followUser = async (req, res) => {
             global.socketServer.io.to(`user:${userId}:activity`).emit('user:follow:activity', followData);
             global.socketServer.io.to(`user:${currentUserId}:activity`).emit('user:follow:activity', followData);
             
-            console.log('📡 Follow event broadcasted via Socket.IO');
-        }
+            }
         
         res.json(createResponse(true, 
             isFollowing ? 'Followed successfully' : 'Unfollowed successfully', 
@@ -113,7 +108,6 @@ exports.followUser = async (req, res) => {
         ));
         
     } catch (error) {
-        console.error('❌ Follow error:', error);
         res.status(500).json(
             createResponse(false, 'Internal server error', null, null, 500)
         );
@@ -126,15 +120,11 @@ exports.getFollowing = async (req, res) => {
         const { userId } = req.params;
         const { page = 1, limit = 20 } = req.query;
         
-        console.log('📥 Fetching following for:', userId);
-        
         const pageNum = Math.max(1, parseInt(page));
         const limitNum = Math.min(50, Math.max(1, parseInt(limit)));
         
         // Lấy tổng số following
         const total = await Follow.countDocuments({ follower: userId });
-        console.log('✅ Total following:', total);
-        
         // Lấy danh sách follows với populate
         const follows = await Follow.find({ follower: userId })
             .populate('following', 'username displayName avatar bio followerCount followingCount')
@@ -143,8 +133,6 @@ exports.getFollowing = async (req, res) => {
             .skip((pageNum - 1) * limitNum)
             .lean();
         
-        console.log('✅ Follow documents found:', follows.length);
-        
         if (follows.length === 0) {
             return res.json(createResponse(true, 'Not following anyone', []));
         }
@@ -152,7 +140,6 @@ exports.getFollowing = async (req, res) => {
         // Format response
         const following = follows.map(follow => {
             if (!follow.following) {
-                console.warn('⚠️ User not found for following:', follow.following);
                 return null;
             }
             return {
@@ -170,8 +157,6 @@ exports.getFollowing = async (req, res) => {
         
         const totalPages = Math.ceil(total / limitNum);
         
-        console.log('✅ Sending following response');
-        
         res.json(createResponse(true, 'Following list retrieved successfully', following, null, null, {
             pagination: {
                 page: pageNum,
@@ -184,7 +169,6 @@ exports.getFollowing = async (req, res) => {
         }));
         
     } catch (error) {
-        console.error('❌ Get following error:', error);
         res.status(500).json(
             createResponse(false, 'Internal server error: ' + error.message, null, null, 500)
         );
@@ -198,15 +182,11 @@ exports.getFollowers = async (req, res) => {
         const { page = 1, limit = 20 } = req.query;
         const currentUserId = req.userId; // Để check isFollowing
         
-        console.log('📥 Fetching followers for:', userId);
-        
         const pageNum = Math.max(1, parseInt(page));
         const limitNum = Math.min(50, Math.max(1, parseInt(limit)));
         
         // Lấy tổng số followers
         const total = await Follow.countDocuments({ following: userId });
-        console.log('✅ Total followers:', total);
-        
         // Lấy danh sách follows với populate
         const follows = await Follow.find({ following: userId })
             .populate('follower', 'username displayName avatar bio followerCount followingCount')
@@ -214,8 +194,6 @@ exports.getFollowers = async (req, res) => {
             .limit(limitNum)
             .skip((pageNum - 1) * limitNum)
             .lean();
-        
-        console.log('✅ Follow documents found:', follows.length);
         
         if (follows.length === 0) {
             return res.json(createResponse(true, 'No followers', []));
@@ -233,7 +211,6 @@ exports.getFollowers = async (req, res) => {
         // Format response
         const followers = follows.map(follow => {
             if (!follow.follower) {
-                console.warn('⚠️ User not found for follower:', follow.follower);
                 return null;
             }
             return {
@@ -251,8 +228,6 @@ exports.getFollowers = async (req, res) => {
         
         const totalPages = Math.ceil(total / limitNum);
         
-        console.log('✅ Sending followers response');
-        
         res.json(createResponse(true, 'Followers list retrieved successfully', followers, null, null, {
             pagination: {
                 page: pageNum,
@@ -265,7 +240,6 @@ exports.getFollowers = async (req, res) => {
         }));
         
     } catch (error) {
-        console.error('❌ Get followers error:', error);
         res.status(500).json(
             createResponse(false, 'Internal server error: ' + error.message, null, null, 500)
         );
@@ -296,7 +270,6 @@ exports.checkFollowStatus = async (req, res) => {
         }));
         
     } catch (error) {
-        console.error('❌ Check follow status error:', error);
         res.status(500).json(
             createResponse(false, 'Internal server error', null, null, 500)
         );

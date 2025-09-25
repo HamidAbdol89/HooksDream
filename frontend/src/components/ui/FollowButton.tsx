@@ -1,10 +1,11 @@
 // components/ui/FollowButton.tsx - Reusable Follow Button với Socket.IO
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { UserPlus, UserMinus, Loader2 } from 'lucide-react';
+import { UserPlus, UserCheck, Loader2 } from 'lucide-react';
 import { useFollow } from '@/hooks/useFollow';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { UnfollowConfirmDialog } from '@/components/dialogs/UnfollowConfirmDialog';
 
 interface FollowButtonProps {
   userId: string;
@@ -16,6 +17,7 @@ interface FollowButtonProps {
   showCount?: boolean;
   className?: string;
   disabled?: boolean;
+  username?: string; // ✅ THÊM username prop
 }
 
 export const FollowButton: React.FC<FollowButtonProps> = ({
@@ -27,9 +29,11 @@ export const FollowButton: React.FC<FollowButtonProps> = ({
   showIcon = true,
   showCount = false,
   className = '',
-  disabled = false
+  disabled = false,
+  username = 'user'
 }) => {
   const { t } = useTranslation('common');
+  const [showUnfollowDialog, setShowUnfollowDialog] = useState(false);
   const {
     isFollowing,
     followerCount,
@@ -44,6 +48,18 @@ export const FollowButton: React.FC<FollowButtonProps> = ({
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    if (isFollowing) {
+      // Hiển thị dialog xác nhận unfollow
+      setShowUnfollowDialog(true);
+    } else {
+      // Follow trực tiếp
+      handleToggleFollow();
+    }
+  };
+
+  const handleConfirmUnfollow = () => {
+    setShowUnfollowDialog(false);
     handleToggleFollow();
   };
 
@@ -54,15 +70,15 @@ export const FollowButton: React.FC<FollowButtonProps> = ({
       transition={{ duration: 0.2 }}
     >
       <Button
-        variant={isFollowing ? 'outline' : variant}
+        variant={isFollowing ? 'secondary' : 'default'}
         size={size}
         onClick={handleClick}
         disabled={disabled || isLoading}
         className={`
-          transition-all duration-300 
+          rounded-full transition-all duration-300 border-0
           ${isFollowing 
-            ? 'border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300' 
-            : 'bg-blue-600 hover:bg-blue-700 text-white'
+            ? 'bg-secondary hover:bg-secondary/80 text-secondary-foreground' 
+            : 'bg-primary hover:bg-primary/90 text-primary-foreground'
           }
           ${className}
         `}
@@ -78,7 +94,7 @@ export const FollowButton: React.FC<FollowButtonProps> = ({
             className="mr-2"
           >
             {isFollowing ? (
-              <UserMinus className="w-4 h-4" />
+              <UserCheck className="w-4 h-4" />
             ) : (
               <UserPlus className="w-4 h-4" />
             )}
@@ -91,7 +107,7 @@ export const FollowButton: React.FC<FollowButtonProps> = ({
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.3 }}
         >
-          {isFollowing ? t('user.unfollow') : t('user.follow')}
+          {isFollowing ? 'Đã theo dõi' : 'Theo dõi'}
           {showCount && followerCount > 0 && (
             <span className="ml-1 text-xs opacity-75">
               ({followerCount})
@@ -99,6 +115,15 @@ export const FollowButton: React.FC<FollowButtonProps> = ({
           )}
         </motion.span>
       </Button>
+
+      {/* Unfollow Confirmation Dialog */}
+      <UnfollowConfirmDialog
+        isOpen={showUnfollowDialog}
+        onClose={() => setShowUnfollowDialog(false)}
+        onConfirm={handleConfirmUnfollow}
+        username={username}
+        isLoading={isLoading}
+      />
     </motion.div>
   );
 };

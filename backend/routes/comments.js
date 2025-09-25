@@ -49,7 +49,6 @@ router.get('/:id/replies', optionalAuth, async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Get comment replies error:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'
@@ -108,7 +107,6 @@ router.post('/:id/reply', authMiddleware, async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Create reply error:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'
@@ -163,7 +161,6 @@ router.put('/:id', authMiddleware, async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Update comment error:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'
@@ -205,7 +202,6 @@ router.delete('/:id', authMiddleware, async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Delete comment error:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'
@@ -242,7 +238,6 @@ router.post('/:id/like', authMiddleware, async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Like comment error:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'
@@ -291,7 +286,6 @@ router.get('/user/:userId', optionalAuth, async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Get user comments error:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'

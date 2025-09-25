@@ -63,7 +63,6 @@ exports.getPosts = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Get posts error:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'
@@ -112,8 +111,7 @@ exports.createPost = async (req, res) => {
             // Broadcast to user's followers
             global.socketServer.io.to(`user:${req.userId}:posts`).emit('post:created', postData);
             
-            console.log('📡 New post broadcasted:', post._id);
-        }
+            }
 
         res.status(201).json({
             success: true,
@@ -122,7 +120,6 @@ exports.createPost = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Create post error:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'
@@ -182,7 +179,6 @@ exports.getPost = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Get post error:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'
@@ -232,7 +228,6 @@ exports.updatePost = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Update post error:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'
@@ -284,8 +279,7 @@ exports.deletePost = async (req, res) => {
             global.socketServer.io.to('feed:global').emit('post:deleted', deleteData);
             global.socketServer.io.to(`user:${req.userId}:posts`).emit('post:deleted', deleteData);
             
-            console.log('📡 Post deletion broadcasted:', id);
-        }
+            }
         
         res.json({
             success: true,
@@ -293,7 +287,6 @@ exports.deletePost = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Delete post error:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'
@@ -355,7 +348,6 @@ exports.getUserPosts = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Get user posts error:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'
@@ -425,7 +417,6 @@ exports.getPostLikes = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Get post likes error:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'
@@ -455,7 +446,6 @@ exports.getTrendingPosts = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Get trending posts error:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'
@@ -517,7 +507,6 @@ exports.sharePost = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Share post error:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'
@@ -578,7 +567,6 @@ exports.searchPosts = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Search posts error:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'

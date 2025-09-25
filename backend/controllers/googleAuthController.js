@@ -9,8 +9,6 @@ exports.googleLogin = async (req, res) => {
     try {
         const { idToken } = req.body;
         
-        console.log('🔐 Google login request received');
-        
         // Validate required fields
         if (!idToken) {
             return res.status(400).json(
@@ -27,8 +25,6 @@ exports.googleLogin = async (req, res) => {
                 createResponse(false, 'Invalid Google token', null, null, 401)
             );
         }
-        
-        console.log('✅ Google token verified:', googleUserInfo.email);
         
         // Check if user exists by googleId
         let user = await User.findOne({ googleId: googleUserInfo.googleId });
@@ -47,7 +43,6 @@ exports.googleLogin = async (req, res) => {
                     const buffer = Buffer.from(response.data);
                     avatarUrl = await uploadImageToCloudinary(buffer, 'avatar', googleUserInfo.googleId);
                 } catch (error) {
-                    console.error('⚠️ Error uploading Google avatar to Cloudinary:', error);
                     avatarUrl = googleUserInfo.picture; // Fallback to original URL
                 }
             }
@@ -66,8 +61,7 @@ exports.googleLogin = async (req, res) => {
             });
             
             await user.save();
-            console.log('✅ New Google user created:', user.username);
-        } else {
+            } else {
             // Update existing Google user
             let isUpdated = false;
             
@@ -85,14 +79,11 @@ exports.googleLogin = async (req, res) => {
             if (googleUserInfo.picture && user.avatar !== googleUserInfo.picture) {
                 if (googleUserInfo.picture.startsWith('http') && !googleUserInfo.picture.includes('cloudinary.com')) {
                     try {
-                        console.log('📤 Uploading updated Google avatar to Cloudinary...');
                         const response = await axios.get(googleUserInfo.picture, { responseType: 'arraybuffer' });
                         const buffer = Buffer.from(response.data);
                         user.avatar = await uploadImageToCloudinary(buffer, 'avatar', user._id);
                         isUpdated = true;
-                        console.log('✅ Google avatar updated successfully');
-                    } catch (error) {
-                        console.error('⚠️ Error updating Google avatar:', error);
+                        } catch (error) {
                         user.avatar = googleUserInfo.picture;
                         isUpdated = true;
                     }
@@ -108,11 +99,9 @@ exports.googleLogin = async (req, res) => {
             
             if (isUpdated) {
                 await user.save();
-                console.log('🔄 Google user info updated:', user._id);
-            }
+                }
             
-            console.log('✅ Google user login successful:', user._id);
-        }
+            }
         
         // Generate JWT token
         const jwtToken = googleAuthService.generateJWTToken(user);
@@ -129,8 +118,6 @@ exports.googleLogin = async (req, res) => {
         );
         
     } catch (error) {
-        console.error('⚠️ Google login error:', error);
-        
         if (error.code === 11000) {
             const field = Object.keys(error.keyPattern)[0];
             return res.status(409).json(
@@ -191,7 +178,6 @@ exports.refreshToken = async (req, res) => {
         );
         
     } catch (error) {
-        console.error('⚠️ Token refresh error:', error);
         res.status(401).json(
             createResponse(false, 'Invalid or expired refresh token', null, null, 401)
         );
@@ -203,14 +189,11 @@ exports.logout = async (req, res) => {
     try {
         // In JWT-based auth, logout is mainly handled client-side
         // But we can log the action for analytics
-        console.log('👋 User logged out:', req.user?._id);
-        
         res.json(
             createResponse(true, 'Logged out successfully')
         );
         
     } catch (error) {
-        console.error('⚠️ Logout error:', error);
         res.status(500).json(
             createResponse(false, 'Logout failed', null, null, 500)
         );

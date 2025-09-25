@@ -70,13 +70,7 @@ router.post('/:id/comments', authMiddleware, commentController.createComment);
 // Comment action routes
 router.post('/:postId/comments/:commentId/like', authMiddleware, async (req, res) => {
     try {
-        const { commentId } = req.params;
-        
-        console.log('🔥 Like comment request:', { 
-            commentId, 
-            userId: req.userId,
-            userIdType: typeof req.userId 
-        });
+        const { commentId, postId } = req.params;
         
         const Comment = require('../models/Comment');
         const comment = await Comment.findOne({
@@ -85,26 +79,13 @@ router.post('/:postId/comments/:commentId/like', authMiddleware, async (req, res
         });
         
         if (!comment) {
-            console.log('❌ Comment not found:', commentId);
             return res.status(404).json({
                 success: false,
                 message: 'Comment not found'
             });
         }
         
-        console.log('📝 Comment before toggle:', {
-            likeCount: comment.likeCount,
-            likesArray: comment.likes,
-            isCurrentlyLiked: comment.isLikedBy(req.userId)
-        });
-        
         const isLiked = await comment.toggleLike(req.userId);
-        
-        console.log('✅ Comment after toggle:', {
-            likeCount: comment.likeCount,
-            isLiked,
-            likesArray: comment.likes
-        });
 
         // Emit real-time update via Socket.IO
         if (global.socketServer) {
@@ -128,7 +109,6 @@ router.post('/:postId/comments/:commentId/like', authMiddleware, async (req, res
         });
         
     } catch (error) {
-        console.error('❌ Like comment error:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'
@@ -170,7 +150,6 @@ router.delete('/:postId/comments/:commentId', authMiddleware, async (req, res) =
         });
         
     } catch (error) {
-        console.error('❌ Delete comment error:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'
@@ -225,7 +204,6 @@ router.put('/:postId/comments/:commentId', authMiddleware, async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Update comment error:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'
@@ -298,7 +276,6 @@ router.post('/:postId/comments/:commentId/replies', authMiddleware, async (req, 
         });
         
     } catch (error) {
-        console.error('❌ Create reply error:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'

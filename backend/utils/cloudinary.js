@@ -11,9 +11,6 @@ const uploadImageToCloudinary = async (fileBuffer, options = {}) => {
 const deleteImageFromCloudinary = async (imageUrl) => {
   try {
     // ✅ TẮT AUTO DELETE - CHỈ LOG
-    console.log('🚫 AUTO DELETE DISABLED - Would delete:', imageUrl);
-    console.log('ℹ️ Image deletion is turned OFF for safety');
-    
     // Trả về kết quả giả để không break existing code
     return { 
       result: 'disabled',
@@ -22,7 +19,6 @@ const deleteImageFromCloudinary = async (imageUrl) => {
     };
 
   } catch (err) {
-    console.error('⚠️ Cloudinary delete function called but disabled:', err);
     return { result: 'disabled', error: err.message };
   }
 };
@@ -34,27 +30,12 @@ cloudinary.config({
   secure: true
 });
 
-console.log('☁️ Cloudinary Config Status:');
-console.log('- Cloud Name:', process.env.CLOUDINARY_CLOUD_NAME ? 'PRESENT' : 'MISSING');
-console.log('- API Key:', process.env.CLOUDINARY_API_KEY ? 'PRESENT' : 'MISSING');
-console.log('- API Secret:', process.env.CLOUDINARY_API_SECRET ? 'PRESENT' : 'MISSING');
-
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: (req, file) => {
-    console.log('🔍 Cloudinary storage params for:', {
-      fieldname: file.fieldname, // ✅ THÊM: Debug field name
-      originalname: file.originalname,
-      mimetype: file.mimetype,
-      size: file.size
-    });
-    
     const isVideo = file.mimetype.startsWith('video/');
     const folder = isVideo ? 'uploads/videos' : 'uploads/images';
     const resourceType = isVideo ? 'video' : 'image';
-    
-    console.log('📂 Using folder:', folder);
-    console.log('🔧 Resource type:', resourceType);
     
     return {
       folder: folder,
@@ -94,12 +75,6 @@ const upload = multer({
     fieldSize: 1024 * 1024 * 2
   },
   fileFilter: (req, file, cb) => {
-    console.log('🔍 File filter check:', {
-      fieldname: file.fieldname,
-      originalname: file.originalname,
-      mimetype: file.mimetype
-    });
-
     const allowedImageTypes = [
       'image/jpeg',
       'image/jpg',
@@ -120,7 +95,6 @@ const upload = multer({
     const allAllowed = [...allowedImageTypes, ...allowedVideoTypes];
 
     if (!allAllowed.includes(file.mimetype)) {
-      console.log('❌ File type rejected:', file.mimetype);
       const error = new Error(`File type not supported: ${file.mimetype}`);
       error.code = 'INVALID_FILE_TYPE';
       return cb(error, false);
@@ -128,14 +102,12 @@ const upload = multer({
 
     // ✅ SỬA: Field-specific validation với better logic
     if (file.fieldname === 'images' && !allowedImageTypes.includes(file.mimetype)) {
-      console.log('❌ Images field but not image type:', file.mimetype);
       const error = new Error('Images field only accepts image files');
       error.code = 'INVALID_IMAGE_TYPE';
       return cb(error, false);
     }
 
     if (file.fieldname === 'video' && !allowedVideoTypes.includes(file.mimetype)) {
-      console.log('❌ Video field but not video type:', file.mimetype);
       const error = new Error('Video field only accepts video files');
       error.code = 'INVALID_VIDEO_TYPE';
       return cb(error, false);
@@ -144,10 +116,8 @@ const upload = multer({
     // ✅ THÊM: Cho phép mixed content cho images field (nếu cần)
     // Nếu frontend gửi video vào images field, có thể accept
     if (file.fieldname === 'images' && allowedVideoTypes.includes(file.mimetype)) {
-      console.log('⚠️ Video file in images field - allowing...');
-    }
+      }
 
-    console.log('✅ File accepted:', file.originalname);
     cb(null, true);
   }
 });
@@ -155,13 +125,8 @@ const upload = multer({
 const testConnection = async () => {
   try {
     const result = await cloudinary.api.ping();
-    console.log('✅ Cloudinary connection test passed:', result.status);
     return true;
   } catch (error) {
-    console.error('❌ Cloudinary connection test failed:', {
-      message: error.message,
-      http_code: error.http_code || 'UNKNOWN'
-    });
     return false;
   }
 };

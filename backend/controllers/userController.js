@@ -30,7 +30,6 @@ exports.getCurrentUserProfile = async (req, res) => {
         res.json(createResponse(true, 'Current user profile retrieved successfully', userProfile));
         
     } catch (error) {
-        console.error('⚠️ Get current user profile error:', error);
         res.status(500).json(
             createResponse(false, 'Internal server error', null, null, 500)
         );
@@ -73,7 +72,6 @@ exports.getProfile = async (req, res) => {
         res.json(createResponse(true, 'User profile retrieved successfully', userProfile));
         
     } catch (error) {
-        console.error('⚠️ Get profile error:', error);
         res.status(500).json(
             createResponse(false, 'Internal server error', null, null, 500)
         );
@@ -93,8 +91,6 @@ exports.updateProfile = async (req, res) => {
             phone,
             pronouns,
         } = req.body;
-        
-        console.log('📝 Update profile request:', { hashId, username, displayName });
         
         const user = await User.findById(hashId);
         
@@ -140,7 +136,6 @@ exports.updateProfile = async (req, res) => {
         // Xử lý avatar upload (file)
         if (req.files?.avatar) {
             try {
-                console.log('🖼️ Processing new avatar...');
                 const optimizedAvatar = await optimizeImage(req.files.avatar[0].buffer, 'avatar');
                 
                 const newAvatarUrl = await uploadImageToCloudinary(optimizedAvatar, {
@@ -159,13 +154,10 @@ exports.updateProfile = async (req, res) => {
                 });
                 
                 user.avatar = newAvatarUrl;
-                console.log('✅ New avatar uploaded successfully:', newAvatarUrl);
-                
                 // CDN propagate delay
                 await new Promise(resolve => setTimeout(resolve, 1500));
                 
             } catch (imgError) {
-                console.error('⚠️ Avatar processing error:', imgError);
                 return res.status(400).json(
                     createResponse(false, `Avatar processing failed: ${imgError.message}`, null, null, 400)
                 );
@@ -175,7 +167,6 @@ exports.updateProfile = async (req, res) => {
         // Xử lý cover image upload (file)
         if (req.files?.coverImage) {
             try {
-                console.log('🖼️ Processing new cover image...');
                 const optimizedCover = await optimizeImage(req.files.coverImage[0].buffer, 'cover');
                 
                 const newCoverUrl = await uploadImageToCloudinary(optimizedCover, {
@@ -192,12 +183,9 @@ exports.updateProfile = async (req, res) => {
                 });
                 
                 user.coverImage = newCoverUrl;
-                console.log('✅ New cover image uploaded successfully:', newCoverUrl);
-                
                 await new Promise(resolve => setTimeout(resolve, 1500));
                 
             } catch (imgError) {
-                console.error('⚠️ Cover processing error:', imgError);
                 return res.status(400).json(
                     createResponse(false, `Cover image processing failed: ${imgError.message}`, null, null, 400)
                 );
@@ -207,8 +195,6 @@ exports.updateProfile = async (req, res) => {
         // ✅ LƯU USER VỚI ẢNH MỚI
         user.updatedAt = new Date();
         await user.save();
-        
-        console.log('✅ Profile updated successfully - NO AUTO DELETE:', user._id);
         
         // ✅ TRẢ RESPONSE CHO FRONTEND NGAY VỚI CACHE-BUSTING
         const response = createResponse(true, 'Profile updated successfully', {
@@ -222,11 +208,7 @@ exports.updateProfile = async (req, res) => {
         res.json(response);
         
         // ✅ CHỈ LOG - KHÔNG XÓA TỰ ĐỘNG
-        console.log('ℹ️ Profile update completed safely - old images preserved');
-        
-    } catch (error) {
-        console.error('⚠️ Update profile error:', error);
-        
+        } catch (error) {
         if (error.code === 11000) {
             const field = Object.keys(error.keyPattern)[0];
             return res.status(409).json(
@@ -253,8 +235,6 @@ exports.cleanupOldImages = async (req, res) => {
         const { hashId } = req.params;
         const { imageUrl } = req.body;
         
-        console.log('🗑️ Manual cleanup request:', { hashId, imageUrl });
-        
         if (!imageUrl || !imageUrl.includes('cloudinary.com')) {
             return res.status(400).json(
                 createResponse(false, 'Invalid image URL', null, null, 400)
@@ -270,12 +250,9 @@ exports.cleanupOldImages = async (req, res) => {
         }
         
         const result = await deleteImageFromCloudinary(imageUrl);
-        console.log('✅ Manual cleanup successful:', result);
-        
         res.json(createResponse(true, 'Image cleaned up successfully', result));
         
     } catch (error) {
-        console.error('⚠️ Manual cleanup error:', error);
         res.status(500).json(
             createResponse(false, 'Cleanup failed', null, null, 500)
         );
@@ -293,8 +270,6 @@ exports.batchCleanupImages = async (req, res) => {
             );
         }
         
-        console.log('🗑️ Batch cleanup request:', imageUrls.length, 'images');
-        
         const results = [];
         for (const imageUrl of imageUrls) {
             try {
@@ -309,12 +284,9 @@ exports.batchCleanupImages = async (req, res) => {
             }
         }
         
-        console.log('✅ Batch cleanup completed:', results.length, 'processed');
-        
         res.json(createResponse(true, 'Batch cleanup completed', results));
         
     } catch (error) {
-        console.error('⚠️ Batch cleanup error:', error);
         res.status(500).json(
             createResponse(false, 'Batch cleanup failed', null, null, 500)
         );
@@ -343,7 +315,6 @@ exports.getUserStats = async (req, res) => {
         }));
         
     } catch (error) {
-        console.error('⚠️ Get stats error:', error);
         res.status(500).json(
             createResponse(false, 'Internal server error', null, null, 500)
         );
@@ -397,7 +368,6 @@ exports.getUsers = async (req, res) => {
         }));
         
     } catch (error) {
-        console.error('⚠️ Get users error:', error);
         res.status(500).json(
             createResponse(false, 'Internal server error', null, null, 500)
         );
@@ -423,12 +393,9 @@ exports.deleteUser = async (req, res) => {
         user.updatedAt = new Date();
         await user.save();
         
-        console.log('🗑️ User soft deleted:', user._id);
-        
         res.json(createResponse(true, 'Account deleted successfully'));
         
     } catch (error) {
-        console.error('⚠️ Delete user error:', error);
         res.status(500).json(
             createResponse(false, 'Internal server error', null, null, 500)
         );

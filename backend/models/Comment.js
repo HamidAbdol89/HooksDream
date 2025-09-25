@@ -247,7 +247,6 @@ CommentSchema.statics.getTotalCountForPost = async function(postId) {
         });
         return count;
     } catch (error) {
-        console.error('Error counting comments:', error);
         return 0;
     }
 };
@@ -273,7 +272,6 @@ CommentSchema.statics.getDetailedCountForPost = async function(postId) {
             total: mainComments + replies
         };
     } catch (error) {
-        console.error('Error getting detailed count:', error);
         return {
             mainComments: 0,
             replies: 0,

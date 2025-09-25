@@ -32,7 +32,6 @@ class GoogleAuthService {
                 familyName: payload.family_name
             };
         } catch (error) {
-            console.error('❌ Google token verification failed:', error);
             throw new Error('Invalid Google token');
         }
     }
@@ -65,7 +64,6 @@ class GoogleAuthService {
         try {
             return jwt.verify(token, this.jwtSecret);
         } catch (error) {
-            console.error('❌ JWT verification failed:', error);
             throw new Error('Invalid or expired token');
         }
     }

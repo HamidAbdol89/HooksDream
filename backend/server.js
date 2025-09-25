@@ -29,8 +29,12 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Kết nối MongoDB
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('✅ Connected to MongoDB'))
-  .catch(err => console.error('❌ MongoDB connection error:', err));
+  .then(() => {
+    // Database connected successfully
+  })
+  .catch(err => {
+    process.exit(1);
+  });
 
 // Route kiểm tra hệ thống
 app.get('/api/health', (req, res) => {
@@ -52,7 +56,6 @@ app.use('/api/posts', postRoutes);
 app.use('/api/comments', commentRoutes);
 // Xử lý lỗi
 app.use((err, req, res, next) => {
-  console.error(err.stack);
   res.status(500).json({ message: 'Something went wrong!' });
 });
 
@@ -70,11 +73,4 @@ global.socketServer = socketServer;
 // Khởi động server
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📡 API URL: http://localhost:${PORT}`);
-  console.log(`🔌 Socket.IO URL: ws://localhost:${PORT}`);
-  console.log(`☁️ Cloudinary Config Status:`);
-  console.log(`- Cloud Name: ${cloudinary.config().cloud_name ? 'PRESENT' : 'MISSING'}`);
-  console.log(`- API Key: ${cloudinary.config().api_key ? 'PRESENT' : 'MISSING'}`);
-  console.log(`- API Secret: ${cloudinary.config().api_secret ? 'PRESENT' : 'MISSING'}`);
-});
+  });

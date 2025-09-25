@@ -12,29 +12,15 @@ interface UserCardProps {
 }
 
 export const UserCard: React.FC<UserCardProps> = ({ 
-  user, 
+  user,
   onFollowToggle, 
   showFollowButton = true 
 }) => {
   const navigate = useNavigate();
 
-  // Debug logging to check user data
-  React.useEffect(() => {
-    console.log('👤 UserCard rendering with user:', {
-      id: user._id || user.id,
-      username: user.username,
-      name: user.name,
-      displayName: user.displayName,
-      isFollowing: user.isFollowing,
-      isOwnProfile: user.isOwnProfile,
-      showFollowButton
-    });
-  }, [user, showFollowButton]);
-
   const handleViewProfile = () => {
     const userId = user._id || user.id;
-    console.log('📱 Navigating to profile:', userId);
-    navigate(`/profile/${userId}`);
+    navigate(`/profile/${userId}`, { replace: true });
   };
 
   const getUserId = () => user._id || user.id;
@@ -82,7 +68,6 @@ export const UserCard: React.FC<UserCardProps> = ({
           className="ml-1 md:ml-0 sm:text-[10px] sm:px-2 sm:py-0.5 sm:h-5 flex-shrink-0 rounded-full md:rounded-md font-medium"
           onClick={(e) => {
             e.stopPropagation();
-            console.log('🔄 Follow toggle clicked for:', getUserId(), getUserName());
             onFollowToggle(getUserId(), getUserName());
           }}
         >

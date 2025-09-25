@@ -43,7 +43,6 @@ const authMiddleware = async (req, res, next) => {
         next();
         
     } catch (error) {
-        console.error('❌ Auth middleware error:', error);
         res.status(401).json({
             success: false,
             message: 'Invalid or expired token'
@@ -78,7 +77,6 @@ const optionalAuth = async (req, res, next) => {
         next();
         
     } catch (error) {
-        console.error('❌ Optional auth error:', error);
         next(); // Tiếp tục dù có lỗi
     }
 };

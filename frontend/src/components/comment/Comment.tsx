@@ -139,7 +139,6 @@ export const Comment: React.FC<CommentProps> = ({
   useEffect(() => {
     onCommentLiked((data) => {
       if (data.commentId === comment._id) {
-        console.log('🔄 Real-time like update received:', data);
         setLocalLikeCount(data.likeCount);
         setLocalIsLiked(data.isLiked);
       }
@@ -154,7 +153,6 @@ export const Comment: React.FC<CommentProps> = ({
 
   // THÊM KIỂM TRA AN TOÀN - QUAN TRỌNG!
   if (!comment || !comment.userId) {
-    console.error('Invalid comment data:', comment);
     return null; // Hoặc hiển thị fallback UI
   }
 
@@ -169,11 +167,7 @@ export const Comment: React.FC<CommentProps> = ({
   ));
 
   const handleLike = async () => {
-    console.log('handleLike called - currentUser:', currentUser);
-    console.log('fallbackUser:', fallbackUser);
-    
     if (!fallbackUser) {
-      console.log('No user authenticated');
       toast({
         title: t('auth.loginRequired'),
         variant: 'destructive'
@@ -187,26 +181,21 @@ export const Comment: React.FC<CommentProps> = ({
     
     setLocalIsLiked(newIsLiked);
     setLocalLikeCount(newLikeCount);
-    setIsLiking(true);
     
     // Emit to socket for real-time updates to other users
     emitCommentLike(comment._id, newIsLiked, newLikeCount);
     
     try {
-      console.log('Liking comment:', { postId, commentId: comment._id });
       const response = await api.comments.likeComment(postId, comment._id);
-      console.log('Like response:', response);
       
       // Update with server response (in case of discrepancy)
       if (response.success && response.data) {
-        setLocalIsLiked(response.data.isLiked);
         setLocalLikeCount(response.data.likeCount);
+        setLocalIsLiked(response.data.isLiked);
       }
       
       onCommentUpdate();
     } catch (error) {
-      console.error('Error liking comment:', error);
-      
       // Revert optimistic update on error
       setLocalIsLiked(!newIsLiked);
       setLocalLikeCount(localLikeCount);
@@ -228,7 +217,6 @@ export const Comment: React.FC<CommentProps> = ({
         title: t('comment.deleted'),
       });
     } catch (error) {
-      console.error('Error deleting comment:', error);
       toast({
         title: t('comment.deleteError'),
         variant: 'destructive'
@@ -247,7 +235,7 @@ export const Comment: React.FC<CommentProps> = ({
         setReplies(response.data);
       }
     } catch (error) {
-      console.error('Error loading replies:', error);
+      // Silent fail for replies loading
     }
   };
 
@@ -342,7 +330,6 @@ export const Comment: React.FC<CommentProps> = ({
                       title: t('comment.updated'),
                     });
                   } catch (error) {
-                    console.error('Error updating comment:', error);
                     toast({
                       title: t('comment.updateError'),
                       variant: 'destructive'

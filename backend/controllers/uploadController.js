@@ -18,7 +18,6 @@ exports.uploadImages = (req, res) => {
   imageUpload(req, res, async (err) => {
     try {
       if (err) {
-        console.error(' Upload middleware error:', err);
         throw err;
       }
       
@@ -28,8 +27,6 @@ exports.uploadImages = (req, res) => {
           message: 'No files uploaded' 
         });
       }
-      
-      console.log(' Files uploaded:', req.files.length);
       
       const urls = req.files.map(file => ({
         url: file.path,
@@ -42,7 +39,6 @@ exports.uploadImages = (req, res) => {
       });
       
     } catch (error) {
-      console.error(' Upload error:', error);
       res.status(500).json({
         success: false,
         message: error.message.includes('File too large') 
@@ -60,7 +56,6 @@ exports.uploadImage = (req, res) => {
   imageUpload(req, res, async (err) => {
     try {
       if (err) {
-        console.error(' Single image upload middleware error:', err);
         throw err;
       }
       
@@ -71,8 +66,6 @@ exports.uploadImage = (req, res) => {
         });
       }
       
-      console.log(' Single image uploaded:', req.file.originalname);
-      
       res.json({ 
         success: true, 
         data: {
@@ -82,7 +75,6 @@ exports.uploadImage = (req, res) => {
       });
       
     } catch (error) {
-      console.error(' Single image upload error:', error);
       res.status(500).json({
         success: false,
         message: error.message.includes('File too large') 
@@ -101,7 +93,6 @@ exports.uploadVideo = (req, res) => {
   videoUpload(req, res, async (err) => {
     try {
       if (err) {
-        console.error('❌ Video upload middleware error:', err);
         throw err;
       }
       
@@ -111,14 +102,6 @@ exports.uploadVideo = (req, res) => {
           message: 'No video uploaded' 
         });
       }
-
-      console.log('📹 Video file info:', {
-        fieldname: req.file.fieldname,
-        originalname: req.file.originalname,
-        mimetype: req.file.mimetype,
-        size: req.file.size,
-        path: req.file.path
-      });
 
       // ✅ BỎQUA validation này vì đã validate trong multer fileFilter
       // Validation đã được handle trong cloudinary.js fileFilter
@@ -132,7 +115,6 @@ exports.uploadVideo = (req, res) => {
       });
       
     } catch (error) {
-      console.error('❌ Video upload error:', error);
       res.status(400).json({
         success: false,
         message: error.code === 'INVALID_VIDEO_TYPE' 

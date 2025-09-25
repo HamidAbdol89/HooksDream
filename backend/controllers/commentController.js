@@ -34,14 +34,7 @@ exports.getComments = async (req, res) => {
             const commentData = comment.toObject();
             if (req.userId) {
                 commentData.isLiked = comment.isLikedBy(req.userId);
-                console.log('🔍 Comment like info:', {
-                    commentId: comment._id,
-                    userId: req.userId,
-                    isLiked: commentData.isLiked,
-                    likeCount: comment.likeCount,
-                    likesArray: comment.likes
-                });
-            }
+                }
             return commentData;
         });
         
@@ -57,7 +50,6 @@ exports.getComments = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Get comments error:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'
@@ -125,7 +117,6 @@ exports.createComment = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Create comment error:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'
@@ -166,7 +157,6 @@ exports.getCommentCount = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Get comment count error:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'
@@ -228,7 +218,6 @@ exports.getCommentStats = async (req, res) => {
             ]);
             totalCommentLikes = commentLikes[0]?.totalLikes || 0;
         } catch (aggregateError) {
-            console.error('❌ Aggregate comment likes error:', aggregateError);
             // Không làm fail request, chỉ set về 0
         }
         
@@ -244,7 +233,6 @@ exports.getCommentStats = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Get comment stats error:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'

@@ -1,5 +1,5 @@
 // src/components/posts/PostLikesDialog.tsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -103,10 +103,13 @@ export const PostLikesDialog: React.FC<PostLikesDialogProps> = ({
   });
 
   // Kết hợp dữ liệu để có trạng thái isFollowing chính xác
-  const usersWithStatus = React.useMemo(() => {
-    if (!likesData || !currentUserFollowing) return [];
+  const usersWithStatus = useMemo(() => {
+    if (!likesData) return [];
 
-    const currentUserFollowingIds = (currentUserFollowing as Profile[]).map((user: Profile) => user._id);
+    // Nếu không có currentUserFollowing, vẫn hiển thị users nhưng không có follow status
+    const currentUserFollowingIds = currentUserFollowing 
+      ? (currentUserFollowing as Profile[]).map((user: Profile) => user._id)
+      : [];
 
     return (likesData as LikeUser[]).map((user: LikeUser) => ({
       ...user,
@@ -150,7 +153,6 @@ export const PostLikesDialog: React.FC<PostLikesDialogProps> = ({
           } catch (error) {
             // Rollback trên error
             queryClient.setQueryData(['postLikes', postId], previousUsers);
-            console.error('⚠ Follow failed:', error);
           }
         }
       );
@@ -171,7 +173,6 @@ export const PostLikesDialog: React.FC<PostLikesDialogProps> = ({
       } catch (error) {
         // Rollback trên error
         queryClient.setQueryData(['postLikes', postId], previousUsers);
-        console.error('⚠ Follow failed:', error);
       }
     }
   };

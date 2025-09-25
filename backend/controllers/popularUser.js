@@ -142,7 +142,6 @@ async function getPopularUsers(req, res) {
 
     res.json({ success: true, message: 'Popular users fetched', data: suggestions });
   } catch (err) {
-    console.error('Error in getPopularUsers:', err);
     res.status(500).json({ success: false, message: 'Server error', error: err.message });
   }
 }

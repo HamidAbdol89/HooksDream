@@ -118,13 +118,10 @@ export const useSocket = () => {
   // Initialize socket connection
   useEffect(() => {
     if (!isAuthConnected || !token) {
-      console.log('🔌 Socket: Waiting for authentication...');
       return;
     }
 
     const SOCKET_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-    
-    console.log('🔌 Initializing Socket.IO connection...', { url: SOCKET_URL });
 
     socketRef.current = io(SOCKET_URL, {
       auth: {
@@ -139,13 +136,11 @@ export const useSocket = () => {
 
     // Connection event handlers
     socket.on('connect', () => {
-      console.log('✅ Socket connected:', socket.id);
       setIsConnected(true);
       setConnectionError(null);
     });
 
     socket.on('disconnect', (reason) => {
-      console.log('🔌 Socket disconnected:', reason);
       setIsConnected(false);
       
       if (reason === 'io server disconnect') {
@@ -155,19 +150,16 @@ export const useSocket = () => {
     });
 
     socket.on('connect_error', (error) => {
-      console.error('❌ Socket connection error:', error);
       setConnectionError(error.message);
       setIsConnected(false);
     });
 
     socket.on('error', (error) => {
-      console.error('❌ Socket error:', error);
       setConnectionError(error.message);
     });
 
     // Cleanup on unmount
     return () => {
-      console.log('🔌 Cleaning up socket connection...');
       if (socket) {
         socket.disconnect();
       }
@@ -178,7 +170,6 @@ export const useSocket = () => {
   // Join post room for real-time updates
   const joinPost = useCallback((postId: string) => {
     if (socketRef.current && isConnected) {
-      console.log('📍 Joining post room:', postId);
       socketRef.current.emit('join:post', postId);
     }
   }, [isConnected]);
@@ -186,7 +177,6 @@ export const useSocket = () => {
   // Leave post room
   const leavePost = useCallback((postId: string) => {
     if (socketRef.current && isConnected) {
-      console.log('🚪 Leaving post room:', postId);
       socketRef.current.emit('leave:post', postId);
     }
   }, [isConnected]);
@@ -205,7 +195,7 @@ export const useSocket = () => {
     eventListenersRef.current.get(event)!.push(callback as Function);
 
     socketRef.current.on(event, callback as any);
-    console.log(`🎧 Listening to ${event}`);
+    
   }, []);
 
   // Remove event listener
@@ -231,16 +221,13 @@ export const useSocket = () => {
       eventListenersRef.current.delete(event);
     }
     
-    console.log(`🔇 Stopped listening to ${event}`);
+    
   }, []);
 
   // Emit events
   const emit = useCallback((event: string, data?: any) => {
     if (socketRef.current && isConnected) {
-      console.log(`📡 Emitting ${event}:`, data);
       socketRef.current.emit(event, data);
-    } else {
-      console.warn('⚠️ Cannot emit: Socket not connected');
     }
   }, [isConnected]);
 
@@ -291,7 +278,7 @@ export const useCommentSocket = (postId: string) => {
     userId: string;
   }) => void) => {
     on('comment:liked', (data) => {
-      console.log('💖 Received comment like update:', data);
+      
       callback(data);
     });
   }, [on]);
@@ -303,7 +290,7 @@ export const useCommentSocket = (postId: string) => {
     userId: string;
   }) => void) => {
     on('comment:created', (data) => {
-      console.log('💬 Received new comment:', data);
+      
       callback(data);
     });
   }, [on]);
@@ -315,7 +302,7 @@ export const useCommentSocket = (postId: string) => {
     userId: string;
   }) => void) => {
     on('comment:deleted', (data) => {
-      console.log('🗑️ Received comment deletion:', data);
+      
       callback(data);
     });
   }, [on]);
@@ -328,7 +315,7 @@ export const useCommentSocket = (postId: string) => {
     userId: string;
   }) => void) => {
     on('comment:edited', (data) => {
-      console.log('✏️ Received comment edit:', data);
+      
       callback(data);
     });
   }, [on]);
@@ -341,7 +328,7 @@ export const useCommentSocket = (postId: string) => {
     userId: string;
   }) => void) => {
     on('reply:created', (data) => {
-      console.log('💬 Received new reply:', data);
+      
       callback(data);
     });
   }, [on]);
@@ -389,7 +376,7 @@ export const usePostSocket = (postId?: string) => {
     userId: string;
   }) => void) => {
     on('post:liked', (data) => {
-      console.log('❤️ Received post like update:', data);
+      
       callback(data);
     });
   }, [on]);
@@ -400,7 +387,7 @@ export const usePostSocket = (postId?: string) => {
     userId: string;
   }) => void) => {
     on('post:deleted', (data) => {
-      console.log('🗑️ Received post deletion:', data);
+      
       callback(data);
     });
   }, [on]);
@@ -412,7 +399,7 @@ export const usePostSocket = (postId?: string) => {
     userId: string;
   }) => void) => {
     on('post:shared', (data) => {
-      console.log('🔄 Received post share:', data);
+      
       callback(data);
     });
   }, [on]);
@@ -462,7 +449,7 @@ export const useFeedSocket = () => {
     userId: string;
   }) => void) => {
     on('post:created', (data) => {
-      console.log('📝 Received new post in feed:', data);
+      
       callback(data);
     });
   }, [on]);
@@ -475,7 +462,7 @@ export const useFeedSocket = () => {
     userId: string;
   }) => void) => {
     on('post:liked', (data) => {
-      console.log('❤️ Received post like in feed:', data);
+      
       callback(data);
     });
   }, [on]);
@@ -486,7 +473,7 @@ export const useFeedSocket = () => {
     userId: string;
   }) => void) => {
     on('post:deleted', (data) => {
-      console.log('🗑️ Received post deletion in feed:', data);
+      
       callback(data);
     });
   }, [on]);
@@ -513,7 +500,7 @@ export const useFollowSocket = () => {
     type: string;
   }) => void) => {
     on('user:follow:update', (data) => {
-      console.log('👥 Received follow update:', data);
+      
       callback(data);
     });
   }, [on]);
@@ -527,7 +514,7 @@ export const useFollowSocket = () => {
     followingCount: number;
   }) => void) => {
     on('user:follow:activity', (data) => {
-      console.log('📈 Received follow activity:', data);
+      
       callback(data);
     });
   }, [on]);
