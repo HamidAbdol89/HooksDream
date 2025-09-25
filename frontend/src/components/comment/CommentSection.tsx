@@ -16,20 +16,20 @@ interface CommentSectionProps {
   showInput?: boolean;
 }
 
-// Shimmer loading component for comments
+// Mobile-first shimmer loading component
 const CommentSkeleton = () => (
-  <div className="flex space-x-3 p-4 animate-pulse">
-    <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
-    <div className="flex-1 space-y-2">
-      <div className="flex items-center space-x-2">
-        <Skeleton className="h-4 w-20" />
-        <Skeleton className="h-3 w-16" />
+  <div className="flex space-x-2 sm:space-x-3 p-2 sm:p-4 animate-pulse">
+    <Skeleton className="h-8 w-8 sm:h-10 sm:w-10 rounded-full flex-shrink-0" />
+    <div className="flex-1 space-y-1 sm:space-y-2">
+      <div className="flex items-center space-x-1 sm:space-x-2">
+        <Skeleton className="h-3 sm:h-4 w-16 sm:w-20" />
+        <Skeleton className="h-2.5 sm:h-3 w-12 sm:w-16" />
       </div>
-      <Skeleton className="h-4 w-full max-w-md" />
-      <Skeleton className="h-4 w-3/4 max-w-sm" />
-      <div className="flex space-x-4 mt-2">
-        <Skeleton className="h-6 w-12" />
-        <Skeleton className="h-6 w-12" />
+      <Skeleton className="h-3 sm:h-4 w-full max-w-xs sm:max-w-md" />
+      <Skeleton className="h-3 sm:h-4 w-2/3 max-w-48 sm:max-w-sm" />
+      <div className="flex space-x-3 sm:space-x-4 mt-1.5 sm:mt-2">
+        <Skeleton className="h-4 sm:h-6 w-8 sm:w-12" />
+        <Skeleton className="h-4 sm:h-6 w-10 sm:w-12" />
       </div>
     </div>
   </div>

@@ -60,17 +60,21 @@ export const CommentSheet: React.FC<CommentSheetProps> = ({
       
       <SheetContent 
         side="bottom" 
-        className="h-[70vh] max-h-[70vh] rounded-t-xl border-t border-border/20 p-0 overflow-hidden"
+        className="h-[90vh] sm:h-[70vh] max-h-[90vh] sm:max-h-[70vh] rounded-t-3xl sm:rounded-t-xl border-t border-border/20 p-0 overflow-hidden"
       >
         {/* Header */}
-        <SheetHeader className="px-4 py-3 border-b border-border/20 bg-background/95 backdrop-blur-sm sticky top-0 z-10">
+        {/* Mobile-optimized Header */}
+        <SheetHeader className="px-3 sm:px-4 py-2 sm:py-3 border-b border-border/20 bg-background/95 backdrop-blur-sm sticky top-0 z-10">
+          {/* Mobile: Drag handle */}
+          <div className="w-12 h-1 bg-muted rounded-full mx-auto mb-2 sm:hidden" />
+          
           <div className="flex items-center justify-between">
-            <SheetTitle className="flex items-center space-x-2 text-lg font-semibold">
-              <MessageCircle className="w-5 h-5 text-primary" />
-              <span>
+            <SheetTitle className="flex items-center space-x-1.5 sm:space-x-2 text-base sm:text-lg font-semibold">
+              <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+              <span className="text-sm sm:text-base">
                 {t('comment.title')} 
                 {displayedCommentCount > 0 && (
-                  <span className="ml-2 text-sm text-muted-foreground font-normal">
+                  <span className="ml-1 sm:ml-2 text-xs sm:text-sm text-muted-foreground font-normal">
                     ({formatCount(displayedCommentCount)})
                   </span>
                 )}
@@ -79,10 +83,10 @@ export const CommentSheet: React.FC<CommentSheetProps> = ({
             
             <SheetClose asChild>
               <button 
-                className="p-2 hover:bg-accent rounded-full transition-colors"
+                className="p-1.5 sm:p-2 hover:bg-accent rounded-full transition-colors"
                 aria-label={t('common.close')}
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </SheetClose>
           </div>
@@ -90,8 +94,8 @@ export const CommentSheet: React.FC<CommentSheetProps> = ({
 
         {/* Content */}
         <div className="flex flex-col h-full">
-          {/* Comments List */}
-          <div className="flex-1 overflow-y-auto p-4">
+          {/* Comments List - Mobile optimized */}
+          <div className="flex-1 overflow-y-auto px-2 sm:px-4 py-2">
             <CommentSection 
               postId={post._id} 
               currentUser={currentUser}
@@ -99,8 +103,8 @@ export const CommentSheet: React.FC<CommentSheetProps> = ({
             />
           </div>
 
-          {/* Comment Input - Sticky at bottom */}
-          <div className="border-t border-border/20 bg-background/95 backdrop-blur-sm p-4">
+          {/* Comment Input - Sticky at bottom, mobile optimized */}
+          <div className="border-t border-border/20 bg-background/95 backdrop-blur-sm p-2 sm:p-4">
             <CommentInput 
               postId={post._id}
               currentUser={currentUser}
