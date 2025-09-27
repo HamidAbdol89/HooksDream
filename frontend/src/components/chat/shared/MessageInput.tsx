@@ -44,11 +44,11 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   };
 
   return (
-    <div
-    className="p-4 border-t bg-background md:bg-card/50 md:backdrop-blur-sm safe-area-inset-bottom 
-      fixed bottom-0 left-0 right-0 z-20 rounded-t-2xl"
-  >
-  
+<div
+  className="p-4 border-t bg-background md:bg-card/50 md:backdrop-blur-sm 
+    safe-area-inset-bottom sticky bottom-0 z-20 rounded-t-2xl"
+>
+
       <div className="flex items-center gap-3">
    
         

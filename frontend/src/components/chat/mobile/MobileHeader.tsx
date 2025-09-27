@@ -1,4 +1,4 @@
-// components/chat/mobile/MobileHeader.tsx - Mobile chat header
+// components/chat/mobile/MobileHeader.tsx - Compact Mobile chat header
 import React from 'react';
 import { ArrowLeft, Search, Edit3, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -28,38 +28,39 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
   userId
 }) => {
   const { isUserOnline, getUserStatus } = useOnlineUsers();
-  
+
   // Get user status if userId is provided
   const userStatus = userId ? getUserStatus(userId) : { isOnline: false, lastSeenText: '' };
-  
+
   return (
-    <div className="md:hidden flex items-center justify-between px-4 py-3 bg-background border-b border-border/50 sticky top-0 z-50 backdrop-blur-md bg-background/95">
+    <div className="md:hidden flex items-center justify-between px-3 py-2 bg-background border-b border-border/50 sticky top-0 z-50 backdrop-blur-md bg-background/95">
       {/* Left side */}
-      <div className="flex items-center gap-3 flex-1 min-w-0">
+      <div className="flex items-center gap-2 flex-1 min-w-0">
         {showBack && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onBack}
             className="p-2 -ml-2 hover:bg-muted/50"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4" />
           </Button>
         )}
-        
-        <div className="flex items-center gap-3 flex-1 min-w-0">
+
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          {/* Avatar */}
           <div className="relative flex-shrink-0">
             {avatar ? (
-              <img 
-                src={avatar} 
+              <img
+                src={avatar}
                 alt={title}
-                className="w-8 h-8 rounded-full object-cover"
+                className="w-7 h-7 rounded-full object-cover"
                 onError={(e) => {
                   e.currentTarget.src = '/default-avatar.jpg';
                 }}
               />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+              <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center">
                 <span className="text-xs font-medium">
                   {title?.charAt(0)?.toUpperCase() || 'U'}
                 </span>
@@ -67,22 +68,47 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
             )}
             {/* Online indicator */}
             {userId && isUserOnline(userId) && (
-              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-background rounded-full" />
+              <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-background rounded-full" />
             )}
           </div>
+
+          {/* Title + subtitle */}
           <div className="flex-1 min-w-0">
-            <h1 className="font-semibold text-foreground text-lg truncate">
+            <h1 className="font-semibold text-foreground text-base truncate">
               {title}
             </h1>
             {(subtitle || userStatus.lastSeenText) && (
-              <p className={`text-sm truncate ${
-                userStatus.isOnline ? 'text-green-500 font-medium' : 'text-muted-foreground'
-              }`}>
+              <p
+                className={`text-xs truncate ${
+                  userStatus.isOnline
+                    ? 'text-green-500 font-medium'
+                    : 'text-muted-foreground'
+                }`}
+              >
                 {userStatus.lastSeenText || subtitle}
               </p>
             )}
           </div>
         </div>
+      </div>
+
+      {/* Right actions */}
+      <div className="flex items-center gap-1">
+        {showSearch && (
+          <Button variant="ghost" size="icon" className="h-8 w-8 p-0 rounded-full">
+            <Search className="w-4 h-4" />
+          </Button>
+        )}
+        {showEdit && (
+          <Button variant="ghost" size="icon" className="h-8 w-8 p-0 rounded-full">
+            <Edit3 className="w-4 h-4" />
+          </Button>
+        )}
+        {showMore && (
+          <Button variant="ghost" size="icon" className="h-8 w-8 p-0 rounded-full">
+            <MoreHorizontal className="w-4 h-4" />
+          </Button>
+        )}
       </div>
     </div>
   );
