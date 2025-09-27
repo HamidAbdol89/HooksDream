@@ -14,15 +14,15 @@ export const useNavItems = (onSearchClick?: () => void) => {
   const navigate = useNavigate();
 
   const navItems: NavItem[] = [
-   {
-    icon: <Home className="w-5 h-5" />,
-    label: t('nav.home'),
-    onClick: () => navigate('/feed') // chuyển page
-  },
+    {
+      icon: <Home className="w-5 h-5" />,
+      label: t('nav.home'),
+      onClick: () => navigate('/feed') // chuyển page
+    },
     {
       icon: <Search className="w-5 h-5" />,
       label: t('nav.search'),
-      onClick: onSearchClick || (() => console.log('Navigate to Search'))
+      onClick: onSearchClick || (() => navigate('/search'))
     },
     {
       icon: <Bell className="w-5 h-5" />,

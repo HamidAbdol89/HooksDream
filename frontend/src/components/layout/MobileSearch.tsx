@@ -1,8 +1,10 @@
 // src/components/layout/MobileSearch.tsx
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { SearchUsers } from '@/components/search/SearchUsers';
+import { Profile } from '@/store/useAppStore';
 
 interface MobileSearchProps {
   isOpen: boolean;
@@ -12,12 +14,13 @@ interface MobileSearchProps {
 
 export const MobileSearch = ({ isOpen, onClose, searchInputRef }: MobileSearchProps) => {
   const { t } = useTranslation('common');
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (isOpen && searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
-  }, [isOpen, searchInputRef]);
+  const handleUserSelect = (user: Profile) => {
+    const userId = user._id || user.id;
+    navigate(`/profile/${userId}`);
+    onClose();
+  };
 
   return (
     <AnimatePresence>
@@ -29,38 +32,33 @@ export const MobileSearch = ({ isOpen, onClose, searchInputRef }: MobileSearchPr
           className="fixed inset-0 z-50 bg-black bg-opacity-50"
         >
           <motion.div 
-            className="min-h-screen bg-neutral-50 dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100"
+            className="min-h-screen bg-background text-foreground"
             initial={{ y: 50 }}
             animate={{ y: 0 }}
             exit={{ y: 50 }}
             transition={{ type: 'tween', ease: 'easeInOut', duration: 0.3 }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-neutral-200 dark:border-neutral-800">
+            <div className="flex items-center justify-between p-4 border-b">
               <motion.button
                 whileTap={{ scale: 0.95 }}
-                className="p-2"
+                className="p-2 hover:bg-accent rounded-lg"
                 onClick={onClose}
                 aria-label="Close search"
               >
-                <X className="w-6 h-6 text-neutral-500 dark:text-neutral-400" />
+                <X className="w-6 h-6" />
               </motion.button>
               <h2 className="text-lg font-semibold">{t('header.search')}</h2>
               <div className="w-10"></div> {/* Placeholder for alignment */}
             </div>
 
-            {/* Search Input */}
-            <div className="p-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-500 dark:text-neutral-400 w-5 h-5" />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  placeholder={t('header.searchPlaceholder')}
-                  className="w-full pl-10 pr-4 py-3 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  aria-label="Search input"
-                />
-              </div>
+            {/* Search Content */}
+            <div className="flex-1 overflow-y-auto p-4">
+              <SearchUsers
+                onUserSelect={handleUserSelect}
+                showFollowButton={true}
+                placeholder={t('header.searchPlaceholder') || "Tìm kiếm người dùng..."}
+              />
             </div>
           </motion.div>
         </motion.div>
@@ -68,12 +66,3 @@ export const MobileSearch = ({ isOpen, onClose, searchInputRef }: MobileSearchPr
     </AnimatePresence>
   );
 };
-
-// Các bước phát triển tiếp theo:
-//=== Thêm component SearchResults
-
-//  Triển khai API call khi nhập
-
-// Thêm debounce cho input
-
-//  Lưu lịch sử tìm kiếm
