@@ -8,10 +8,10 @@ import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import { useChatContext } from '@/contexts/ChatContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/input';
-import { ChatWindow } from '@/components/chat/ChatWindow';
-import { ConversationsList } from '@/components/chat/ConversationsList';
-import { FollowingUsersList } from '@/components/chat/FollowingUsersList';
-import { MobileHeader } from '@/components/chat/MobileHeader';
+// Import từ cấu trúc mới
+import { ResponsiveChatWindow } from '@/components/chat/ResponsiveChatWindow';
+import { MobileHeader } from '@/components/chat/mobile';
+import { ConversationsList, FollowingUsersList } from '@/components/chat/desktop';
 
 // Types
 interface User {
@@ -234,27 +234,202 @@ const MessagesPage: React.FC = () => {
         {/* Content List */}
         <div className="flex-1 overflow-y-auto">
           {activeTab === 'conversations' ? (
-            <ConversationsList
-              conversations={filteredConversations}
-              currentUserId={currentUserId || ''}
-              selectedConversationId={selectedConversationId}
-              onSelectConversation={(conversationId, user) => {
-                setSelectedConversationId(conversationId);
-                setSelectedUser(user);
-              }}
-              isLoading={isLoading}
-              error={error}
-              onSwitchToFollowing={() => setActiveTab('following')}
-            />
+            <>
+              {/* Desktop Conversations List */}
+              <div className="hidden md:block">
+                <ConversationsList
+                  conversations={filteredConversations}
+                  currentUserId={currentUserId || ''}
+                  selectedConversationId={selectedConversationId}
+                  onSelectConversation={(conversationId, user) => {
+                    setSelectedConversationId(conversationId);
+                    setSelectedUser(user);
+                  }}
+                  isLoading={isLoading}
+                  error={error}
+                  onSwitchToFollowing={() => setActiveTab('following')}
+                />
+              </div>
+              
+              {/* Mobile Conversations List */}
+              <div className="md:hidden">
+                {isLoading ? (
+                  <div className="flex-1 p-4">
+                    <div className="space-y-4">
+                      {[...Array(5)].map((_, i) => (
+                        <div key={i} className="flex items-center gap-3 p-3 animate-pulse">
+                          <div className="w-12 h-12 bg-muted rounded-full" />
+                          <div className="flex-1">
+                            <div className="h-4 bg-muted rounded mb-2" />
+                            <div className="h-3 bg-muted rounded w-2/3" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border/50">
+                    {filteredConversations.map((conversation: any) => {
+                      const otherParticipant = conversation.participants?.find(
+                        (p: any) => p._id !== currentUserId
+                      );
+                      
+                      return (
+                        <div
+                          key={conversation._id}
+                          onClick={() => {
+                            setSelectedConversationId(conversation._id);
+                            setSelectedUser(otherParticipant);
+                          }}
+                          className="flex items-center gap-3 p-4 hover:bg-muted/50 active:bg-muted cursor-pointer transition-colors"
+                        >
+                          <div className="relative flex-shrink-0">
+                            <img 
+                              src={otherParticipant?.avatar || "/default-avatar.jpg"} 
+                              alt={otherParticipant?.displayName}
+                              className="w-12 h-12 rounded-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src = '/default-avatar.jpg';
+                              }}
+                            />
+                          </div>
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1">
+                              <h3 className="font-semibold text-foreground truncate">
+                                {otherParticipant?.displayName || otherParticipant?.username || 'Unknown User'}
+                              </h3>
+                              {conversation.lastMessage?.createdAt && (
+                                <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
+                                  {new Date(conversation.lastActivity).toLocaleTimeString([], { 
+                                    hour: '2-digit', 
+                                    minute: '2-digit' 
+                                  })}
+                                </span>
+                              )}
+                            </div>
+                            
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm text-muted-foreground truncate">
+                                {conversation.lastMessage?.content?.text || 'Không có tin nhắn'}
+                              </p>
+                              {conversation.unreadCount > 0 && (
+                                <div className="bg-primary text-primary-foreground text-xs rounded-full px-2 py-0.5 min-w-[20px] text-center flex-shrink-0 ml-2">
+                                  {conversation.unreadCount}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    
+                    {filteredConversations.length === 0 && (
+                      <div className="flex flex-col items-center justify-center h-64 text-center p-6">
+                        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                          <span className="text-2xl">💬</span>
+                        </div>
+                        <h3 className="font-semibold text-foreground mb-2">Chưa có cuộc trò chuyện</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Bắt đầu trò chuyện với bạn bè từ tab Following
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </>
           ) : (
-            <FollowingUsersList
-              users={filteredFollowingUsers}
-              onStartChat={(userId, user) => {
-                startChatWithUser(userId);
-                setSelectedUser(user || null);
-              }}
-              isLoading={isLoadingFollowing}
-            />
+            <>
+              {/* Desktop Following List */}
+              <div className="hidden md:block">
+                <FollowingUsersList
+                  users={filteredFollowingUsers}
+                  onStartChat={(userId, user) => {
+                    startChatWithUser(userId);
+                    setSelectedUser(user || null);
+                  }}
+                  isLoading={isLoadingFollowing}
+                />
+              </div>
+              
+              {/* Mobile Following List */}
+              <div className="md:hidden">
+                {isLoadingFollowing ? (
+                  <div className="flex-1 p-4">
+                    <div className="space-y-4">
+                      {[...Array(5)].map((_, i) => (
+                        <div key={i} className="flex items-center gap-3 p-3 animate-pulse">
+                          <div className="w-12 h-12 bg-muted rounded-full" />
+                          <div className="flex-1">
+                            <div className="h-4 bg-muted rounded mb-2" />
+                            <div className="h-3 bg-muted rounded w-2/3" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border/50">
+                    {filteredFollowingUsers.map((user: User) => (
+                      <div
+                        key={user._id}
+                        onClick={() => {
+                          startChatWithUser(user._id);
+                          setSelectedUser(user);
+                        }}
+                        className="flex items-center gap-3 p-4 hover:bg-muted/50 active:bg-muted cursor-pointer transition-colors"
+                      >
+                        {/* Avatar */}
+                        <div className="relative flex-shrink-0">
+                          <img 
+                            src={user.avatar || "/default-avatar.jpg"} 
+                            alt={user.displayName}
+                            className="w-12 h-12 rounded-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = '/default-avatar.jpg';
+                            }}
+                          />
+                        </div>
+                        
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-foreground truncate">
+                            {user.displayName || user.username}
+                          </h3>
+                          <p className="text-sm text-muted-foreground truncate">
+                            @{user.username} • Tap to message
+                          </p>
+                        </div>
+                        
+                        {/* Chat icon */}
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                            <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.959 8.959 0 01-4.906-1.436L3 21l2.436-5.094A8.959 8.959 0 013 12c0-4.418 3.582-8 8-8s8 3.582 8 8z" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {filteredFollowingUsers.length === 0 && (
+                      <div className="flex flex-col items-center justify-center h-64 text-center p-6">
+                        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                          <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                          </svg>
+                        </div>
+                        <h3 className="font-semibold text-foreground mb-2">Chưa theo dõi ai</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Tìm và theo dõi bạn bè để bắt đầu trò chuyện
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -266,17 +441,13 @@ const MessagesPage: React.FC = () => {
           : 'hidden md:flex md:flex-1'
       } flex-col bg-background relative`}>
         {selectedConversationId ? (
-          <>
-            {/* Mobile Chat Header - Instagram style */}
-            <ChatWindowWithMobileHeader 
-              conversationId={selectedConversationId} 
-              user={selectedUser}
-              onBack={() => {
-                setSelectedConversationId(null);
-                setSelectedUser(null);
-              }} 
-            />
-          </>
+          <ResponsiveChatWindow 
+            conversationId={selectedConversationId}
+            onBack={() => {
+              setSelectedConversationId(null);
+              setSelectedUser(null);
+            }} 
+          />
         ) : (
           <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-muted/20 to-muted/5">
             <div className="text-center p-8">
@@ -297,26 +468,23 @@ const MessagesPage: React.FC = () => {
   );
 };
 
-// Component wrapper để hiển thị user info trong mobile header
-const ChatWindowWithMobileHeader: React.FC<{
-  conversationId: string;
-  user: User | null;
-  onBack: () => void;
-}> = ({ conversationId, user, onBack }) => {
+// Interface để pass selectedConversationId lên ProtectedApp (theo memory về mobile chat navigation)
+interface MessagesPageProps {
+  onConversationSelect?: (conversationId: string | null) => void;
+}
+
+// Wrapper component để tích hợp với ProtectedApp navigation logic
+const MessagesPageWrapper: React.FC<MessagesPageProps> = ({ onConversationSelect }) => {
+  const { selectedConversationId } = useChatContext();
   
-  return (
-    <>
-      <MobileHeader 
-        title={user?.displayName || user?.username || 'Chat Partner'}
-        showBack={true}
-        onBack={onBack}
-        showMore={true}
-        avatar={user?.avatar}
-        userId={user?._id}
-      />
-      <ChatWindow conversationId={conversationId} />
-    </>
-  );
+  // Notify ProtectedApp về conversation state để ẩn bottom nav khi đang chat (mobile)
+  React.useEffect(() => {
+    onConversationSelect?.(selectedConversationId);
+  }, [selectedConversationId, onConversationSelect]);
+  
+  return <MessagesPage />;
 };
 
+// Export both components
+export { MessagesPage, MessagesPageWrapper };
 export default MessagesPage;

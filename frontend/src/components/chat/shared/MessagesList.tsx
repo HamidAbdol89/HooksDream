@@ -1,4 +1,4 @@
-// components/chat/MessagesList.tsx
+// components/chat/shared/MessagesList.tsx - Shared messages list for both desktop and mobile
 import React, { useRef, useEffect } from 'react';
 import { MessageSquare } from 'lucide-react';
 import { MessageBubble } from './MessageBubble';

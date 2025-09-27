@@ -1,4 +1,4 @@
-// components/chat/ConversationsList.tsx
+// components/chat/desktop/ConversationsList.tsx - Desktop conversations list
 import React from 'react';
 import { MessageSquare, UserCheck } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
@@ -42,6 +42,7 @@ export const ConversationsList: React.FC<ConversationsListProps> = ({
   onSwitchToFollowing
 }) => {
   const { isUserOnline, getUserStatus } = useOnlineUsers();
+  
   if (isLoading) {
     return (
       <div className="p-4 space-y-3">
@@ -87,7 +88,7 @@ export const ConversationsList: React.FC<ConversationsListProps> = ({
   }
 
   return (
-    <div className="">
+    <div className="hidden md:block">
       {conversations.map((conversation) => {
         const otherParticipant = conversation.participants.find(p => p._id !== currentUserId);
         const isSelected = selectedConversationId === conversation._id;
@@ -96,15 +97,15 @@ export const ConversationsList: React.FC<ConversationsListProps> = ({
           <div
             key={conversation._id}
             onClick={() => onSelectConversation(conversation._id, otherParticipant)}
-            className={`flex items-center gap-3 p-4 cursor-pointer transition-colors border-b border-border/30 active:bg-muted/30 ${
+            className={`flex items-center gap-3 p-4 cursor-pointer transition-colors border-b border-border/30 mx-2 rounded-lg ${
               isSelected 
-                ? 'bg-primary/5 md:bg-primary/10 md:border md:border-primary/20 md:rounded-lg md:mx-2' 
-                : 'hover:bg-muted/20 md:hover:bg-muted/50 md:mx-2 md:rounded-lg'
+                ? 'bg-primary/10 border border-primary/20' 
+                : 'hover:bg-muted/50'
             }`}
           >
             {/* Avatar with online indicator */}
             <div className="relative flex-shrink-0">
-              <Avatar className="w-14 h-14 md:w-12 md:h-12">
+              <Avatar className="w-12 h-12">
                 <AvatarImage src={otherParticipant?.avatar} alt={otherParticipant?.displayName} />
                 <AvatarFallback>
                   {otherParticipant?.displayName?.charAt(0) || otherParticipant?.username?.charAt(0) || 'U'}
@@ -112,7 +113,7 @@ export const ConversationsList: React.FC<ConversationsListProps> = ({
               </Avatar>
               {/* Online indicator */}
               {otherParticipant?._id && isUserOnline(otherParticipant._id) && (
-                <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 border-2 border-background rounded-full md:w-3 md:h-3" />
+                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-background rounded-full" />
               )}
             </div>
             
@@ -120,7 +121,7 @@ export const ConversationsList: React.FC<ConversationsListProps> = ({
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-foreground truncate text-base md:text-sm">
+                  <h3 className="font-semibold text-foreground truncate text-sm">
                     {otherParticipant?.displayName || otherParticipant?.username}
                   </h3>
                   <div className="flex items-center gap-1 mt-0.5">

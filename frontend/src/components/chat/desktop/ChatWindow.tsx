@@ -1,11 +1,11 @@
-// components/chat/ChatWindow.tsx
+// components/chat/desktop/ChatWindow.tsx - Desktop chat window
 import React from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import { useChat } from '@/hooks/useChat';
 import { ChatHeader } from './ChatHeader';
-import { MessagesList } from './MessagesList';
-import { MessageInput } from './MessageInput';
+import { MessagesList } from '../shared/MessagesList';
+import { MessageInput } from '../shared/MessageInput';
 
 interface ChatWindowProps {
   conversationId: string;
@@ -81,10 +81,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ conversationId }) => {
 
   return (
     <div className="flex-1 flex flex-col bg-background h-full">
-      {/* Hide ChatHeader on mobile since we have back button in MessagesPage */}
-      <div className="hidden md:block">
-        <ChatHeader user={otherParticipant} />
-      </div>
+      {/* Desktop always shows ChatHeader */}
+      <ChatHeader user={otherParticipant} />
       
       <MessagesList 
         messages={messages}

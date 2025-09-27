@@ -1,4 +1,4 @@
-// components/chat/MessageBubble.tsx
+// components/chat/shared/MessageBubble.tsx - Shared message bubble for both desktop and mobile
 import React from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
 

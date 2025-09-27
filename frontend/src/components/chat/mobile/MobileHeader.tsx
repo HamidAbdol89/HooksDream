@@ -1,4 +1,4 @@
-// components/chat/MobileHeader.tsx - Instagram-style mobile header
+// components/chat/mobile/MobileHeader.tsx - Mobile chat header
 import React from 'react';
 import { ArrowLeft, Search, Edit3, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/Button';

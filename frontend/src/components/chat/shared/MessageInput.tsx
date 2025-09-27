@@ -1,4 +1,4 @@
-// components/chat/MessageInput.tsx
+// components/chat/shared/MessageInput.tsx - Shared message input for both desktop and mobile
 import React, { useState } from 'react';
 import { Send, Smile, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
