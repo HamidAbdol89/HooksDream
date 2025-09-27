@@ -30,6 +30,7 @@ router.get('/conversations/direct/:userId', conversationLimiter, chatController.
 // Message routes
 router.get('/conversations/:conversationId/messages', chatController.getMessages);
 router.post('/conversations/:conversationId/messages', chatLimiter, chatController.sendMessage);
+router.post('/conversations/:conversationId/messages/image', chatLimiter, chatController.sendImageMessage);
 router.put('/conversations/:conversationId/read', chatController.markAsRead);
 
 // Message actions

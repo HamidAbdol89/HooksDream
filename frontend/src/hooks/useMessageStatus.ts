@@ -118,6 +118,130 @@ export const useMessageStatus = (conversationId?: string) => {
     }
   }, [token, conversationId, queryClient]);
 
+  // Send image message with optimistic status update
+  const sendImageMessageWithStatus = useCallback(async (
+    imageFile: File,
+    text?: string,
+    tempId?: string
+  ): Promise<{ success: boolean; messageId?: string }> => {
+    if (!token || !conversationId) return { success: false };
+
+    const actualTempId = tempId || `temp-${Date.now()}-${Math.random()}`;
+
+    // Create optimistic image message
+    const tempMessage = {
+      _id: actualTempId,
+      sender: {
+        _id: 'current-user',
+        username: 'You',
+        displayName: 'You',
+        avatar: ''
+      },
+      content: { 
+        image: URL.createObjectURL(imageFile),
+        text: text || undefined
+      },
+      type: 'image',
+      createdAt: new Date().toISOString(),
+      messageStatus: {
+        status: 'sending' as const,
+        timestamp: new Date().toISOString()
+      }
+    };
+
+    // Update cache optimistically
+    queryClient.setQueryData(
+      ['chat', 'messages', conversationId],
+      (oldData: any) => {
+        if (!oldData) return [tempMessage];
+        return [...oldData, tempMessage];
+      }
+    );
+
+    try {
+      const formData = new FormData();
+      formData.append('image', imageFile);
+      if (text) {
+        formData.append('text', text);
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/chat/conversations/${conversationId}/messages/image`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Replace temp message with real message
+        queryClient.setQueryData(
+          ['chat', 'messages', conversationId],
+          (oldData: any) => {
+            if (!oldData) return [];
+            return oldData.map((msg: any) => 
+              msg._id === actualTempId ? {
+                ...data.data,
+                messageStatus: {
+                  status: 'sent',
+                  timestamp: new Date().toISOString()
+                }
+              } : msg
+            );
+          }
+        );
+
+        // Invalidate conversations to update last message
+        queryClient.invalidateQueries({ 
+          queryKey: ['chat', 'conversations'] 
+        });
+
+        return { success: true, messageId: data.data._id };
+      } else {
+        // Mark as failed
+        queryClient.setQueryData(
+          ['chat', 'messages', conversationId],
+          (oldData: any) => {
+            if (!oldData) return [];
+            return oldData.map((msg: any) => 
+              msg._id === actualTempId ? {
+                ...msg,
+                messageStatus: {
+                  status: 'failed',
+                  timestamp: new Date().toISOString()
+                }
+              } : msg
+            );
+          }
+        );
+        return { success: false };
+      }
+    } catch (error) {
+      // Mark as failed
+      queryClient.setQueryData(
+        ['chat', 'messages', conversationId],
+        (oldData: any) => {
+          if (!oldData) return [];
+          return oldData.map((msg: any) => 
+            msg._id === actualTempId ? {
+              ...msg,
+              messageStatus: {
+                status: 'failed',
+                timestamp: new Date().toISOString()
+              }
+            } : msg
+          );
+        }
+      );
+      return { success: false };
+    }
+  }, [token, conversationId, queryClient]);
+
   // Send message with optimistic status update
   const sendMessageWithStatus = useCallback(async (
     text: string,
@@ -264,6 +388,7 @@ export const useMessageStatus = (conversationId?: string) => {
   return {
     markAsRead: markMessageAsRead,
     markConversationAsRead,
-    sendMessageWithStatus
+    sendMessageWithStatus,
+    sendImageMessageWithStatus
   };
 };

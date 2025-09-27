@@ -3,6 +3,7 @@ import React from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
 import { useOnlineUsers } from '@/hooks/useOnlineUsers';
 import { Conversation } from '@/types/chat';
+import { Image } from 'lucide-react';
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -67,11 +68,22 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
               {otherParticipant?.displayName || otherParticipant?.username}
             </h3>
             <div className="flex items-center gap-1 mt-0.5">
-              <p className="text-sm text-muted-foreground truncate flex-1">
-                {conversation.lastMessage?.content?.text || 'Tap to start chatting'}
-              </p>
+              <div className="flex items-center gap-1 flex-1 min-w-0">
+                {/* Image indicator */}
+                {conversation.lastMessage?.content?.image && (
+                  <Image className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                )}
+                <p className="text-sm text-muted-foreground truncate">
+                  {conversation.lastMessage?.content?.image && conversation.lastMessage?.content?.text
+                    ? conversation.lastMessage.content.text
+                    : conversation.lastMessage?.content?.image 
+                    ? 'Đã gửi một ảnh'
+                    : conversation.lastMessage?.content?.text || 'Tap to start chatting'
+                  }
+                </p>
+              </div>
               {shouldShowBadge && (
-                <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full min-w-[18px] text-center font-medium ml-2">
+                <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full min-w-[18px] text-center font-medium ml-2 flex-shrink-0">
                   {(unreadCount || 0) > 99 ? '99+' : (unreadCount || 0)}
                 </span>
               )}

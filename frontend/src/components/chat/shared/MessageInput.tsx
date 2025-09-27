@@ -4,6 +4,7 @@ import { Send, Smile, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/input';
 import { useMessageStatus } from '@/hooks/useMessageStatus';
+import { ImageUpload } from './ImageUpload';
 
 interface MessageInputProps {
   conversationId: string;
@@ -43,6 +44,11 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     }
   };
 
+  const handleImageSent = () => {
+    // Refresh messages or handle image sent callback
+    // The real-time update will be handled by socket
+  };
+
   return (
 <div
   className="p-4 border-t bg-background md:bg-card/50 md:backdrop-blur-sm 
@@ -52,7 +58,14 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       <div className="flex items-center gap-3">
    
         
-        {/* Desktop attachment button */}
+        {/* Image upload button */}
+        <ImageUpload
+          conversationId={conversationId}
+          onImageSent={handleImageSent}
+          disabled={disabled}
+        />
+        
+        {/* Desktop attachment button (for other files) */}
         <Button variant="ghost" size="sm" className="hidden md:flex h-10 w-10 p-0 rounded-full">
           <Paperclip className="w-4 h-4" />
         </Button>

@@ -1,7 +1,8 @@
 // components/chat/shared/MessageBubble.tsx - Shared message bubble for both desktop and mobile
-import React from 'react';
+import React, { useState } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
 import { Message } from '@/types/chat';
+import { ImageLightbox } from './ImageLightbox';
 
 interface MessageBubbleProps {
   message: Message;
@@ -34,6 +35,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   showAvatar,
   isLastInGroup
 }) => {
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   return (
     <div className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
   {/* Avatar */}
@@ -64,15 +66,45 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         )}
         
         <div
-          className={`px-3 py-2.5 rounded-2xl shadow-sm transition-all hover:shadow-md ${
+          className={`rounded-2xl shadow-sm transition-all hover:shadow-md ${
             isOwn
               ? 'bg-primary text-primary-foreground rounded-br-sm'
               : 'bg-muted text-foreground rounded-bl-sm'
-          } ${isLastInGroup ? 'mb-2' : 'mb-1'}`}
+          } ${isLastInGroup ? 'mb-2' : 'mb-1'} ${
+            message.content.image ? 'p-1' : 'px-3 py-2.5'
+          }`}
         >
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">
-            {message.content.text}
-          </p>
+          {/* Image content */}
+          {message.content.image && (
+            <div className="relative">
+              <img
+                src={message.content.image}
+                alt="Shared image"
+                className="max-w-full h-auto rounded-xl max-h-80 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                onClick={() => setIsLightboxOpen(true)}
+                onError={(e) => {
+                  e.currentTarget.src = '/default-image.jpg';
+                }}
+              />
+              {/* Text overlay if both image and text */}
+              {message.content.text && (
+                <div className={`absolute bottom-0 left-0 right-0 p-2 rounded-b-xl ${
+                  isOwn ? 'bg-primary/80' : 'bg-muted/80'
+                } backdrop-blur-sm`}>
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap text-white">
+                    {message.content.text}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Text-only content */}
+          {message.content.text && !message.content.image && (
+            <p className="text-sm leading-relaxed whitespace-pre-wrap">
+              {message.content.text}
+            </p>
+          )}
         </div>
         
         {isLastInGroup && (
@@ -92,6 +124,16 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           </div>
         )}
       </div>
+
+      {/* Image Lightbox */}
+      {message.content.image && (
+        <ImageLightbox
+          imageUrl={message.content.image}
+          isOpen={isLightboxOpen}
+          onClose={() => setIsLightboxOpen(false)}
+          alt="Chat image"
+        />
+      )}
     </div>
   );
 };

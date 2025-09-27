@@ -2,6 +2,7 @@ const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
 const User = require('../models/User');
 const { createResponse } = require('../utils/helpers');
+const { upload } = require('../utils/cloudinary');
 
 // Get all conversations for current user
 exports.getConversations = async (req, res) => {
@@ -317,6 +318,96 @@ exports.sendMessage = async (req, res) => {
     console.error('Send message error:', error);
     res.status(500).json(createResponse(false, 'Internal server error', null, null, 500));
   }
+};
+
+// Send image message
+exports.sendImageMessage = (req, res) => {
+  const imageUpload = upload.single('image');
+  
+  imageUpload(req, res, async (err) => {
+    try {
+      if (err) {
+        return res.status(400).json(createResponse(false, `Upload failed: ${err.message}`, null, null, 400));
+      }
+      
+      if (!req.file) {
+        return res.status(400).json(createResponse(false, 'No image uploaded', null, null, 400));
+      }
+      
+      const currentUserId = req.userId;
+      const { conversationId } = req.params;
+      const { text } = req.body; // Optional text with image
+      
+      // Check if user is participant
+      const conversation = await Conversation.findById(conversationId);
+      if (!conversation || !conversation.isParticipant(currentUserId)) {
+        return res.status(403).json(createResponse(false, 'Access denied', null, null, 403));
+      }
+      
+      // Create image message
+      const messageData = {
+        conversation: conversationId,
+        sender: currentUserId,
+        content: {
+          image: req.file.path
+        },
+        type: 'image'
+      };
+      
+      // Add text if provided
+      if (text && text.trim()) {
+        messageData.content.text = text.trim();
+      }
+      
+      const message = await Message.create(messageData);
+      
+      // Update conversation lastActivity and lastMessage
+      await Conversation.findByIdAndUpdate(conversationId, {
+        lastActivity: new Date(),
+        lastMessage: message._id
+      });
+      
+      // Populate sender info
+      await message.populate('sender', 'username displayName avatar');
+      
+      // Add message status to response
+      const messageWithStatus = {
+        ...message.toObject(),
+        messageStatus: {
+          status: 'sent',
+          timestamp: new Date().toISOString(),
+          readBy: []
+        }
+      };
+      
+      // Emit socket event to conversation participants
+      if (global.socketServer) {
+        conversation.participants.forEach(participantId => {
+          if (participantId.toString() !== currentUserId) {
+            global.socketServer.emitToUser(participantId.toString(), 'message:new', {
+              conversationId,
+              message: message.toObject()
+            });
+          }
+        });
+        
+        // Also emit to all participants for conversations list updates
+        conversation.participants.forEach(participantId => {
+          global.socketServer.emitToUser(participantId.toString(), 'conversation:updated', {
+            conversationId,
+            lastMessage: message.toObject(),
+            lastActivity: new Date()
+          });
+        });
+      }
+      
+      res.json(createResponse(true, 'Image message sent successfully', messageWithStatus));
+      
+    } catch (error) {
+      console.error('Send image message error:', error);
+      res.status(500).json(createResponse(false, 'Internal server error', null, null, 500));
+    }
+  });
 };
 
 // Mark messages as read
