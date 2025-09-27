@@ -3,6 +3,13 @@ const { createResponse, generateUniqueUsername } = require('../utils/helpers');
 const { uploadImageToCloudinary } = require('../utils/cloudinary');
 const googleAuthService = require('../services/googleAuthService');
 const axios = require('axios');
+const { OAuth2Client } = require('google-auth-library');
+
+const oauth2Client = new OAuth2Client(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    process.env.GOOGLE_REDIRECT_URI
+);
 
 // Google OAuth login/register
 exports.googleLogin = async (req, res) => {
@@ -106,14 +113,21 @@ exports.googleLogin = async (req, res) => {
         // Generate JWT token
         const jwtToken = googleAuthService.generateJWTToken(user);
         
-        // Return user data with token
+        // Return complete user data with token and profile in single response
+        const completeUserData = {
+            ...user.toObject(),
+            isSetupComplete: true,
+            // Add computed fields
+            handle: `@${user.username}`,
+            hashId: user.googleId // For compatibility
+        };
+        
         return res.status(isNewUser ? 201 : 200).json(
             createResponse(true, isNewUser ? 'User created successfully' : 'Login successful', {
-                user: {
-                    ...user.toObject(),
-                    isSetupComplete: true
-                },
-                token: jwtToken
+                user: completeUserData,
+                profile: completeUserData, // Same data for profile to avoid duplicate API calls
+                token: jwtToken,
+                isNewUser
             }, null, isNewUser ? 201 : 200)
         );
         
@@ -180,6 +194,112 @@ exports.refreshToken = async (req, res) => {
     } catch (error) {
         res.status(401).json(
             createResponse(false, 'Invalid or expired refresh token', null, null, 401)
+        );
+    }
+};
+
+// Google OAuth callback handler
+exports.googleCallback = async (req, res) => {
+    try {
+        const { code, state } = req.body;
+        
+        // Validate required fields
+        if (!code) {
+            return res.status(400).json(
+                createResponse(false, 'Authorization code is required', null, null, 400)
+            );
+        }
+        
+        // Exchange code for tokens
+        const { tokens } = await oauth2Client.getToken(code);
+        oauth2Client.setCredentials(tokens);
+        
+        // Get user info from Google
+        const response = await axios.get(
+            `https://www.googleapis.com/oauth2/v2/userinfo?access_token=${tokens.access_token}`
+        );
+        
+        const googleUserInfo = {
+            googleId: response.data.id,
+            email: response.data.email,
+            name: response.data.name,
+            picture: response.data.picture,
+            emailVerified: response.data.verified_email
+        };
+        
+        // Check if user exists by googleId
+        let user = await User.findOne({ googleId: googleUserInfo.googleId });
+        let isNewUser = false;
+        
+        if (!user) {
+            isNewUser = true;
+            // Create new user
+            const randomUsername = await generateUniqueUsername(googleUserInfo.googleId);
+            
+            // Upload Google avatar to Cloudinary
+            let avatarUrl = '';
+            if (googleUserInfo.picture) {
+                try {
+                    const response = await axios.get(googleUserInfo.picture, { responseType: 'arraybuffer' });
+                    const buffer = Buffer.from(response.data);
+                    avatarUrl = await uploadImageToCloudinary(buffer, 'avatar', googleUserInfo.googleId);
+                } catch (error) {
+                    avatarUrl = googleUserInfo.picture; // Fallback to original URL
+                }
+            }
+            
+            user = new User({
+                _id: googleUserInfo.googleId,
+                googleId: googleUserInfo.googleId,
+                email: googleUserInfo.email.toLowerCase(),
+                displayName: googleUserInfo.name || randomUsername,
+                avatar: avatarUrl,
+                username: randomUsername,
+                isSetupComplete: true,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                lastLoginAt: new Date()
+            });
+            
+            await user.save();
+        } else {
+            // Update existing user
+            user.lastLoginAt = new Date();
+            user.updatedAt = new Date();
+            await user.save();
+        }
+        
+        // Generate JWT token
+        const jwtToken = googleAuthService.generateJWTToken(user);
+        
+        // Return complete user data with token and profile in single response
+        const completeUserData = {
+            ...user.toObject(),
+            isSetupComplete: true,
+            handle: `@${user.username}`,
+            hashId: user.googleId
+        };
+        
+        return res.status(isNewUser ? 201 : 200).json(
+            createResponse(true, isNewUser ? 'User created successfully' : 'Login successful', {
+                user: completeUserData,
+                profile: completeUserData,
+                token: jwtToken,
+                isNewUser
+            }, null, isNewUser ? 201 : 200)
+        );
+        
+    } catch (error) {
+        console.error('Google callback error:', error);
+        
+        if (error.message.includes('invalid_grant')) {
+            return res.status(400).json(
+                createResponse(false, 'Authorization code expired or invalid', null, null, 400)
+            );
+        }
+        
+        res.status(500).json(
+            createResponse(false, 'OAuth callback failed', null, null, 500)
         );
     }
 };

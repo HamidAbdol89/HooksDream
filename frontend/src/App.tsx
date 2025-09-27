@@ -1,41 +1,52 @@
-// src/App.tsx - FIXED VERSION
+// src/App.tsx - MODERN VERSION with optimized authentication
 import React, { useEffect, useRef } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useGoogleAuth } from "./hooks/useGoogleAuth";
+import { useModernGoogleAuth, AuthState } from "./hooks/useModernGoogleAuth";
 import { useAppStore } from "@/store/useAppStore";
 import TermsOfUse from "@/pages/TermsOfUse";
 import ProtectedApp from "@/components/ProtectedApp";
+import AuthErrorBoundary from "@/components/auth/AuthErrorBoundary";
 
 const App: React.FC = () => {
-  const { isLoading } = useGoogleAuth();
-  const { isConnected, user, refetchProfile } = useAppStore();
-  const hasRefetchedRef = useRef(false); // 🔥 Tránh refetch nhiều lần
+  const { authState, isLoading, isConnected } = useModernGoogleAuth();
+  const { user } = useAppStore();
+  const initializationRef = useRef(false);
 
+  // Modern auth system handles all user data loading in single API call
+  // No need for additional refetch calls - performance optimized!
   useEffect(() => {
-    if (!isLoading && isConnected && user?._id && !hasRefetchedRef.current) {
-      console.log('🔄 App mounted - refetching user data...');
-      hasRefetchedRef.current = true;
+    if (authState === AuthState.SUCCESS && isConnected && user && !initializationRef.current) {
+      initializationRef.current = true;
+      console.log(' Modern auth system: User authenticated and data loaded');
       
-      refetchProfile()
-        .catch(console.error)
-        .finally(() => {
-          // Reset flag after 5s để cho phép refetch lần sau nếu cần
-          setTimeout(() => {
-            hasRefetchedRef.current = false;
-          }, 5000);
-        });
+      // Reset after component lifecycle
+      return () => {
+        initializationRef.current = false;
+      };
     }
-  }, [isLoading, isConnected, user?._id]); // 🔥 Bỏ refetchProfile khỏi dependencies
+  }, [authState, isConnected, user]);
+
+  // Show loading during initialization only
+  if (authState === AuthState.INITIALIZING) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm text-muted-foreground">Initializing HooksDream...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <>
+    <AuthErrorBoundary>
       <div id="portal-root" />
       <Routes>
         <Route path="/terms-of-use" element={<TermsOfUse />} />
         <Route path="/*" element={<ProtectedApp />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </>
+    </AuthErrorBoundary>
   );
 };
 

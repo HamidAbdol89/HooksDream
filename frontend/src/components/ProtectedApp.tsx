@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { useAppStore } from "@/store/useAppStore";
-import { AuthConnect } from "@/components/auth/AuthConnect";
+import ModernAuthConnect from "@/components/auth/ModernAuthConnect";
 import { Header } from "@/components/layout/Header";
 import SidebarLeft from "@/components/layout/SidebarLeft";
 import { SidebarRight } from "@/components/layout/SidebarRight";
@@ -42,7 +42,7 @@ const ProtectedAppContent: React.FC = () => {
   const isInChat = isMessagesPage && !!selectedConversationId && isMobile;
   
   if (!isConnected || !user) {
-    return <AuthConnect />;
+    return <ModernAuthConnect />;
   }
 
   return (

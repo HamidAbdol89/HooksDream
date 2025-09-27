@@ -5,6 +5,7 @@ const { authMiddleware } = require('../middleware/auth');
 
 // Google OAuth routes
 router.post('/google/login', googleAuthController.googleLogin);
+router.post('/google/callback', googleAuthController.googleCallback);
 router.post('/refresh-token', googleAuthController.refreshToken);
 router.post('/logout', authMiddleware, googleAuthController.logout);
 
