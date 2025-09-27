@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import mobile optimizations */
+@import './styles/mobile-optimizations.css';
+
 :root {
   --background: 0 0% 100%;
   --foreground: 240 10% 3.9%;

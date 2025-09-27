@@ -1,0 +1,173 @@
+/* Mobile Performance Optimizations */
+
+/* Smooth scrolling for all scrollable containers */
+* {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Optimize sheet animations */
+[data-radix-dialog-content] {
+  will-change: transform, opacity;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Optimize sheet overlay */
+[data-radix-dialog-overlay] {
+  will-change: opacity;
+  transform: translate3d(0, 0, 0);
+}
+
+/* Mobile-specific optimizations */
+@media (max-width: 768px) {
+  /* Reduce motion for better performance on low-end devices */
+  @media (prefers-reduced-motion: no-preference) {
+    /* Smooth sheet transitions */
+    [data-radix-dialog-content] {
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                  opacity 0.15s ease-out;
+    }
+    
+    [data-radix-dialog-overlay] {
+      transition: opacity 0.15s ease-out;
+    }
+  }
+  
+  /* Optimize scrolling containers */
+  .scroll-container {
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    will-change: scroll-position;
+  }
+  
+  /* Optimize list items */
+  .list-item {
+    will-change: transform;
+    transform: translate3d(0, 0, 0);
+  }
+  
+  /* Optimize buttons and interactive elements */
+  button, [role="button"] {
+    will-change: transform;
+    transform: translate3d(0, 0, 0);
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  
+  /* Optimize images */
+  img {
+    will-change: auto;
+    transform: translate3d(0, 0, 0);
+  }
+  
+  /* Optimize avatars */
+  [data-radix-avatar-image] {
+    will-change: auto;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* Reduce animations on very low-end devices */
+@media (max-width: 480px) and (max-height: 800px) {
+  @media (prefers-reduced-motion: no-preference) {
+    * {
+      animation-duration: 0.1s !important;
+      transition-duration: 0.1s !important;
+    }
+  }
+}
+
+/* Optimize for devices with limited memory */
+@media (max-width: 375px) {
+  /* Reduce blur effects that can cause lag */
+  .backdrop-blur-sm {
+    backdrop-filter: none !important;
+    background-color: rgba(255, 255, 255, 0.95) !important;
+  }
+  
+  [data-theme="dark"] .backdrop-blur-sm {
+    background-color: rgba(0, 0, 0, 0.95) !important;
+  }
+}
+
+/* Optimize sheet content scrolling */
+.sheet-scroll-area {
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  will-change: scroll-position;
+  transform: translate3d(0, 0, 0);
+}
+
+/* Optimize comment and user list rendering */
+.comment-list, .user-list {
+  contain: layout style paint;
+  will-change: contents;
+}
+
+.comment-item, .user-item {
+  contain: layout style paint;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+}
+
+/* Optimize skeleton loading animations */
+.skeleton-pulse {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  will-change: opacity;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Optimize button hover states for touch devices */
+@media (hover: none) and (pointer: coarse) {
+  button:hover,
+  [role="button"]:hover {
+    background-color: initial !important;
+  }
+  
+  button:active,
+  [role="button"]:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease-out;
+  }
+}
+
+/* Optimize focus states for accessibility */
+button:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Prevent layout shifts */
+.avatar-container {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Optimize text rendering */
+.text-content {
+  text-rendering: optimizeSpeed;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Optimize for high DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .text-content {
+    -webkit-font-smoothing: subpixel-antialiased;
+  }
+}

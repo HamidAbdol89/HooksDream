@@ -1,5 +1,5 @@
 // src/components/comment/CommentSection.tsx - Clean version with shimmer loading
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Comment } from './Comment';
 import { CommentInput } from './CommentInput';
 import { api } from '@/services/api';
@@ -9,6 +9,7 @@ import { UserProfile } from '@/types/user';
 import { Button } from '@/components/ui/Button';
 import { Comment as CommentType } from '@/components/comment/types/comment';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useDebouncedCallback } from '@/hooks/useDebounce';
 
 interface CommentSectionProps {
   postId: string;
@@ -52,15 +53,21 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
   const { t } = useTranslation('common');
   const [comments, setComments] = useState<CommentType[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  // Load initial comments
-  const loadComments = async (pageNum = 1, append = false) => {
+  // Load initial comments with debouncing
+  const loadComments = useCallback(async (pageNum = 1, append = false, isRefresh = false) => {
     try {
-      if (!append) setLoading(true);
-      else setIsLoadingMore(true);
+      if (isRefresh) {
+        setIsRefreshing(true);
+      } else if (!append) {
+        setLoading(true);
+      } else {
+        setIsLoadingMore(true);
+      }
 
       const response = await api.comments.getComments(postId, {
         page: pageNum,
@@ -83,30 +90,32 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
     } finally {
       setLoading(false);
       setIsLoadingMore(false);
+      setIsRefreshing(false);
     }
-  };
+  }, [postId]);
 
-  // Load more comments (pagination)
-  const loadMoreComments = () => {
+  // Load more comments (pagination) with debouncing
+  const loadMoreComments = useDebouncedCallback(() => {
     if (!isLoadingMore && hasMore) {
       const nextPage = page + 1;
       setPage(nextPage);
       loadComments(nextPage, true);
     }
-  };
+  }, 300);
 
-  // Refresh comments
-  const refreshComments = () => {
+  // Refresh comments with debouncing - không hiện shimmer
+  const refreshComments = useDebouncedCallback(() => {
     setPage(1);
-    loadComments(1, false);
-  };
+    loadComments(1, false, true); // isRefresh = true
+  }, 200);
 
   // Initial load
   useEffect(() => {
-    loadComments();
-  }, [postId]);
+    loadComments(); // Chỉ hiện shimmer lần đầu load
+  }, [loadComments]);
 
-  if (loading) {
+  // Chỉ hiện shimmer khi thực sự loading lần đầu, không phải khi refresh
+  if (loading && !isRefreshing) {
     return (
       <div className="mt-4">
         <BatchLoadingSkeleton count={5} />
@@ -127,10 +136,10 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
         </div>
       )}
 
-      {/* Comments List - No animations, just simple rendering */}
-      <div className="space-y-0">
+      {/* Comments List - Optimized rendering */}
+      <div className="space-y-0 comment-list">
         {comments.map((comment) => (
-          <div key={comment._id} className="border-b border-border/10 last:border-b-0">
+          <div key={comment._id} className="border-b border-border/10 last:border-b-0 comment-item">
             <Comment
               comment={comment}
               postId={postId}
@@ -165,6 +174,13 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
       {/* Loading more shimmer */}
       {isLoadingMore && (
         <BatchLoadingSkeleton count={3} />
+      )}
+      
+      {/* Subtle refresh indicator */}
+      {isRefreshing && (
+        <div className="flex justify-center py-2">
+          <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+        </div>
       )}
 
       {/* Empty state */}

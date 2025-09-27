@@ -1,5 +1,5 @@
 // src/components/posts/PostCard.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo, useCallback, useMemo, startTransition, lazy, Suspense } from 'react';
 import { PostHeader } from './PostHeader';
 import { PostContent } from '@/components/posts/PostContent';
 import { PostMedia } from '@/components/posts/PostMedia';
@@ -7,13 +7,16 @@ import { PostActions } from '@/components/posts/PostActions';
 import { EngagementStats } from '@/components/posts/EngagementStats';
 import { CommentInput } from '@/components/comment/CommentInput';
 import { CommentSection } from '@/components/comment/CommentSection';
-import { ImageModal } from './ImageModal';
 import { usePostInteractions } from '@/components/posts/hooks/usePostInteractions';
 import { useImageModal } from '@/components/posts/hooks/useImageModal';
 import { Post } from '@/types/post';
 import { UserProfile } from '@/types/user';
-import { api } from '@/services/api'; // THÊM IMPORT
+import { api } from '@/services/api';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
+import { performanceMonitor } from '@/utils/simplePerformance';
+
+// Lazy load ImageModal for better code splitting
+const ImageModal = lazy(() => import('./ImageModal').then(module => ({ default: module.ImageModal })));
 
 interface PostCardProps {
   post: Post;
@@ -28,7 +31,7 @@ interface PostCardProps {
   onPostUpdate?: (updatedPost: Post) => void; // THÊM PROP MỚI
 }
 
-export const PostCard: React.FC<PostCardProps> = ({ 
+export const PostCard: React.FC<PostCardProps> = memo(({ 
   post, 
   onLike, 
   onComment, 
@@ -67,32 +70,46 @@ export const PostCard: React.FC<PostCardProps> = ({
   const [isRefreshing, setIsRefreshing] = useState(false); // THÊM STATE
 
 
-  const handleShowLikes = () => {
+  const handleShowLikes = useCallback(() => {
     if (post.likeCount > 0) {
       setShowLikesDialog(true);
     }
-  };
+  }, [post.likeCount]);
 
-const handleCommentCreated = () => {
-  // Optimistic update: Tăng comment count ngay lập tức
-  if (onPostUpdate) {
-    onPostUpdate({
-      ...post,
-      commentCount: (post.commentCount || 0) + 1
-    });
-  }
-    // Đồng bộ với server sau (không cần chờ)
-  setTimeout(async () => {
-    try {
-      const response = await api.post.getPost(post._id);
-      if (response.success && response.data) {
-        onPostUpdate?.(response.data);
-      }
-    } catch (error) {
-      console.error('Error syncing comment count:', error);
+  const handleCommentCreated = useCallback(() => {
+    const interactionStart = performance.now();
+    
+    // Optimistic update: Tăng comment count ngay lập tức
+    if (onPostUpdate) {
+      onPostUpdate({
+        ...post,
+        commentCount: (post.commentCount || 0) + 1
+      });
     }
-  }, 1000);
-};
+    
+    // Track interaction performance
+    const interactionTime = performance.now() - interactionStart;
+    performanceMonitor.trackInteraction('comment-created', interactionTime);
+    
+    // Đồng bộ với server sau (không cần chờ) - sử dụng startTransition
+    startTransition(() => {
+      setTimeout(async () => {
+        try {
+          const apiStart = performance.now();
+          const response = await api.post.getPost(post._id);
+          const apiDuration = performance.now() - apiStart;
+          
+          performanceMonitor.trackAPICall(`getPost/${post._id}`, apiDuration, response.success);
+          
+          if (response.success && response.data) {
+            onPostUpdate?.(response.data);
+          }
+        } catch (error) {
+          console.error('Error syncing comment count:', error);
+        }
+      }, 1000);
+    });
+  }, [post._id, post.commentCount, onPostUpdate]);
 
 // THÊM useEffect vào PostCard.tsx
 useEffect(() => {
@@ -125,7 +142,7 @@ useEffect(() => {
       <PostContent
         content={post.content}
         isExpanded={isExpanded}
-        onToggleExpand={() => setIsExpanded(!isExpanded)}
+        onToggleExpand={useCallback(() => setIsExpanded(!isExpanded), [isExpanded])}
       />
 
       {/* Media */}
@@ -136,18 +153,24 @@ useEffect(() => {
         onImageClick={openImageModal}
       />
 
-      {/* Image Modal */}
+      {/* Image Modal with Suspense for lazy loading */}
       {isModalOpen && modalImages.length > 0 && (
-        <ImageModal
-          images={modalImages}
-          currentIndex={modalImageIndex}
-          content={post.content}
-          onClose={closeImageModal}
-          onNext={goToNextImage}
-          onPrev={goToPrevImage}
-          onDownload={downloadImage}
-          onIndexChange={setModalImageIndex}
-        />
+        <Suspense fallback={
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+          </div>
+        }>
+          <ImageModal
+            images={modalImages}
+            currentIndex={modalImageIndex}
+            content={post.content}
+            onClose={closeImageModal}
+            onNext={goToNextImage}
+            onPrev={goToPrevImage}
+            onDownload={downloadImage}
+            onIndexChange={setModalImageIndex}
+          />
+        </Suspense>
       )}
 
       {/* Actions Bar */}
@@ -168,7 +191,7 @@ useEffect(() => {
         <EngagementStats
           post={{ ...post, commentCount }} // CẬP NHẬT POST OBJECT
           showComments={showComments}
-          onToggleComments={() => setShowComments(!showComments)}
+          onToggleComments={useCallback(() => setShowComments(!showComments), [showComments])}
           currentUserId={currentUserHashId}
           commentCount={commentCount}
         />
@@ -191,4 +214,6 @@ useEffect(() => {
 
     </article>
   );
-};
+});
+
+PostCard.displayName = 'PostCard';

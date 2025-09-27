@@ -1,7 +1,8 @@
 // src/components/posts/PostMedia.tsx
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, memo, useRef } from 'react';
 import { Camera, Play } from 'lucide-react';
-import  {VideoPlayer}  from './VideoPlayer';
+import { VideoPlayer } from './VideoPlayer';
+import { OptimizedImage } from './OptimizedImage';
 import { useTranslation } from "react-i18next";
 import { isMobile } from 'react-device-detect';
 
@@ -80,7 +81,7 @@ const calculateOptimalLayout = (dimensions: ImageDimensions[], count: number) =>
 const imageDimensionsCache = new Map<string, ImageDimensions>();
 
 // Component chính
-export const PostMedia: React.FC<PostMediaProps> = ({
+export const PostMedia: React.FC<PostMediaProps> = memo(({
   images,
   video,
   content,
@@ -94,6 +95,9 @@ export const PostMedia: React.FC<PostMediaProps> = ({
   const mobileLayout = isMobileDevice ? 'grid-cols-2 gap-1' : 'grid-cols-3 gap-2';
   const maxDisplayImages = isMobileDevice ? 3 : 4;
 
+  // Intersection Observer ref for lazy loading
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isInView, setIsInView] = useState(false);
 
   const getImageUrl = useCallback((imagePath: string): string => {
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
@@ -152,9 +156,31 @@ export const PostMedia: React.FC<PostMediaProps> = ({
     });
   }, []);
 
+  // Intersection Observer for lazy loading
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsInView(true);
+          observer.disconnect();
+        }
+      },
+      {
+        rootMargin: '50px',
+        threshold: 0.1
+      }
+    );
+
+    observer.observe(containerRef.current);
+
+    return () => observer.disconnect();
+  }, []);
+
   // Tối ưu: Sử dụng Intersection Observer để lazy load dimensions chỉ khi cần
   useEffect(() => {
-    if (images && images.length > 0) {
+    if (images && images.length > 0 && isInView) {
       setIsLoadingDimensions(true);
       
       // Tạo một AbortController để hủy request nếu component unmount
@@ -217,7 +243,7 @@ export const PostMedia: React.FC<PostMediaProps> = ({
         abortController.abort();
       };
     }
-  }, [images, getImageUrl, loadImageDimensions]);
+  }, [images, getImageUrl, loadImageDimensions, isInView]);
 
   const handleImageError = useCallback((index: number) => {
     setImageErrors(prev => {
@@ -233,31 +259,23 @@ export const PostMedia: React.FC<PostMediaProps> = ({
     return calculateOptimalLayout(imageDimensions, images.length);
   }, [images, imageDimensions]);
 
-  const renderImageWithErrorHandling = useCallback((image: string, index: number, className: string, alt: string) => {
-    if (imageErrors[index]) {
-      return (
-        <div className={`${className} flex items-center justify-center bg-secondary/30`}>
-          <Camera className="w-6 h-6 text-muted-foreground" />
-        </div>
-      );
-    }
-
+  const renderOptimizedImage = useCallback((image: string, index: number, className: string, alt: string) => {
     return (
-      <img
-        src={getImageUrl(image)}
+      <OptimizedImage
+        src={image}
         alt={alt}
-        className={`${className} transition-all duration-500 ease-out group-hover:scale-[1.01] group-hover:brightness-105`}
+        className={className}
         onClick={() => onImageClick(images!, index)}
         onError={() => handleImageError(index)}
-        loading="lazy"
-        decoding="async" // Tối ưu decoding
+        priority={index === 0} // First image has priority
+        sizes={index === 0 ? '(max-width: 768px) 100vw, 80vw' : '(max-width: 768px) 50vw, 40vw'}
       />
     );
-  }, [imageErrors, getImageUrl, images, onImageClick, handleImageError]);
+  }, [images, onImageClick, handleImageError]);
 
   // Tối ưu: Preconnect đến domain của media
   useEffect(() => {
-    if (images && images.length > 0) {
+    if (images && images.length > 0 && isInView) {
       const firstImageUrl = getImageUrl(images[0]);
       try {
         const url = new URL(firstImageUrl);
@@ -273,26 +291,23 @@ export const PostMedia: React.FC<PostMediaProps> = ({
         console.warn('Could not preconnect to media domain', e);
       }
     }
-  }, [images, getImageUrl]);
+  }, [images, getImageUrl, isInView]);
 
   if (!images && !video) return null;
 
   // Video content với VideoPlayer đã tối ưu
   if (video) {
     return (
-<div className="relative group/video rounded-xl overflow-hidden bg-black">
-  <VideoPlayer 
-    videoUrl={video}
-    className="w-full aspect-[4/5] md:aspect-video object-cover"
-    autoPlayWithSound={false}
-    poster={images && images.length > 0 ? getImageUrl(images[0]) : undefined}
-    lazyLoad={true}
-    preload="metadata"
-  />
-</div>
-
-
-
+      <div ref={containerRef} className="relative group/video rounded-xl overflow-hidden bg-black">
+        <VideoPlayer 
+          videoUrl={video}
+          className="w-full aspect-[4/5] md:aspect-video object-cover"
+          autoPlayWithSound={false}
+          poster={images && images.length > 0 ? getImageUrl(images[0]) : undefined}
+          lazyLoad={true}
+          preload="metadata"
+        />
+      </div>
     );
   }
 
@@ -303,7 +318,7 @@ export const PostMedia: React.FC<PostMediaProps> = ({
     // Show loading state while dimensions are being calculated
     if (isLoadingDimensions && imageCount > 1) {
       return (
-        <div className="relative rounded-xl overflow-hidden bg-secondary/20 animate-pulse">
+        <div ref={containerRef} className="relative rounded-xl overflow-hidden bg-secondary/20 animate-pulse">
           <div className="w-full h-80 flex items-center justify-center">
             <div className="text-center">
               <div className="w-16 h-16 mx-auto mb-4 bg-secondary/60 rounded-2xl flex items-center justify-center">
@@ -322,8 +337,8 @@ export const PostMedia: React.FC<PostMediaProps> = ({
       const isLandscape = imageDimensions[0]?.isLandscape;
       
       return (
-        <div className="relative rounded-xl overflow-hidden bg-secondary/20 group cursor-pointer">
-          {renderImageWithErrorHandling(
+        <div ref={containerRef} className="relative rounded-xl overflow-hidden bg-secondary/20 group cursor-pointer">
+          {renderOptimizedImage(
             images[0],
             0,
             `w-full object-contain ${
@@ -341,17 +356,20 @@ export const PostMedia: React.FC<PostMediaProps> = ({
 
     // Multiple images with smart layout
     return (
-      <div className={`grid gap-1 rounded-xl overflow-hidden ${
-        optimalLayout === 'masonry-portrait' ? 'grid-cols-2' :
-        optimalLayout === 'masonry-landscape' ? 'grid-cols-1' :
-        optimalLayout === 'masonry-grid' ? 'grid-cols-2 md:grid-cols-3' :
-        'grid-cols-2'
-      }`}
-      style={{
-        // Sử dụng masonry layout nếu trình duyệt hỗ trợ
-        gridTemplateRows: 'masonry'
-      }}>
-{images.slice(0, maxDisplayImages).map((image, index) => (
+      <div 
+        ref={containerRef}
+        className={`grid gap-1 rounded-xl overflow-hidden ${
+          optimalLayout === 'masonry-portrait' ? 'grid-cols-2' :
+          optimalLayout === 'masonry-landscape' ? 'grid-cols-1' :
+          optimalLayout === 'masonry-grid' ? 'grid-cols-2 md:grid-cols-3' :
+          'grid-cols-2'
+        }`}
+        style={{
+          // Sử dụng masonry layout nếu trình duyệt hỗ trợ
+          gridTemplateRows: 'masonry'
+        }}
+      >
+        {images.slice(0, maxDisplayImages).map((image, index) => (
           <div
             key={index}
             className={`relative bg-secondary/20 group cursor-pointer overflow-hidden ${
@@ -360,7 +378,7 @@ export const PostMedia: React.FC<PostMediaProps> = ({
               'aspect-square'
             }`}
           >
-            {renderImageWithErrorHandling(
+            {renderOptimizedImage(
               image,
               index,
               'w-full h-full object-cover',
@@ -386,4 +404,6 @@ export const PostMedia: React.FC<PostMediaProps> = ({
   }
 
   return null;
-};
+});
+
+PostMedia.displayName = 'PostMedia';

@@ -1,5 +1,5 @@
 // src/components/posts/PostHeader.tsx (updated với Socket.IO)
-import React from 'react';
+import React, { memo, useMemo, useCallback } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/Avatar";
 import { formatTimeAgo } from '@/utils/formatters';
 import { useTranslation } from "react-i18next";
@@ -15,7 +15,7 @@ interface PostHeaderProps {
   isOwnProfile?: boolean;
 }
 
-export const PostHeader: React.FC<PostHeaderProps> = ({
+export const PostHeader: React.FC<PostHeaderProps> = memo(({
   user,
   createdAt,
   onFollow,
@@ -25,14 +25,29 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
 }) => {
   const { t } = useTranslation("common");
   
-  // Ẩn nút follow nếu là chính mình
-  const shouldShowFollowButton = onFollow && !isOwnProfile;
+  // Memoize expensive calculations
+  const { shouldShowFollowButton, userInitial, formattedTime } = useMemo(() => {
+    const showFollowBtn = onFollow && !isOwnProfile;
+    const initial = user.displayName?.charAt(0)?.toUpperCase() || user.username?.charAt(0)?.toUpperCase() || '?';
+    const timeFormatted = formatTimeAgo(createdAt);
+    
+    return {
+      shouldShowFollowButton: showFollowBtn,
+      userInitial: initial,
+      formattedTime: timeFormatted
+    };
+  }, [onFollow, isOwnProfile, user.displayName, user.username, createdAt]);
+  
+  // Memoize click handler
+  const handleUserClick = useCallback(() => {
+    onUserClick();
+  }, [onUserClick]);
 
   return (
     <header className="flex items-center justify-between p-3 sm:p-4">
       <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
         <button 
-          onClick={onUserClick}
+          onClick={handleUserClick}
           className="flex-shrink-0 transition-transform duration-200 hover:scale-105 active:scale-95"
         >
           <Avatar className="w-8 h-8 sm:w-10 sm:h-10 ring-2 ring-background">
@@ -42,14 +57,14 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
               className="object-cover"
             />
             <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xs sm:text-sm font-semibold">
-              {user.displayName?.charAt(0)?.toUpperCase() || user.username?.charAt(0)?.toUpperCase() || '?'}
+              {userInitial}
             </AvatarFallback>
           </Avatar>
         </button>
 
         <div className="flex-1 min-w-0">
           <button 
-            onClick={onUserClick}
+            onClick={handleUserClick}
             className="block text-left transition-colors duration-200 hover:text-primary"
           >
             <div className="flex items-center space-x-1 sm:space-x-2">
@@ -79,7 +94,7 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
           </button>
 
           <p className="text-xs text-muted-foreground mt-0.5">
-            {formatTimeAgo(createdAt)}
+            {formattedTime}
           </p>
         </div>
       </div>
@@ -96,4 +111,6 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
       )}
     </header>
   );
-};
+});
+
+PostHeader.displayName = 'PostHeader';

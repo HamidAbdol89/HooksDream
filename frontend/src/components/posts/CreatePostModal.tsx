@@ -1,13 +1,15 @@
-// CreatePostModal.tsx - Components hóa
-import React, { useState, useRef, useEffect } from 'react';
+// CreatePostModal.tsx - Components hóa with performance optimizations
+import React, { useState, useRef, useEffect, memo, useCallback, useMemo, startTransition, lazy, Suspense } from 'react';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import { useSocial } from '@/hooks/useSocial';
 import { api } from '@/services/api';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useTranslation } from 'react-i18next';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { SessionWarningModal } from './modalpost/SessionWarningModal';
-import { LoadingModal } from './modalpost/LoadingModal';
+// Lazy load modal components for better code splitting
+const SessionWarningModal = lazy(() => import('./modalpost/SessionWarningModal').then(m => ({ default: m.SessionWarningModal })));
+const LoadingModal = lazy(() => import('./modalpost/LoadingModal').then(m => ({ default: m.LoadingModal })));
+
 import { PostHeader } from './modalpost/PostHeader';
 import { PostForm } from './modalpost/PostForm';
 import { ActionBar } from './modalpost/ActionBar';
@@ -20,7 +22,7 @@ interface CreatePostModalProps {
   maxImages?: number;
 }
 
-export const CreatePostModal: React.FC<CreatePostModalProps> = ({ 
+export const CreatePostModal: React.FC<CreatePostModalProps> = memo(({ 
   isOpen, 
   onClose,
   onPostCreated,
@@ -195,7 +197,7 @@ const { isConnected, profile: currentUser } = useGoogleAuth();
     setVideo(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Session consistency check
@@ -331,7 +333,7 @@ const { isConnected, profile: currentUser } = useGoogleAuth();
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [content, images, video, currentUser, profile, isConnected, onPostCreated, onClose, t]);
 
   // Helper function to convert data URL to File
   const dataURLtoFile = (dataUrl: string, filename: string): File => {
@@ -348,7 +350,7 @@ const { isConnected, profile: currentUser } = useGoogleAuth();
     return new File([u8arr], filename, { type: mime });
   };
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (isSubmitting) return;
     
     if (content.trim() || images.length > 0 || video) {
@@ -361,9 +363,12 @@ const { isConnected, profile: currentUser } = useGoogleAuth();
     setVideo(null);
     setIsTextExpanded(false);
     onClose();
-  };
+  }, [content, images, video, onClose, t]);
 
-  const hasContent = content.trim().length > 0 || images.length > 0 || !!video;
+  // Memoize expensive calculations
+  const hasContent = useMemo(() => {
+    return content.trim().length > 0 || images.length > 0 || !!video;
+  }, [content, images.length, video]);
 
   return (
     <>
@@ -445,21 +450,31 @@ const { isConnected, profile: currentUser } = useGoogleAuth();
         </DialogContent>
       </Dialog>
 
-      {/* Session Warning Modal */}
-      <SessionWarningModal
-        isOpen={sessionWarning}
-        onClose={() => setSessionWarning(false)}
-      />
+      {/* Session Warning Modal with Suspense */}
+      {sessionWarning && (
+        <Suspense fallback={null}>
+          <SessionWarningModal
+            isOpen={sessionWarning}
+            onClose={() => setSessionWarning(false)}
+          />
+        </Suspense>
+      )}
 
-      {/* Loading Modal */}
-      <LoadingModal
-        isOpen={isSubmitting}
-        onClose={() => {}}
-      />
+      {/* Loading Modal with Suspense */}
+      {isSubmitting && (
+        <Suspense fallback={null}>
+          <LoadingModal
+            isOpen={isSubmitting}
+            onClose={() => {}}
+          />
+        </Suspense>
+      )}
 
    
     </>
   );
-};
+});
+
+CreatePostModal.displayName = 'CreatePostModal';
 
 export default CreatePostModal;

@@ -1,5 +1,5 @@
 // src/components/posts/PostLikesSheet.tsx
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useCallback } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -43,7 +43,7 @@ export const PostLikesSheet: React.FC<PostLikesSheetProps> = ({
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
   const token = localStorage.getItem('user_hash_id') || '';
 
-  // Fetch likes list
+  // Fetch likes list with better caching
   const { data: likesData, isLoading, error, refetch } = useQuery({
     queryKey: ['postLikes', postId],
     queryFn: async () => {
@@ -60,10 +60,12 @@ export const PostLikesSheet: React.FC<PostLikesSheetProps> = ({
       return data.data || data;
     },
     enabled: open,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000, // Increase cache time
+    gcTime: 15 * 60 * 1000, // Keep in cache longer
+    refetchOnWindowFocus: false, // Prevent unnecessary refetches
   });
 
-  // Fetch current user's following list
+  // Fetch current user's following list with better caching
   const { data: currentUserFollowing } = useQuery({
     queryKey: ['following', currentUserId],
     queryFn: async () => {
@@ -80,7 +82,9 @@ export const PostLikesSheet: React.FC<PostLikesSheetProps> = ({
       return data.data || data;
     },
     enabled: open && !!currentUserId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 15 * 60 * 1000, // Longer cache for following list
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   // Follow/Unfollow mutation
@@ -120,12 +124,21 @@ export const PostLikesSheet: React.FC<PostLikesSheetProps> = ({
     }));
   }, [likesData, currentUserFollowing, currentUserId]);
 
-  // Refetch khi sheet mở
+  // Optimized refetch - only when really needed
+  const debouncedRefetch = useCallback(() => {
+    const timeoutId = setTimeout(() => {
+      if (open) {
+        refetch();
+      }
+    }, 100);
+    return () => clearTimeout(timeoutId);
+  }, [open, refetch]);
+
   useEffect(() => {
     if (open) {
-      refetch();
+      debouncedRefetch();
     }
-  }, [open, refetch]);
+  }, [open, debouncedRefetch]);
 
   const handleFollowToggle = async (targetUserId: string, targetUsername: string) => {
     if (!currentUserId) return;
@@ -194,7 +207,12 @@ export const PostLikesSheet: React.FC<PostLikesSheetProps> = ({
       
       <SheetContent 
         side="bottom" 
-        className="h-[70vh] max-h-[70vh] rounded-t-xl border-t border-border/20 p-0 overflow-hidden"
+        className="h-[70vh] max-h-[70vh] rounded-t-xl border-t border-border/20 p-0 overflow-hidden will-change-transform transform-gpu"
+        style={{
+          transform: 'translate3d(0, 0, 0)',
+          backfaceVisibility: 'hidden',
+          perspective: '1000px'
+        }}
       >
         {/* Header */}
         <SheetHeader className="px-4 py-3 border-b border-border/20 bg-background/95 backdrop-blur-sm sticky top-0 z-10">
@@ -223,7 +241,14 @@ export const PostLikesSheet: React.FC<PostLikesSheetProps> = ({
         </SheetHeader>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto">
+        <div 
+          className="flex-1 overflow-y-auto overscroll-behavior-y-contain"
+          style={{
+            WebkitOverflowScrolling: 'touch',
+            scrollBehavior: 'smooth',
+            willChange: 'scroll-position'
+          }}
+        >
           {isLoading ? (
             <div className="space-y-1 p-4">
               {Array.from({ length: 8 }).map((_, index) => (

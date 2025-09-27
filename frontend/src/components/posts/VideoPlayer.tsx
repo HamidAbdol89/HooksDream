@@ -1,6 +1,6 @@
 // src/components/posts/VideoPlayer.tsx
 // VideoPlayer.tsx - 🎥 Custom Video Player Component với tối ưu hóa hiệu suất
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, memo, useMemo } from 'react';
 import { throttle } from 'lodash-es';
 
 interface VideoPlayerProps {
@@ -12,7 +12,7 @@ interface VideoPlayerProps {
   preload: 'auto' | 'metadata' | 'none';
 }
 
-export const VideoPlayer: React.FC<VideoPlayerProps> = ({ 
+export const VideoPlayer: React.FC<VideoPlayerProps> = memo(({ 
   videoUrl, 
   className,
   autoPlayWithSound = false,
@@ -28,11 +28,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const userInteractedRef = useRef(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
-  // Xử lý URL tương tự như ảnh
-  const getFullUrl = useCallback((path: string) => {
-    if (path.startsWith('http')) return path;
-    return `${window.location.protocol}//${window.location.hostname}:5000${path}`;
-  }, []);
+  // Xử lý URL tương tự như ảnh - memoized
+  const fullVideoUrl = useMemo(() => {
+    if (videoUrl.startsWith('http')) return videoUrl;
+    return `${window.location.protocol}//${window.location.hostname}:5000${videoUrl}`;
+  }, [videoUrl]);
 
   // Tối ưu hóa: Sử dụng Intersection Observer với requestIdleCallback
   useEffect(() => {
@@ -207,7 +207,7 @@ if (!videoEl || videoEl.readyState < 2) {
         disablePictureInPicture
         disableRemotePlayback
       >
-        <source src={getFullUrl(videoUrl)} type="video/mp4" />
+        <source src={fullVideoUrl} type="video/mp4" />
         Trình duyệt của bạn không hỗ trợ video.
       </video>
       
@@ -228,4 +228,6 @@ if (!videoEl || videoEl.readyState < 2) {
       </button>
     </div>
   );
-};
+});
+
+VideoPlayer.displayName = 'VideoPlayer';

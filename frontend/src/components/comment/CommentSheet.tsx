@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { X, MessageCircle } from 'lucide-react';
 import {
   Sheet,
@@ -30,23 +30,28 @@ export const CommentSheet: React.FC<CommentSheetProps> = ({
   const { t } = useTranslation("common");
   const [isOpen, setIsOpen] = useState(false);
   
-  const displayedCommentCount = commentCount !== undefined ? commentCount : post.commentCount;
-
-  const formatCount = (count: number): string => {
+  // Memoize expensive calculations
+  const memoizedFormatCount = useCallback((count: number): string => {
     if (count >= 1000000) {
       return `${(count / 1000000).toFixed(1)}M`;
     } else if (count >= 1000) {
       return `${(count / 1000).toFixed(1)}K`;
     }
     return count.toString();
-  };
+  }, []);
+  
+  const displayedCommentCount = useMemo(() => 
+    commentCount !== undefined ? commentCount : post.commentCount,
+    [commentCount, post.commentCount]
+  );
+  
 
   const defaultTrigger = (
     <button className="flex items-center space-x-1.5 sm:space-x-2 text-muted-foreground hover:text-foreground transition-colors">
       <MessageCircle className="w-5 h-5" />
       {displayedCommentCount > 0 && (
         <span className="text-sm font-medium">
-          {formatCount(displayedCommentCount)}
+          {memoizedFormatCount(displayedCommentCount)}
         </span>
       )}
     </button>
@@ -60,7 +65,12 @@ export const CommentSheet: React.FC<CommentSheetProps> = ({
       
       <SheetContent 
         side="bottom" 
-        className="h-[90vh] sm:h-[70vh] max-h-[90vh] sm:max-h-[70vh] rounded-t-3xl sm:rounded-t-xl border-t border-border/20 p-0 overflow-hidden"
+        className="h-[90vh] sm:h-[70vh] max-h-[90vh] sm:max-h-[70vh] rounded-t-3xl sm:rounded-t-xl border-t border-border/20 p-0 overflow-hidden will-change-transform transform-gpu"
+        style={{
+          transform: 'translate3d(0, 0, 0)',
+          backfaceVisibility: 'hidden',
+          perspective: '1000px'
+        }}
       >
         {/* Header */}
         {/* Mobile-optimized Header */}
@@ -75,7 +85,7 @@ export const CommentSheet: React.FC<CommentSheetProps> = ({
                 {t('comment.title')} 
                 {displayedCommentCount > 0 && (
                   <span className="ml-1 sm:ml-2 text-xs sm:text-sm text-muted-foreground font-normal">
-                    ({formatCount(displayedCommentCount)})
+                    ({memoizedFormatCount(displayedCommentCount)})
                   </span>
                 )}
               </span>
@@ -95,7 +105,14 @@ export const CommentSheet: React.FC<CommentSheetProps> = ({
         {/* Content */}
         <div className="flex flex-col h-full">
           {/* Comments List - Mobile optimized */}
-          <div className="flex-1 overflow-y-auto px-2 sm:px-4 py-2">
+          <div 
+            className="flex-1 overflow-y-auto px-2 sm:px-4 py-2 overscroll-behavior-y-contain"
+            style={{
+              WebkitOverflowScrolling: 'touch',
+              scrollBehavior: 'smooth',
+              willChange: 'scroll-position'
+            }}
+          >
             <CommentSection 
               postId={post._id} 
               currentUser={currentUser}
