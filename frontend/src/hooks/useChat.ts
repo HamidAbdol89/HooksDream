@@ -19,14 +19,28 @@ export const useChat = () => {
   const { user: currentUser } = useAppStore();
   const currentUserId = currentUser?._id || currentUser?.id;
 
-  // Get conversations list
+  // Professional Conversations Query với advanced caching
   const useConversations = (params: { page?: number; limit?: number } = {}) => {
     return useQuery({
       queryKey: [...chatQueryKeys.conversations(), params],
       queryFn: () => chatApi.getConversations(params),
       enabled: !!currentUserId,
-      staleTime: 30 * 1000, // 30 seconds
-      gcTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 15 * 60 * 1000, // 15 minutes - Very aggressive caching
+      gcTime: 60 * 60 * 1000, // 1 hour - Keep in memory longer
+      refetchInterval: false,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
+      // Professional optimization
+      structuralSharing: true, // Prevent unnecessary re-renders
+      // Network mode optimization
+      networkMode: 'online', // Only fetch when online
+      // Retry configuration
+      retry: (failureCount, error: any) => {
+        if (error?.status === 429) return false; // Don't retry rate limits
+        return failureCount < 2; // Max 2 retries
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     });
   };
 

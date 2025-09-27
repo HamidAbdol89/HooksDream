@@ -12,6 +12,8 @@ import { Input } from '@/components/ui/input';
 import { ResponsiveChatWindow } from '@/components/chat/ResponsiveChatWindow';
 import { MobileHeader } from '@/components/chat/mobile';
 import { ConversationsList, FollowingUsersList } from '@/components/chat/desktop';
+import { ConversationItem } from '@/components/chat/shared/ConversationItem';
+import { useChatSocket, useChatNotifications, useSocket } from '@/hooks/useSocket';
 
 // Types
 interface User {
@@ -31,9 +33,124 @@ const MessagesPage: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<'conversations' | 'following'>('conversations');
   
-  // Get current user data
+  // Get current user data first
   const { data: currentUserData } = useCurrentProfile();
   const actualUserId = currentUserId || currentUserData?.data?._id;
+
+  // Initialize socket for real-time updates
+  const chatSocket = useChatSocket();
+  const { onGlobalNewMessage } = useChatNotifications();
+  const { on, off } = useSocket();
+  
+  // Professional Real-time Optimization
+  React.useEffect(() => {
+    if (!chatSocket) return;
+
+    // Advanced batching với requestIdleCallback
+    let batchedUpdates = new Set<string>();
+    let batchTimeout: NodeJS.Timeout;
+    let isProcessing = false;
+
+    const processBatch = () => {
+      if (isProcessing || batchedUpdates.size === 0) return;
+      
+      isProcessing = true;
+      
+      // Use requestIdleCallback cho smooth performance
+      const processUpdates = () => {
+        if (batchedUpdates.size > 0) {
+          queryClient.invalidateQueries({ 
+            queryKey: ['chat', 'conversations'],
+            exact: false 
+          });
+          batchedUpdates.clear();
+        }
+        isProcessing = false;
+      };
+
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(processUpdates, { timeout: 1000 });
+      } else {
+        setTimeout(processUpdates, 0);
+      }
+    };
+
+    const batchUpdate = (type: string) => {
+      batchedUpdates.add(type);
+      clearTimeout(batchTimeout);
+      batchTimeout = setTimeout(processBatch, 300); // Reduced to 300ms for better UX
+    };
+
+    // Professional event handlers với selective updates
+    const handleNewMessage = (data: any) => {
+      // Chỉ update nếu tin nhắn không phải từ current user
+      if (data.message?.sender?._id !== actualUserId) {
+        batchUpdate('message');
+      }
+    };
+
+    const handleMessagesRead = (data: any) => {
+      // Update ngay lập tức khi có read receipt
+      if (data.readBy === actualUserId || data.conversationId === selectedConversationId) {
+        // Optimistic update: clear badge cho conversation này
+        queryClient.setQueryData(['chat', 'conversations', { limit: 20 }], (oldData: any) => {
+          if (!oldData?.data) return oldData;
+          
+          return {
+            ...oldData,
+            data: oldData.data.map((conv: any) => 
+              conv._id === data.conversationId 
+                ? { ...conv, unreadCount: 0 }
+                : conv
+            )
+          };
+        });
+      }
+      batchUpdate('read');
+    };
+
+    const handleConversationUpdate = (data: any) => {
+      // Smart update dựa trên action type
+      if (data.action === 'messages_read') {
+        handleMessagesRead(data);
+      } else {
+        batchUpdate('conversation');
+      }
+    };
+
+    // Register listeners
+    chatSocket.onNewMessage(handleNewMessage);
+    chatSocket.onMessagesRead(handleMessagesRead);
+    
+    // Listen for conversation updates from socket
+    on('conversation:updated', handleConversationUpdate);
+
+    return () => {
+      // Cleanup listeners
+      off('conversation:updated', handleConversationUpdate);
+      // Cleanup timeouts
+      clearTimeout(batchTimeout);
+    };
+  }, [chatSocket, queryClient, on, off, actualUserId, selectedConversationId]);
+
+  // Auto-clear badge khi mở conversation
+  React.useEffect(() => {
+    if (selectedConversationId) {
+      // Optimistic update: clear badge ngay lập tức
+      queryClient.setQueryData(['chat', 'conversations', { limit: 20 }], (oldData: any) => {
+        if (!oldData?.data) return oldData;
+        
+        return {
+          ...oldData,
+          data: oldData.data.map((conv: any) => 
+            conv._id === selectedConversationId 
+              ? { ...conv, unreadCount: 0 }
+              : conv
+          )
+        };
+      });
+    }
+  }, [selectedConversationId, queryClient]);
   
   // API setup
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
@@ -41,6 +158,7 @@ const MessagesPage: React.FC = () => {
   // Get conversations list
   const { data: conversationsData, isLoading, error } = useConversations({ limit: 20 });
   const conversations = conversationsData?.data || [];
+  
   
   // Get following users (using same pattern as FollowerListModal)
   const { data: followingUsers = [], isLoading: isLoadingFollowing, error: followingError } = useQuery({
@@ -70,9 +188,9 @@ const MessagesPage: React.FC = () => {
   
   
   // Filter conversations based on search
-  const filteredConversations = conversations.filter(conversation => {
+  const filteredConversations = conversations.filter((conversation: any) => {
     if (!searchTerm) return true;
-    const otherParticipant = conversation.participants.find(p => p._id !== currentUserId);
+    const otherParticipant = conversation.participants.find((p: any) => p._id !== currentUserId);
     return otherParticipant?.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
            otherParticipant?.username?.toLowerCase().includes(searchTerm.toLowerCase());
   });
@@ -268,59 +386,23 @@ const MessagesPage: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="divide-y divide-border/50">
+                  <div>
                     {filteredConversations.map((conversation: any) => {
                       const otherParticipant = conversation.participants?.find(
                         (p: any) => p._id !== currentUserId
                       );
                       
                       return (
-                        <div
+                        <ConversationItem
                           key={conversation._id}
+                          conversation={conversation}
+                          currentUserId={currentUserId || ''}
                           onClick={() => {
                             setSelectedConversationId(conversation._id);
                             setSelectedUser(otherParticipant);
                           }}
-                          className="flex items-center gap-3 p-4 hover:bg-muted/50 active:bg-muted cursor-pointer transition-colors"
-                        >
-                          <div className="relative flex-shrink-0">
-                            <img 
-                              src={otherParticipant?.avatar || "/default-avatar.jpg"} 
-                              alt={otherParticipant?.displayName}
-                              className="w-12 h-12 rounded-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.src = '/default-avatar.jpg';
-                              }}
-                            />
-                          </div>
-                          
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-1">
-                              <h3 className="font-semibold text-foreground truncate">
-                                {otherParticipant?.displayName || otherParticipant?.username || 'Unknown User'}
-                              </h3>
-                              {conversation.lastMessage?.createdAt && (
-                                <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
-                                  {new Date(conversation.lastActivity).toLocaleTimeString([], { 
-                                    hour: '2-digit', 
-                                    minute: '2-digit' 
-                                  })}
-                                </span>
-                              )}
-                            </div>
-                            
-                            <div className="flex items-center justify-between">
-                              <p className="text-sm text-muted-foreground truncate">
-                                {conversation.lastMessage?.content?.text || 'Không có tin nhắn'}
-                              </p>
-                              {conversation.unreadCount > 0 && (
-                                <div className="bg-primary text-primary-foreground text-xs rounded-full px-2 py-0.5 min-w-[20px] text-center flex-shrink-0 ml-2">
-                                  {conversation.unreadCount}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
+                          isMobile={true}
+                        />
                       );
                     })}
                     

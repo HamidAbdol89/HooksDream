@@ -3,26 +3,32 @@ import React, { useState } from 'react';
 import { Send, Smile, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/input';
+import { useMessageStatus } from '@/hooks/useMessageStatus';
 
 interface MessageInputProps {
-  onSendMessage: (text: string) => Promise<void>;
+  conversationId: string;
   disabled?: boolean;
 }
 
 export const MessageInput: React.FC<MessageInputProps> = ({
-  onSendMessage,
+  conversationId,
   disabled = false
 }) => {
   const [messageText, setMessageText] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const { sendMessageWithStatus } = useMessageStatus(conversationId);
 
   const handleSend = async () => {
     if (!messageText.trim() || isSending || disabled) return;
     
     setIsSending(true);
+    const tempId = `temp-${Date.now()}-${Math.random()}`;
+    
     try {
-      await onSendMessage(messageText.trim());
-      setMessageText('');
+      const result = await sendMessageWithStatus(messageText.trim(), tempId);
+      if (result.success) {
+        setMessageText('');
+      }
     } catch (error) {
       console.error('Failed to send message:', error);
     } finally {

@@ -165,6 +165,14 @@ interface SocketEvents {
     userId: string;
     timestamp: string;
   }) => void;
+
+  'conversation:updated': (data: {
+    conversationId: string;
+    lastMessage?: any;
+    lastActivity?: string;
+    action?: string;
+    readBy?: string;
+  }) => void;
 }
 
 export const useSocket = () => {

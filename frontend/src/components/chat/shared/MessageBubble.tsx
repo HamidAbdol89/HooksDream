@@ -1,21 +1,7 @@
 // components/chat/shared/MessageBubble.tsx - Shared message bubble for both desktop and mobile
 import React from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
-
-interface Message {
-  _id: string;
-  sender: {
-    _id: string;
-    username: string;
-    displayName: string;
-    avatar?: string;
-  };
-  content: {
-    text?: string;
-    image?: string;
-  };
-  createdAt: string;
-}
+import { Message } from '@/types/chat';
 
 interface MessageBubbleProps {
   message: Message;
@@ -23,6 +9,24 @@ interface MessageBubbleProps {
   showAvatar: boolean;
   isLastInGroup: boolean;
 }
+
+// Message Status Text Component
+const MessageStatusText: React.FC<{ status: string }> = ({ status }) => {
+  switch (status) {
+    case 'sending':
+      return <span className="text-muted-foreground text-xs">Đang gửi...</span>;
+    case 'sent':
+      return <span className="text-muted-foreground text-xs">Đã gửi</span>;
+    case 'delivered':
+      return <span className="text-muted-foreground text-xs">Đã nhận</span>;
+    case 'read':
+      return <span className="text-blue-500 text-xs">Đã xem</span>;
+    case 'failed':
+      return <span className="text-red-500 text-xs">Gửi lỗi</span>;
+    default:
+      return <span className="text-muted-foreground text-xs">Đã gửi</span>;
+  }
+};
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({
   message,
@@ -67,15 +71,18 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         </div>
         
         {isLastInGroup && (
-          <div className={`flex items-center gap-1 text-xs text-muted-foreground px-3 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
-            <span>
+          <div className={`flex items-center gap-2 text-xs px-3 mt-1 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+            <span className="text-muted-foreground">
               {new Date(message.createdAt).toLocaleTimeString([], {
                 hour: '2-digit',
                 minute: '2-digit'
               })}
             </span>
             {isOwn && (
-              <span className="text-primary">✓</span>
+              <>
+                <span className="text-muted-foreground">•</span>
+                <MessageStatusText status={message.messageStatus?.status || 'sent'} />
+              </>
             )}
           </div>
         )}

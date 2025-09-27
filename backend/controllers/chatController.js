@@ -23,7 +23,46 @@ exports.getConversations = async (req, res) => {
     .skip((pageNum - 1) * limitNum)
     .lean();
     
-    // Format conversations
+    // Get all conversation IDs for bulk unread count query
+    const conversationIds = conversations.map(conv => conv._id);
+    
+    // Professional aggregation để tính unread count chính xác
+    const unreadCounts = await Message.aggregate([
+      {
+        $match: {
+          conversation: { $in: conversationIds },
+          isDeleted: false,
+          sender: { $ne: currentUserId } // Chỉ tin nhắn từ người khác
+        }
+      },
+      {
+        $addFields: {
+          isReadByCurrentUser: {
+            $in: [currentUserId, '$readBy.user']
+          }
+        }
+      },
+      {
+        $match: {
+          isReadByCurrentUser: false // Chưa được current user đọc
+        }
+      },
+      {
+        $group: {
+          _id: '$conversation',
+          count: { $sum: 1 },
+          lastUnreadMessage: { $last: '$$ROOT' }
+        }
+      }
+    ]);
+    
+    // Create a map for quick lookup
+    const unreadCountMap = {};
+    unreadCounts.forEach(item => {
+      unreadCountMap[item._id.toString()] = item.count;
+    });
+    
+    // Format conversations with unread counts
     const formattedConversations = conversations.map(conv => {
       const otherParticipant = conv.participants.find(p => p._id.toString() !== currentUserId);
       
@@ -35,7 +74,7 @@ exports.getConversations = async (req, res) => {
         participants: conv.participants,
         lastMessage: conv.lastMessage,
         lastActivity: conv.lastActivity,
-        unreadCount: 0 // TODO: Calculate unread count
+        unreadCount: unreadCountMap[conv._id.toString()] || 0
       };
     });
     
@@ -153,11 +192,37 @@ exports.getMessages = async (req, res) => {
     .limit(limitNum)
     .skip((pageNum - 1) * limitNum)
     .lean();
+
+    // Add message status for each message
+    const messagesWithStatus = messages.map(message => {
+      // Determine status based on readBy array
+      let status = 'sent';
+      if (message.readBy && message.readBy.length > 0) {
+        // Check if current user has read it (for messages sent by others)
+        if (message.sender._id.toString() !== currentUserId) {
+          const currentUserRead = message.readBy.find(r => r.user.toString() === currentUserId);
+          status = currentUserRead ? 'read' : 'delivered';
+        } else {
+          // For messages sent by current user, check if others have read
+          const othersRead = message.readBy.some(r => r.user.toString() !== currentUserId);
+          status = othersRead ? 'read' : 'delivered';
+        }
+      }
+
+      return {
+        ...message,
+        messageStatus: {
+          status,
+          timestamp: new Date().toISOString(),
+          readBy: message.readBy ? message.readBy.map(r => r.user.toString()) : []
+        }
+      };
+    });
     
     // Reverse to show oldest first
-    messages.reverse();
+    messagesWithStatus.reverse();
     
-    res.json(createResponse(true, 'Messages retrieved successfully', messages));
+    res.json(createResponse(true, 'Messages retrieved successfully', messagesWithStatus));
     
   } catch (error) {
     console.error('Get messages error:', error);
@@ -206,8 +271,24 @@ exports.sendMessage = async (req, res) => {
     
     const message = await Message.create(messageData);
     
+    // Update conversation lastActivity and lastMessage
+    await Conversation.findByIdAndUpdate(conversationId, {
+      lastActivity: new Date(),
+      lastMessage: message._id
+    });
+    
     // Populate sender info
     await message.populate('sender', 'username displayName avatar');
+    
+    // Add message status to response
+    const messageWithStatus = {
+      ...message.toObject(),
+      messageStatus: {
+        status: 'sent',
+        timestamp: new Date().toISOString(),
+        readBy: []
+      }
+    };
     
     // Emit socket event to conversation participants
     if (global.socketServer) {
@@ -219,9 +300,18 @@ exports.sendMessage = async (req, res) => {
           });
         }
       });
+      
+      // Also emit to all participants for conversations list updates
+      conversation.participants.forEach(participantId => {
+        global.socketServer.emitToUser(participantId.toString(), 'conversation:updated', {
+          conversationId,
+          lastMessage: message.toObject(),
+          lastActivity: new Date()
+        });
+      });
     }
     
-    res.json(createResponse(true, 'Message sent successfully', message));
+    res.json(createResponse(true, 'Message sent successfully', messageWithStatus));
     
   } catch (error) {
     console.error('Send message error:', error);
@@ -269,6 +359,15 @@ exports.markAsRead = async (req, res) => {
             messageIds
           });
         }
+      });
+      
+      // Also emit conversation update for unread count changes
+      conversation.participants.forEach(participantId => {
+        global.socketServer.emitToUser(participantId.toString(), 'conversation:updated', {
+          conversationId,
+          action: 'messages_read',
+          readBy: currentUserId
+        });
       });
     }
     

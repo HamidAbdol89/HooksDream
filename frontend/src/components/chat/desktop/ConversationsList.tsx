@@ -93,6 +93,7 @@ export const ConversationsList: React.FC<ConversationsListProps> = ({
         const otherParticipant = conversation.participants.find(p => p._id !== currentUserId);
         const isSelected = selectedConversationId === conversation._id;
         
+        
         return (
           <div
             key={conversation._id}
@@ -128,9 +129,9 @@ export const ConversationsList: React.FC<ConversationsListProps> = ({
                     <p className="text-sm text-muted-foreground truncate flex-1">
                       {conversation.lastMessage?.content?.text || 'Tap to start chatting'}
                     </p>
-                    {conversation.unreadCount && conversation.unreadCount > 0 && (
+                    {Boolean(conversation.unreadCount && conversation.unreadCount > 0) && (
                       <span className="bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full min-w-[18px] text-center font-medium ml-2">
-                        {conversation.unreadCount > 99 ? '99+' : conversation.unreadCount}
+                        {(conversation.unreadCount || 0) > 99 ? '99+' : conversation.unreadCount}
                       </span>
                     )}
                   </div>

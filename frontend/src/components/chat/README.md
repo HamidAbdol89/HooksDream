@@ -163,9 +163,70 @@ shared/
 └── index.ts           # Shared exports
 ```
 
+## 🚀 Message Status System
+
+### ✅ **Tính năng đã implement:**
+
+**Message Status Types:**
+- `sending` - Đang gửi (với loading animation)
+- `sent` - Đã gửi (✓ màu xám)
+- `delivered` - Đã nhận (✓✓ màu xám)
+- `read` - Đã xem (✓✓ màu xanh)
+- `failed` - Gửi thất bại (⚠️ màu đỏ)
+
+**Real-time Features:**
+- Socket.IO integration cho status updates
+- Optimistic UI updates khi gửi tin nhắn
+- Auto-retry cho failed messages
+- Real-time message delivery notifications
+
+**Conversation Highlighting:**
+- Nổi bật conversations có tin nhắn mới
+- Blue border và background cho unread messages
+- Animated unread count badges
+- Online status indicators
+
+### 🔧 **Technical Implementation:**
+
+**Types & Interfaces:**
+```typescript
+// @/types/chat.ts
+interface MessageStatus {
+  status: 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
+  timestamp?: string;
+  readBy?: string[];
+}
+```
+
+**Hooks:**
+- `useMessageStatus` - Message status management
+- `useMessageSocket` - Real-time Socket.IO integration
+
+**Components:**
+- `MessageBubble` - Shows status icons
+- `ConversationItem` - Highlights new messages
+- `MessageInput` - Optimistic sending
+
+### 📱 **User Experience:**
+
+**Visual Indicators:**
+- ⏳ Clock icon - Sending
+- ✓ Single check - Sent
+- ✓✓ Double check gray - Delivered
+- ✓✓ Double check blue - Read
+- ⚠️ Alert icon - Failed
+
+**Conversation List:**
+- 🔵 Blue left border - New messages
+- 💙 Blue background tint - Unread
+- 🔴 Red badge - Unread count
+- ✨ Pulse animation - Active notifications
+
 Cấu trúc này giúp:
 - ✅ Tách biệt logic desktop/mobile
 - ✅ Dễ dàng maintain và debug
 - ✅ Code reuse tối đa
 - ✅ Performance tốt hơn
 - ✅ Developer experience tốt hơn
+- ✅ Real-time message status như WhatsApp/Telegram
+- ✅ Professional chat experience

@@ -1,41 +1,24 @@
 // components/chat/mobile/MobileConversationsList.tsx - Mobile conversations list
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { useGoogleAuth } from '@/hooks/useGoogleAuth';
-import { useChat } from '@/hooks/useChat';
 import { useOnlineUsers } from '@/hooks/useOnlineUsers';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 
 interface MobileConversationsListProps {
+  conversations: any[];
+  currentUserId: string;
   onSelectConversation: (conversationId: string) => void;
+  isLoading?: boolean;
 }
 
 export const MobileConversationsList: React.FC<MobileConversationsListProps> = ({
-  onSelectConversation
+  conversations,
+  currentUserId,
+  onSelectConversation,
+  isLoading = false
 }) => {
-  const { token } = useGoogleAuth();
-  const { currentUserId } = useChat();
   const { getUserStatus } = useOnlineUsers();
-
-  const { data: conversations = [], isLoading } = useQuery({
-    queryKey: ['chat', 'conversations'],
-    queryFn: async () => {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/chat/conversations`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!response.ok) throw new Error('Failed to fetch conversations');
-      const data = await response.json();
-      return data.data || [];
-    },
-    enabled: !!token,
-    refetchInterval: 5000,
-  });
 
   if (isLoading) {
     return (
@@ -64,6 +47,7 @@ export const MobileConversationsList: React.FC<MobileConversationsListProps> = (
           );
           
           const userStatus = otherParticipant?._id ? getUserStatus(otherParticipant._id) : { isOnline: false, lastSeenText: '' };
+          
           
           return (
             <div
@@ -102,7 +86,7 @@ export const MobileConversationsList: React.FC<MobileConversationsListProps> = (
                   <p className="text-sm text-muted-foreground truncate">
                     {conversation.lastMessage?.text || 'Không có tin nhắn'}
                   </p>
-                  {conversation.unreadCount > 0 && (
+                  {Boolean(conversation.unreadCount && conversation.unreadCount > 0) && (
                     <div className="bg-primary text-primary-foreground text-xs rounded-full px-2 py-0.5 min-w-[20px] text-center flex-shrink-0 ml-2">
                       {conversation.unreadCount}
                     </div>

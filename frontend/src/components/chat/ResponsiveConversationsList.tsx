@@ -36,10 +36,13 @@ export const ResponsiveConversationsList: React.FC<ResponsiveConversationsListPr
       {/* Desktop version */}
       <DesktopConversationsList {...props} />
       
-      {/* Mobile version - sử dụng same props như desktop */}
+      {/* Mobile version - sử dụng same data như desktop */}
       <div className="md:hidden">
         <MobileConversationsList 
+          conversations={props.conversations}
+          currentUserId={props.currentUserId}
           onSelectConversation={props.onSelectConversation}
+          isLoading={props.isLoading}
         />
       </div>
     </>

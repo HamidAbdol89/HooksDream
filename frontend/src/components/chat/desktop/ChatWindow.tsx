@@ -4,8 +4,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import { useChat } from '@/hooks/useChat';
 import { ChatHeader } from './ChatHeader';
-import { MessagesList } from '../shared/MessagesList';
-import { MessageInput } from '../shared/MessageInput';
+import { MessagesList } from '@/components/chat/shared/MessagesList';
+import { MessageInput } from '@/components/chat/shared/MessageInput';
 
 interface ChatWindowProps {
   conversationId: string;
@@ -87,11 +87,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ conversationId }) => {
       <MessagesList 
         messages={messages}
         currentUserId={currentUserId || ''}
+        conversationId={conversationId}
         isLoading={isLoadingMessages}
       />
       
       <MessageInput 
-        onSendMessage={handleSendMessage}
+        conversationId={conversationId}
         disabled={!token}
       />
     </div>

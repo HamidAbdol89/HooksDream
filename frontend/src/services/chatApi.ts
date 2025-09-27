@@ -1,5 +1,79 @@
-// services/chatApi.ts - Chat API Service
+// services/chatApi.ts - Professional Chat API Service
+import { memoryCache } from '@/utils/memoryCache';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+
+// Professional Rate Limiting với exponential backoff
+const rateLimiter = new Map<string, { count: number; resetTime: number; backoffMultiplier: number }>();
+const RATE_LIMIT_WINDOW = 1000;
+const MAX_REQUESTS_PER_WINDOW = 3;
+
+// Circuit Breaker Pattern
+class CircuitBreaker {
+  private failures = 0;
+  private lastFailureTime = 0;
+  private state: 'CLOSED' | 'OPEN' | 'HALF_OPEN' = 'CLOSED';
+  private readonly failureThreshold = 5;
+  private readonly recoveryTimeout = 30000; // 30 seconds
+
+  async execute<T>(fn: () => Promise<T>): Promise<T> {
+    if (this.state === 'OPEN') {
+      if (Date.now() - this.lastFailureTime > this.recoveryTimeout) {
+        this.state = 'HALF_OPEN';
+      } else {
+        throw new Error('Circuit breaker is OPEN');
+      }
+    }
+
+    try {
+      const result = await fn();
+      this.onSuccess();
+      return result;
+    } catch (error) {
+      this.onFailure();
+      throw error;
+    }
+  }
+
+  private onSuccess(): void {
+    this.failures = 0;
+    this.state = 'CLOSED';
+  }
+
+  private onFailure(): void {
+    this.failures++;
+    this.lastFailureTime = Date.now();
+    
+    if (this.failures >= this.failureThreshold) {
+      this.state = 'OPEN';
+    }
+  }
+}
+
+const circuitBreaker = new CircuitBreaker();
+
+const checkRateLimit = (endpoint: string): boolean => {
+  const now = Date.now();
+  const limiter = rateLimiter.get(endpoint) || { count: 0, resetTime: now, backoffMultiplier: 1 };
+  
+  // Reset window if expired
+  if (now > limiter.resetTime) {
+    limiter.count = 0;
+    limiter.resetTime = now + RATE_LIMIT_WINDOW;
+    limiter.backoffMultiplier = 1;
+  }
+  
+  if (limiter.count >= MAX_REQUESTS_PER_WINDOW) {
+    // Exponential backoff
+    limiter.backoffMultiplier *= 2;
+    limiter.resetTime = now + (RATE_LIMIT_WINDOW * limiter.backoffMultiplier);
+    return false;
+  }
+  
+  limiter.count++;
+  rateLimiter.set(endpoint, limiter);
+  return true;
+};
 
 // Auth headers helper
 const getAuthHeaders = (): HeadersInit => {
@@ -15,31 +89,62 @@ const getAuthHeaders = (): HeadersInit => {
   return headers;
 };
 
-// Main API call function
+// Professional API call với caching và circuit breaker
 const apiCall = async (endpoint: string, options: RequestInit = {}) => {
-  const url = `${API_BASE_URL}${endpoint}`;
-  const headers = {
-    ...getAuthHeaders(),
-    ...options.headers,
-  };
+  const cacheKey = `${endpoint}:${JSON.stringify(options)}`;
   
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
-  
-  if (!response.ok) {
-    let errorMessage;
-    try {
-      const errorData = await response.json();
-      errorMessage = errorData.message || errorData.error || `HTTP error! status: ${response.status}`;
-    } catch {
-      errorMessage = `HTTP error! status: ${response.status} - ${response.statusText}`;
+  // Check memory cache first
+  if (options.method === 'GET' || !options.method) {
+    const cached = memoryCache.get(cacheKey);
+    if (cached) {
+      return cached;
     }
-    throw new Error(errorMessage);
+  }
+  
+  // Check rate limit
+  if (!checkRateLimit(endpoint)) {
+    // Try to return stale cache if available
+    const staleCache = memoryCache.get(`stale:${cacheKey}`);
+    if (staleCache) {
+      return staleCache;
+    }
+    throw new Error('Rate limited - too many requests');
   }
 
-  return await response.json();
+  return circuitBreaker.execute(async () => {
+    const url = `${API_BASE_URL}${endpoint}`;
+    const headers = {
+      ...getAuthHeaders(),
+      ...options.headers,
+    };
+    
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    });
+  
+    if (!response.ok) {
+      let errorMessage;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || `HTTP error! status: ${response.status}`;
+      } catch {
+        errorMessage = `HTTP error! status: ${response.status} - ${response.statusText}`;
+      }
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+    
+    // Cache successful GET responses
+    if (options.method === 'GET' || !options.method) {
+      memoryCache.set(cacheKey, data, 15 * 60 * 1000); // 15 minutes
+      // Keep stale version for fallback
+      memoryCache.set(`stale:${cacheKey}`, data, 60 * 60 * 1000); // 1 hour
+    }
+    
+    return data;
+  });
 };
 
 // Types

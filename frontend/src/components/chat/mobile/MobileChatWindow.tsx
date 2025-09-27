@@ -4,8 +4,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import { useChat } from '@/hooks/useChat';
 import { MobileHeader } from './MobileHeader';
-import { MessagesList } from '../shared/MessagesList';
-import { MessageInput } from '../shared/MessageInput';
+import { MessagesList } from '@/components/chat/shared/MessagesList';
+import { MessageInput } from '@/components/chat/shared/MessageInput';
 
 interface MobileChatWindowProps {
   conversationId: string;
@@ -98,11 +98,12 @@ export const MobileChatWindow: React.FC<MobileChatWindowProps> = ({
       <MessagesList 
         messages={messages}
         currentUserId={currentUserId || ''}
+        conversationId={conversationId}
         isLoading={isLoadingMessages}
       />
       
       <MessageInput 
-        onSendMessage={handleSendMessage}
+        conversationId={conversationId}
         disabled={!token}
       />
     </div>
