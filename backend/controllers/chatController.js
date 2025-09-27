@@ -184,8 +184,7 @@ exports.getMessages = async (req, res) => {
     }
     
     const messages = await Message.find({
-      conversation: conversationId,
-      isDeleted: false
+      conversation: conversationId
     })
     .populate('sender', 'username displayName avatar')
     .populate('replyTo')
@@ -196,6 +195,23 @@ exports.getMessages = async (req, res) => {
 
     // Add message status for each message
     const messagesWithStatus = messages.map(message => {
+      // Handle recalled messages
+      if (message.isDeleted) {
+        return {
+          ...message,
+          content: {
+            text: 'Tin nhắn đã được thu hồi',
+            isRecalled: true
+          },
+          type: 'system',
+          messageStatus: {
+            status: 'recalled',
+            timestamp: message.deletedAt || new Date().toISOString(),
+            readBy: []
+          }
+        };
+      }
+
       // Determine status based on readBy array
       let status = 'sent';
       if (message.readBy && message.readBy.length > 0) {
@@ -650,8 +666,8 @@ exports.markAsRead = async (req, res) => {
   }
 };
 
-// Delete a message
-exports.deleteMessage = async (req, res) => {
+// Recall a message (soft delete with TTL)
+exports.recallMessage = async (req, res) => {
   try {
     const currentUserId = req.userId;
     const { messageId } = req.params;
@@ -661,32 +677,113 @@ exports.deleteMessage = async (req, res) => {
       return res.status(404).json(createResponse(false, 'Message not found', null, null, 404));
     }
     
-    // Check if user is sender
-    if (message.sender.toString() !== currentUserId) {
-      return res.status(403).json(createResponse(false, 'Access denied', null, null, 403));
+    // Check if message is already deleted
+    if (message.isDeleted) {
+      return res.status(400).json(createResponse(false, 'Message already recalled', null, null, 400));
     }
     
-    // Soft delete
-    message.isDeleted = true;
-    message.deletedAt = new Date();
-    message.deletedBy = currentUserId;
-    await message.save();
+    // Check if user is sender
+    if (message.sender.toString() !== currentUserId) {
+      return res.status(403).json(createResponse(false, 'Only sender can recall message', null, null, 403));
+    }
+    
+    // Check time limit (e.g., can only recall within 24 hours)
+    const timeLimit = 24 * 60 * 60 * 1000; // 24 hours
+    if (Date.now() - new Date(message.createdAt).getTime() > timeLimit) {
+      return res.status(400).json(createResponse(false, 'Cannot recall message after 24 hours', null, null, 400));
+    }
+    
+    // Recall message using model method
+    await message.recallMessage(currentUserId);
     
     // Emit socket event
     if (global.socketServer) {
       const conversation = await Conversation.findById(message.conversation);
       conversation.participants.forEach(participantId => {
-        global.socketServer.emitToUser(participantId.toString(), 'message:deleted', {
+        global.socketServer.emitToUser(participantId.toString(), 'message:recalled', {
           conversationId: message.conversation,
-          messageId: message._id
+          messageId: message._id,
+          recalledBy: currentUserId,
+          recalledAt: message.deletedAt
         });
       });
     }
     
-    res.json(createResponse(true, 'Message deleted successfully'));
+    res.json(createResponse(true, 'Message recalled successfully', {
+      messageId: message._id,
+      recalledAt: message.deletedAt,
+      expiresAt: message.expiresAt
+    }));
     
   } catch (error) {
-    console.error('Delete message error:', error);
+    console.error('Recall message error:', error);
+    res.status(500).json(createResponse(false, 'Internal server error', null, null, 500));
+  }
+};
+
+// Delete a message (legacy - keep for compatibility)
+exports.deleteMessage = exports.recallMessage;
+
+// Edit a message
+exports.editMessage = async (req, res) => {
+  try {
+    const currentUserId = req.userId;
+    const { messageId } = req.params;
+    const { text } = req.body;
+    
+    if (!text || !text.trim()) {
+      return res.status(400).json(createResponse(false, 'Message text is required', null, null, 400));
+    }
+    
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json(createResponse(false, 'Message not found', null, null, 404));
+    }
+    
+    // Check if message is deleted
+    if (message.isDeleted) {
+      return res.status(400).json(createResponse(false, 'Cannot edit recalled message', null, null, 400));
+    }
+    
+    // Check if user is sender
+    if (message.sender.toString() !== currentUserId) {
+      return res.status(403).json(createResponse(false, 'Only sender can edit message', null, null, 403));
+    }
+    
+    // Check if message is text type
+    if (message.type !== 'text' && !message.content.text) {
+      return res.status(400).json(createResponse(false, 'Can only edit text messages', null, null, 400));
+    }
+    
+    // Check time limit (e.g., can only edit within 24 hours)
+    const timeLimit = 24 * 60 * 60 * 1000; // 24 hours
+    if (Date.now() - new Date(message.createdAt).getTime() > timeLimit) {
+      return res.status(400).json(createResponse(false, 'Cannot edit message after 24 hours', null, null, 400));
+    }
+    
+    // Edit message using model method
+    await message.editMessage(text.trim());
+    
+    // Populate sender info
+    await message.populate('sender', 'username displayName avatar');
+    
+    // Emit socket event
+    if (global.socketServer) {
+      const conversation = await Conversation.findById(message.conversation);
+      conversation.participants.forEach(participantId => {
+        global.socketServer.emitToUser(participantId.toString(), 'message:edited', {
+          conversationId: message.conversation,
+          message: message.toObject(),
+          editedBy: currentUserId,
+          editedAt: new Date()
+        });
+      });
+    }
+    
+    res.json(createResponse(true, 'Message edited successfully', message.toObject()));
+    
+  } catch (error) {
+    console.error('Edit message error:', error);
     res.status(500).json(createResponse(false, 'Internal server error', null, null, 500));
   }
 };

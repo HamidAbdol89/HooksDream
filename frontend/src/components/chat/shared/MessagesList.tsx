@@ -176,6 +176,7 @@ export const MessagesList: React.FC<MessagesListProps> = ({
               key={`${message._id}-${index}`}
               message={message}
               isOwn={isOwn}
+              conversationId={conversationId}
               showAvatar={showAvatar}
               isLastInGroup={isLastInGroup}
             />

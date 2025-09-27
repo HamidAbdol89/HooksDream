@@ -28,12 +28,19 @@ export interface Message {
       duration?: number;
       waveform?: number[];
     };
+    isRecalled?: boolean;
   };
   type?: 'text' | 'image' | 'video' | 'audio' | 'file' | 'system';
   createdAt: string;
   updatedAt?: string;
   messageStatus?: MessageStatus;
   isEdited?: boolean;
+  isDeleted?: boolean;
+  deletedAt?: string;
+  editHistory?: Array<{
+    content: string;
+    editedAt: string;
+  }>;
 }
 
 export interface Conversation {
@@ -54,6 +61,7 @@ export interface Conversation {
         duration?: number;
         waveform?: number[];
       };
+      isRecalled?: boolean;
     };
     type?: 'text' | 'image' | 'video' | 'audio' | 'file' | 'system';
     sender: User;

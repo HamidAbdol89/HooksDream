@@ -37,6 +37,8 @@ router.put('/conversations/:conversationId/read', chatController.markAsRead);
 
 // Message actions
 router.delete('/messages/:messageId', chatController.deleteMessage);
+router.post('/messages/:messageId/recall', chatController.recallMessage);
+router.put('/messages/:messageId/edit', chatController.editMessage);
 router.post('/messages/:messageId/reactions', chatController.addReaction);
 
 // User status

@@ -78,7 +78,7 @@ const messageSchema = new mongoose.Schema({
       default: Date.now
     }
   }],
-  // Soft delete
+  // Soft delete with TTL
   isDeleted: {
     type: Boolean,
     default: false
@@ -89,6 +89,17 @@ const messageSchema = new mongoose.Schema({
   deletedBy: {
     type: String, // Changed from ObjectId to String
     ref: 'User'
+  },
+  // TTL for auto cleanup (30 days after deletion)
+  deleteType: {
+    type: String,
+    enum: ['recall', 'permanent'], // recall = soft delete, permanent = hard delete
+    default: 'recall'
+  },
+  // Auto cleanup after 30 days of deletion
+  expiresAt: {
+    type: Date,
+    index: { expireAfterSeconds: 0 } // MongoDB TTL index
   },
   // Edit history
   editHistory: [{
@@ -145,6 +156,33 @@ messageSchema.methods.addReaction = function(userId, emoji) {
 // Method để remove reaction
 messageSchema.methods.removeReaction = function(userId) {
   this.reactions = this.reactions.filter(r => r.user.toString() !== userId.toString());
+  return this.save();
+};
+
+// Method để recall message (soft delete với TTL)
+messageSchema.methods.recallMessage = function(userId) {
+  this.isDeleted = true;
+  this.deletedAt = new Date();
+  this.deletedBy = userId;
+  this.deleteType = 'recall';
+  // Set TTL to 30 days from now
+  this.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  return this.save();
+};
+
+// Method để edit message
+messageSchema.methods.editMessage = function(newContent) {
+  // Save current content to history
+  if (this.content.text) {
+    this.editHistory.push({
+      content: this.content.text,
+      editedAt: new Date()
+    });
+  }
+  
+  // Update content
+  this.content.text = newContent;
+  this.isEdited = true;
   return this.save();
 };
 

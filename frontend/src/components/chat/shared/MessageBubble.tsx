@@ -3,14 +3,19 @@ import React, { useState, useRef } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
 import { Message } from '@/types/chat';
 import { ImageLightbox } from './ImageLightbox';
-import { Play, Pause, Volume2 } from 'lucide-react';
+import { MessageActions } from './MessageActions';
+import { EditMessageModal } from './EditMessageModal';
+import { Play, Pause, Volume2, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { useMessageActions } from '@/hooks/useMessageActions';
+import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 
 interface MessageBubbleProps {
   message: Message;
   isOwn: boolean;
   showAvatar: boolean;
   isLastInGroup: boolean;
+  conversationId: string;
 }
 
 // Message Status Text Component
@@ -26,6 +31,8 @@ const MessageStatusText: React.FC<{ status: string }> = ({ status }) => {
       return <span className="text-blue-500 text-xs">Đã xem</span>;
     case 'failed':
       return <span className="text-red-500 text-xs">Gửi lỗi</span>;
+    case 'recalled':
+      return <span className="text-muted-foreground text-xs">Đã thu hồi</span>;
     default:
       return <span className="text-muted-foreground text-xs">Đã gửi</span>;
   }
@@ -35,13 +42,37 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   message,
   isOwn,
   showAvatar,
-  isLastInGroup
+  isLastInGroup,
+  conversationId
 }) => {
-  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  
+  const { profile } = useGoogleAuth();
+  const { editMessage, recallMessage, copyText } = useMessageActions(conversationId);
+
+  // Handler functions for message actions
+  const handleEdit = (messageId: string) => {
+    setEditingMessage(message);
+  };
+
+  const handleRecall = async (messageId: string) => {
+    if (confirm('Are you sure you want to recall this message? This action cannot be undone.')) {
+      try {
+        await recallMessage(messageId);
+      } catch (error) {
+        alert('Failed to recall message');
+      }
+    }
+  };
+
+  const handleSaveEdit = async (messageId: string, newText: string) => {
+    await editMessage(messageId, newText);
+  };
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -70,7 +101,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     }
   };
   return (
-    <div className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+    <div className={`group flex gap-3 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
   {/* Avatar */}
 {!isOwn && (
   <div className="flex-shrink-0">
@@ -92,6 +123,16 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       
       {/* Message Bubble */}
       <div className={`flex flex-col max-w-[280px] sm:max-w-xs lg:max-w-md ${isOwn ? 'items-end' : 'items-start'}`}>
+        {/* Message Actions */}
+        <div className={`flex items-center gap-1 mb-1 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+          <MessageActions
+            message={message}
+            isOwn={isOwn}
+            onEdit={handleEdit}
+            onRecall={handleRecall}
+            onCopy={copyText}
+          />
+        </div>
         {!isOwn && showAvatar && (
           <span className="text-xs text-muted-foreground mb-1 px-3">
             {message.sender.displayName || message.sender.username}
@@ -100,7 +141,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         
         <div
           className={`rounded-2xl shadow-sm transition-all hover:shadow-md ${
-            isOwn
+            message.content.isRecalled
+              ? 'bg-muted/50 text-muted-foreground border border-dashed'
+              : isOwn
               ? 'bg-primary text-primary-foreground rounded-br-sm'
               : 'bg-muted text-foreground rounded-bl-sm'
           } ${isLastInGroup ? 'mb-2' : 'mb-1'} ${
@@ -114,7 +157,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 src={message.content.image}
                 alt="Shared image"
                 className="max-w-full h-auto rounded-xl max-h-80 object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                onClick={() => setIsLightboxOpen(true)}
+                onClick={() => setLightboxImage(message.content.image!)}
                 onError={(e) => {
                   e.currentTarget.src = '/default-image.jpg';
                 }}
@@ -209,9 +252,25 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
           {/* Text-only content */}
           {message.content.text && !message.content.image && !message.content.video && (
-            <p className="text-sm leading-relaxed whitespace-pre-wrap">
-              {message.content.text}
-            </p>
+            <div>
+              {message.content.isRecalled ? (
+                <div className="flex items-center gap-2">
+                  <RotateCcw className="w-4 h-4 opacity-50" />
+                  <p className="text-sm italic opacity-70">
+                    {message.content.text}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                  {message.content.text}
+                </p>
+              )}
+              {message.isEdited && !message.content.isRecalled && (
+                <span className="text-xs opacity-70 italic mt-1 block">
+                  (edited)
+                </span>
+              )}
+            </div>
           )}
         </div>
         
@@ -234,14 +293,22 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       </div>
 
       {/* Image Lightbox */}
-      {message.content.image && (
+      {lightboxImage && (
         <ImageLightbox
-          imageUrl={message.content.image}
-          isOpen={isLightboxOpen}
-          onClose={() => setIsLightboxOpen(false)}
+          imageUrl={lightboxImage}
+          isOpen={!!lightboxImage}
+          onClose={() => setLightboxImage(null)}
           alt="Chat image"
         />
       )}
+
+      {/* Edit Message Modal */}
+      <EditMessageModal
+        message={editingMessage}
+        isOpen={!!editingMessage}
+        onClose={() => setEditingMessage(null)}
+        onSave={handleSaveEdit}
+      />
     </div>
   );
 };

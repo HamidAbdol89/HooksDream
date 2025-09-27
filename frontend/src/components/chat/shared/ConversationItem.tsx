@@ -80,7 +80,9 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
                   <Volume2 className="w-3 h-3 text-muted-foreground flex-shrink-0" />
                 )}
                 <p className="text-sm text-muted-foreground truncate">
-                  {conversation.lastMessage?.content?.video && conversation.lastMessage?.content?.text
+                  {conversation.lastMessage?.content?.isRecalled
+                    ? 'Tin nhắn đã được thu hồi'
+                    : conversation.lastMessage?.content?.video && conversation.lastMessage?.content?.text
                     ? conversation.lastMessage.content.text
                     : conversation.lastMessage?.content?.audio && conversation.lastMessage?.content?.text
                     ? conversation.lastMessage.content.text
