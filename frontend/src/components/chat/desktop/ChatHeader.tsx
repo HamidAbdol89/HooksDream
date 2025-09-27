@@ -46,9 +46,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             </p>
           </div>
         </div>
-        <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
-          <MoreVertical className="w-4 h-4" />
-        </Button>
+       
       </div>
     </div>
   );

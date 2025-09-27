@@ -36,19 +36,24 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 }) => {
   return (
     <div className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
-      {/* Avatar */}
-      <div className="flex-shrink-0">
-        {!isOwn && showAvatar ? (
-          <Avatar className="w-8 h-8">
-            <AvatarImage src={message.sender.avatar} />
-            <AvatarFallback className="text-xs">
-              {message.sender.displayName?.charAt(0) || message.sender.username?.charAt(0) || 'U'}
-            </AvatarFallback>
-          </Avatar>
-        ) : (
-          <div className="w-8 h-8" />
-        )}
-      </div>
+  {/* Avatar */}
+{!isOwn && (
+  <div className="flex-shrink-0">
+    {showAvatar ? (
+      <Avatar className="w-8 h-8">
+        <AvatarImage src={message.sender.avatar} />
+        <AvatarFallback className="text-xs">
+          {message.sender.displayName?.charAt(0) ||
+            message.sender.username?.charAt(0) ||
+            'U'}
+        </AvatarFallback>
+      </Avatar>
+    ) : (
+      <div className="w-8 h-8" />
+    )}
+  </div>
+)}
+
       
       {/* Message Bubble */}
       <div className={`flex flex-col max-w-[280px] sm:max-w-xs lg:max-w-md ${isOwn ? 'items-end' : 'items-start'}`}>

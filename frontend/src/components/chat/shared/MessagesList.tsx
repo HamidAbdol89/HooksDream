@@ -165,7 +165,7 @@ export const MessagesList: React.FC<MessagesListProps> = ({
       ref={containerRef}
       className="flex-1 overflow-y-auto bg-gradient-to-b from-muted/20 to-muted/5 relative"
     >
-      <div className="p-3 md:p-6 space-y-3 md:space-y-4">
+      <div className="p-2 md:p-2 space-y-2 md:space-y-2">
         {messages.map((message, index) => {
           const isOwn = message.sender._id === currentUserId;
           const showAvatar = index === 0 || messages[index - 1]?.sender._id !== message.sender._id;
@@ -201,13 +201,7 @@ export const MessagesList: React.FC<MessagesListProps> = ({
           </button>
         </div>
       )}
-      
-      {/* Debug badge state */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="absolute top-4 right-4 bg-black/80 text-white p-2 rounded text-xs">
-          Badge: {showNewMessagesBadge ? 'SHOW' : 'HIDE'} | Count: {newMessagesCount}
-        </div>
-      )}
+     
     </div>
   );
 };

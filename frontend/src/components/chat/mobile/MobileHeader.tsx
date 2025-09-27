@@ -84,25 +84,6 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Right side */}
-      <div className="flex items-center gap-1">
-        {showSearch && (
-          <Button variant="ghost" size="sm" className="p-2">
-            <Search className="w-5 h-5" />
-          </Button>
-        )}
-        {showEdit && (
-          <Button variant="ghost" size="sm" className="p-2">
-            <Edit3 className="w-5 h-5" />
-          </Button>
-        )}
-        {showMore && (
-          <Button variant="ghost" size="sm" className="p-2">
-            <MoreHorizontal className="w-5 h-5" />
-          </Button>
-        )}
-      </div>
     </div>
   );
 };
