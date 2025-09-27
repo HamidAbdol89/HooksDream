@@ -100,10 +100,18 @@ phone: {
         type: Number,
         default: 0
     },
-    lastLoginAt: {
+    
+    // Online status tracking
+    isOnline: {
+        type: Boolean,
+        default: false
+    },
+    lastSeen: {
         type: Date,
         default: Date.now
     },
+    
+    // Timestamps
     createdAt: {
         type: Date,
         default: Date.now

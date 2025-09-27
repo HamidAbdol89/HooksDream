@@ -54,7 +54,7 @@ export const MessagesList: React.FC<MessagesListProps> = ({
   if (messages.length === 0) {
     return (
       <div className="flex-1 overflow-y-auto bg-gradient-to-b from-muted/20 to-muted/5">
-        <div className="flex flex-col items-center justify-center h-64 text-center p-6">
+        <div className="flex flex-col items-center justify-center h-64 text-center p-4 md:p-6">
           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
             <MessageSquare className="w-8 h-8 text-primary" />
           </div>
@@ -69,7 +69,7 @@ export const MessagesList: React.FC<MessagesListProps> = ({
 
   return (
     <div className="flex-1 overflow-y-auto bg-gradient-to-b from-muted/20 to-muted/5">
-      <div className="p-6 space-y-4">
+      <div className="p-3 md:p-6 space-y-3 md:space-y-4">
         {messages.map((message, index) => {
           const isOwn = message.sender._id === currentUserId;
           const showAvatar = index === 0 || messages[index - 1]?.sender._id !== message.sender._id;

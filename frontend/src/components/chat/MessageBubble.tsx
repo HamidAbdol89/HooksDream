@@ -47,7 +47,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       </div>
       
       {/* Message Bubble */}
-      <div className={`flex flex-col max-w-xs lg:max-w-md ${isOwn ? 'items-end' : 'items-start'}`}>
+      <div className={`flex flex-col max-w-[280px] sm:max-w-xs lg:max-w-md ${isOwn ? 'items-end' : 'items-start'}`}>
         {!isOwn && showAvatar && (
           <span className="text-xs text-muted-foreground mb-1 px-3">
             {message.sender.displayName || message.sender.username}
@@ -55,10 +55,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         )}
         
         <div
-          className={`px-4 py-2.5 rounded-2xl shadow-sm transition-all hover:shadow-md ${
+          className={`px-3 py-2.5 rounded-2xl shadow-sm transition-all hover:shadow-md ${
             isOwn
-              ? 'bg-primary text-primary-foreground rounded-br-md'
-              : 'bg-card text-foreground border rounded-bl-md'
+              ? 'bg-primary text-primary-foreground rounded-br-sm'
+              : 'bg-muted text-foreground rounded-bl-sm'
           } ${isLastInGroup ? 'mb-2' : 'mb-1'}`}
         >
           <p className="text-sm leading-relaxed whitespace-pre-wrap">

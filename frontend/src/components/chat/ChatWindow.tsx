@@ -16,6 +16,29 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ conversationId }) => {
   const queryClient = useQueryClient();
   const { currentUserId } = useChat();
   
+  // Get conversation details
+  const { data: conversationData } = useQuery({
+    queryKey: ['chat', 'conversation', conversationId],
+    queryFn: async () => {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/chat/conversations/${conversationId}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Failed to fetch conversation');
+      const data = await response.json();
+      return data.data;
+    },
+    enabled: !!conversationId && !!token,
+  });
+  
+  // Get other participant info
+  const otherParticipant = conversationData?.participants?.find(
+    (p: any) => p._id !== currentUserId
+  );
+  
   // Get messages for this conversation
   const { data: messagesData, isLoading: isLoadingMessages } = useQuery({
     queryKey: ['chat', 'messages', conversationId],
@@ -57,8 +80,11 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ conversationId }) => {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-background">
-      <ChatHeader />
+    <div className="flex-1 flex flex-col bg-background h-full">
+      {/* Hide ChatHeader on mobile since we have back button in MessagesPage */}
+      <div className="hidden md:block">
+        <ChatHeader user={otherParticipant} />
+      </div>
       
       <MessagesList 
         messages={messages}

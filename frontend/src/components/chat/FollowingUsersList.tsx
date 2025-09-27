@@ -1,8 +1,9 @@
 // components/chat/FollowingUsersList.tsx
 import React from 'react';
-import { MessageSquare, Users, UserCheck } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { MessageSquare, Users } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
+import { Button } from '@/components/ui/Button';
+import { useOnlineUsers } from '@/hooks/useOnlineUsers';
 
 interface User {
   _id: string;
@@ -13,7 +14,7 @@ interface User {
 
 interface FollowingUsersListProps {
   users: User[];
-  onStartChat: (userId: string) => void;
+  onStartChat: (userId: string, user?: User) => void;
   isLoading?: boolean;
 }
 
@@ -22,6 +23,7 @@ export const FollowingUsersList: React.FC<FollowingUsersListProps> = ({
   onStartChat,
   isLoading = false
 }) => {
+  const { isUserOnline } = useOnlineUsers();
   if (isLoading) {
     return (
       <div className="p-4 space-y-3">
@@ -41,7 +43,7 @@ export const FollowingUsersList: React.FC<FollowingUsersListProps> = ({
   if (users.length === 0) {
     return (
       <div className="p-8 text-center">
-        <UserCheck className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+        <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
         <h3 className="font-medium text-foreground mb-2">No following users</h3>
         <p className="text-sm text-muted-foreground mb-4">
           Follow some users to start chatting with them
@@ -55,35 +57,43 @@ export const FollowingUsersList: React.FC<FollowingUsersListProps> = ({
   }
 
   return (
-    <div className="p-2">
+    <div className="">
       {users.map((user) => (
         <div
           key={user._id}
-          onClick={() => onStartChat(user._id)}
-          className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors hover:bg-muted/50"
+          onClick={() => onStartChat(user._id, user)}
+          className="flex items-center gap-3 p-4 cursor-pointer transition-colors border-b border-border/30 active:bg-muted/30 hover:bg-muted/20 md:hover:bg-muted/50 md:mx-2 md:rounded-lg"
         >
-          {/* Avatar */}
-          <Avatar className="w-12 h-12">
-            <AvatarImage src={user.avatar} alt={user.displayName} />
-            <AvatarFallback>
-              {user.displayName?.charAt(0) || user.username?.charAt(0) || 'U'}
-            </AvatarFallback>
-          </Avatar>
+          {/* Avatar with online indicator */}
+          <div className="relative flex-shrink-0">
+            <Avatar className="w-14 h-14 md:w-12 md:h-12">
+              <AvatarImage src={user.avatar} alt={user.displayName} />
+              <AvatarFallback>
+                {user.displayName?.charAt(0) || user.username?.charAt(0) || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            {/* Online indicator */}
+            {isUserOnline(user._id) && (
+              <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 border-2 border-background rounded-full md:w-3 md:h-3" />
+            )}
+          </div>
           
           {/* Content */}
           <div className="flex-1 min-w-0">
-            <h3 className="font-medium text-foreground truncate">
+            <h3 className="font-semibold text-foreground truncate text-base md:text-sm">
               {user.displayName || user.username}
             </h3>
             <p className="text-sm text-muted-foreground truncate">
-              @{user.username}
+              @{user.username} • Tap to message
             </p>
           </div>
           
-          {/* Chat button */}
-          <Button size="sm" variant="ghost" className="px-3">
-            <MessageSquare className="w-4 h-4" />
-          </Button>
+          {/* Chat button - Instagram style */}
+          <div className="flex-shrink-0">
+            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+              <MessageSquare className="w-4 h-4 text-primary" />
+            </div>
+          </div>
         </div>
       ))}
     </div>

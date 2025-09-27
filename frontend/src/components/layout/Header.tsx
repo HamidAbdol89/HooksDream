@@ -17,7 +17,11 @@ interface UserType {
   profileImage?: string;
 }
 
-export const Header: React.FC = () => {
+interface HeaderProps {
+  isInChat?: boolean;
+}
+
+export const Header: React.FC<HeaderProps> = ({ isInChat = false }) => {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
   const { profile, user, isConnected } = useAppStore();
@@ -254,7 +258,7 @@ export const Header: React.FC = () => {
       </header>
 
       {/* Navigation items - Mobile */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t z-30 shadow-lg">
+      <div className={`md:hidden fixed bottom-0 left-0 right-0 bg-background border-t z-30 shadow-lg ${isInChat ? 'hidden' : ''}`}>
         <div className="max-w-md mx-auto px-2">
           <div className="flex items-center justify-around py-2">
             {navItems.map((item, index) => (

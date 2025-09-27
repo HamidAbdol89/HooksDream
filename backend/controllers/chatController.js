@@ -47,6 +47,33 @@ exports.getConversations = async (req, res) => {
   }
 };
 
+// Get single conversation
+exports.getConversation = async (req, res) => {
+  try {
+    const currentUserId = req.userId;
+    const { conversationId } = req.params;
+    
+    const conversation = await Conversation.findOne({
+      _id: conversationId,
+      participants: currentUserId,
+      isActive: true
+    })
+    .populate('participants', 'username displayName avatar')
+    .populate('lastMessage')
+    .lean();
+    
+    if (!conversation) {
+      return res.status(404).json(createResponse(false, 'Conversation not found', null, null, 404));
+    }
+    
+    res.json(createResponse(true, 'Conversation retrieved successfully', conversation));
+    
+  } catch (error) {
+    console.error('Get conversation error:', error);
+    res.status(500).json(createResponse(false, 'Internal server error', null, null, 500));
+  }
+};
+
 // Get or create direct conversation
 exports.getOrCreateDirectConversation = async (req, res) => {
   try {
@@ -328,6 +355,29 @@ exports.addReaction = async (req, res) => {
     
   } catch (error) {
     console.error('Add reaction error:', error);
+    res.status(500).json(createResponse(false, 'Internal server error', null, null, 500));
+  }
+};
+
+// Get user online status
+exports.getUserStatus = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const user = await User.findById(userId).select('isOnline lastSeen');
+    
+    if (!user) {
+      return res.status(404).json(createResponse(false, 'User not found', null, null, 404));
+    }
+    
+    res.json(createResponse(true, 'User status retrieved successfully', {
+      userId,
+      isOnline: user.isOnline,
+      lastSeen: user.lastSeen
+    }));
+    
+  } catch (error) {
+    console.error('Get user status error:', error);
     res.status(500).json(createResponse(false, 'Internal server error', null, null, 500));
   }
 };

@@ -1,8 +1,9 @@
 // components/chat/ConversationsList.tsx
 import React from 'react';
 import { MessageSquare, UserCheck } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
+import { Button } from '@/components/ui/Button';
+import { useOnlineUsers } from '@/hooks/useOnlineUsers';
 
 interface Conversation {
   _id: string;
@@ -25,7 +26,7 @@ interface ConversationsListProps {
   conversations: Conversation[];
   currentUserId: string;
   selectedConversationId: string | null;
-  onSelectConversation: (conversationId: string) => void;
+  onSelectConversation: (conversationId: string, user?: any) => void;
   isLoading?: boolean;
   error?: any;
   onSwitchToFollowing: () => void;
@@ -37,9 +38,10 @@ export const ConversationsList: React.FC<ConversationsListProps> = ({
   selectedConversationId,
   onSelectConversation,
   isLoading = false,
-  error = null,
+  error,
   onSwitchToFollowing
 }) => {
+  const { isUserOnline, getUserStatus } = useOnlineUsers();
   if (isLoading) {
     return (
       <div className="p-4 space-y-3">
@@ -85,7 +87,7 @@ export const ConversationsList: React.FC<ConversationsListProps> = ({
   }
 
   return (
-    <div className="p-2">
+    <div className="">
       {conversations.map((conversation) => {
         const otherParticipant = conversation.participants.find(p => p._id !== currentUserId);
         const isSelected = selectedConversationId === conversation._id;
@@ -93,46 +95,61 @@ export const ConversationsList: React.FC<ConversationsListProps> = ({
         return (
           <div
             key={conversation._id}
-            onClick={() => onSelectConversation(conversation._id)}
-            className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+            onClick={() => onSelectConversation(conversation._id, otherParticipant)}
+            className={`flex items-center gap-3 p-4 cursor-pointer transition-colors border-b border-border/30 active:bg-muted/30 ${
               isSelected 
-                ? 'bg-primary/10 border border-primary/20' 
-                : 'hover:bg-muted/50'
+                ? 'bg-primary/5 md:bg-primary/10 md:border md:border-primary/20 md:rounded-lg md:mx-2' 
+                : 'hover:bg-muted/20 md:hover:bg-muted/50 md:mx-2 md:rounded-lg'
             }`}
           >
-            {/* Avatar */}
-            <Avatar className="w-12 h-12">
-              <AvatarImage src={otherParticipant?.avatar} alt={otherParticipant?.displayName} />
-              <AvatarFallback>
-                {otherParticipant?.displayName?.charAt(0) || otherParticipant?.username?.charAt(0) || 'U'}
-              </AvatarFallback>
-            </Avatar>
+            {/* Avatar with online indicator */}
+            <div className="relative flex-shrink-0">
+              <Avatar className="w-14 h-14 md:w-12 md:h-12">
+                <AvatarImage src={otherParticipant?.avatar} alt={otherParticipant?.displayName} />
+                <AvatarFallback>
+                  {otherParticipant?.displayName?.charAt(0) || otherParticipant?.username?.charAt(0) || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              {/* Online indicator */}
+              {otherParticipant?._id && isUserOnline(otherParticipant._id) && (
+                <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 border-2 border-background rounded-full md:w-3 md:h-3" />
+              )}
+            </div>
             
             {/* Content */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <h3 className="font-medium text-foreground truncate">
-                  {otherParticipant?.displayName || otherParticipant?.username}
-                </h3>
-                <span className="text-xs text-muted-foreground">
-                  {conversation.lastMessage ? 
-                    new Date(conversation.lastActivity).toLocaleTimeString([], { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    }) : ''
-                  }
-                </span>
-              </div>
-              
-              <div className="flex items-center justify-between mt-1">
-                <p className="text-sm text-muted-foreground truncate">
-                  {conversation.lastMessage?.content?.text || 'No messages yet'}
-                </p>
-                {conversation.unreadCount && conversation.unreadCount > 0 && (
-                  <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full min-w-[20px] text-center">
-                    {conversation.unreadCount}
+              <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-foreground truncate text-base md:text-sm">
+                    {otherParticipant?.displayName || otherParticipant?.username}
+                  </h3>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <p className="text-sm text-muted-foreground truncate flex-1">
+                      {conversation.lastMessage?.content?.text || 'Tap to start chatting'}
+                    </p>
+                    {conversation.unreadCount && conversation.unreadCount > 0 && (
+                      <span className="bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full min-w-[18px] text-center font-medium ml-2">
+                        {conversation.unreadCount > 99 ? '99+' : conversation.unreadCount}
+                      </span>
+                    )}
+                  </div>
+                  {/* Last seen status */}
+                  {otherParticipant?._id && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {getUserStatus(otherParticipant._id).lastSeenText}
+                    </p>
+                  )}
+                </div>
+                <div className="flex flex-col items-end gap-1 ml-3">
+                  <span className="text-xs text-muted-foreground">
+                    {conversation.lastMessage ? 
+                      new Date(conversation.lastActivity).toLocaleTimeString([], { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      }) : ''
+                    }
                   </span>
-                )}
+                </div>
               </div>
             </div>
           </div>

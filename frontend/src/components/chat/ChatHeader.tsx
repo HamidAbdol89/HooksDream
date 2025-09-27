@@ -1,23 +1,27 @@
 // components/chat/ChatHeader.tsx
 import React from 'react';
 import { MoreVertical } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
+import { Button } from '@/components/ui/Button';
+import { useOnlineUsers } from '@/hooks/useOnlineUsers';
+
+interface User {
+  _id?: string;
+  username?: string;
+  displayName?: string;
+  avatar?: string;
+}
 
 interface ChatHeaderProps {
-  user?: {
-    _id: string;
-    username: string;
-    displayName: string;
-    avatar?: string;
-  };
-  isOnline?: boolean;
+  user?: User;
 }
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({ 
-  user, 
-  isOnline = true 
+  user
 }) => {
+  const { isUserOnline, getUserStatus } = useOnlineUsers();
+  
+  const userStatus = user?._id ? getUserStatus(user._id) : { isOnline: false, lastSeenText: '' };
   return (
     <div className="px-6 py-4 border-b bg-card/50 backdrop-blur-sm">
       <div className="flex items-center justify-between">
@@ -29,7 +33,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 {user?.displayName?.charAt(0) || user?.username?.charAt(0) || 'U'}
               </AvatarFallback>
             </Avatar>
-            {isOnline && (
+            {userStatus.isOnline && (
               <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-background rounded-full"></div>
             )}
           </div>
@@ -37,8 +41,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             <h3 className="font-semibold text-foreground">
               {user?.displayName || user?.username || 'Chat Partner'}
             </h3>
-            <p className={`text-sm font-medium ${isOnline ? 'text-green-500' : 'text-muted-foreground'}`}>
-              {isOnline ? 'Online' : 'Offline'}
+            <p className={`text-sm font-medium ${userStatus.isOnline ? 'text-green-500' : 'text-muted-foreground'}`}>
+              {userStatus.lastSeenText || 'Offline'}
             </p>
           </div>
         </div>

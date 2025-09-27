@@ -1,6 +1,7 @@
 // socket/socketServer.js - Real-time Socket.IO Server
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 
 class SocketServer {
     constructor(server) {
@@ -51,6 +52,12 @@ class SocketServer {
 
             // Join user to their personal room
             socket.join(`user:${socket.userId}`);
+            
+            // Update user online status in database
+            this.updateUserOnlineStatus(socket.userId, true);
+            
+            // Broadcast user online status to all conversations
+            this.broadcastUserStatus(socket.userId, 'online');
             
             // Handle joining post rooms for real-time updates
             socket.on('join:post', (postId) => {
@@ -301,6 +308,12 @@ class SocketServer {
 
             // Handle disconnect
             socket.on('disconnect', (reason) => {
+                // Update user offline status in database
+                this.updateUserOnlineStatus(socket.userId, false);
+                
+                // Broadcast user offline status before cleanup
+                this.broadcastUserStatus(socket.userId, 'offline');
+                
                 // Clean up user data
                 this.connectedUsers.delete(socket.userId);
                 this.userRooms.delete(socket.userId);
@@ -308,6 +321,7 @@ class SocketServer {
 
             // Handle connection errors
             socket.on('error', (error) => {
+                // Handle socket errors silently
                 });
         });
     }
@@ -346,9 +360,32 @@ class SocketServer {
         return room ? Array.from(room) : [];
     }
 
+    // Update user online status in database
+    async updateUserOnlineStatus(userId, isOnline) {
+        try {
+            const updateData = {
+                isOnline,
+                lastSeen: isOnline ? undefined : new Date()
+            };
+            
+            await User.findByIdAndUpdate(userId, updateData);
+        } catch (error) {
+            console.error('Error updating user online status:', error);
+        }
+    }
+    
     // Broadcast user status to conversations
     broadcastUserStatus(userId, status) {
         const userRooms = this.userRooms.get(userId) || new Set();
+        
+        // Broadcast to all connected users
+        this.io.emit('chat:user:status', {
+            userId,
+            status,
+            timestamp: new Date().toISOString()
+        });
+        
+        // Also broadcast to specific conversation rooms
         userRooms.forEach(room => {
             if (room.startsWith('conversation:')) {
                 this.io.to(room).emit('chat:user:status', {

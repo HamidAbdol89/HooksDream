@@ -5,11 +5,13 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useChat } from '@/hooks/useChat';
 import { useSocial } from '@/hooks/useSocial';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
+import { useChatContext } from '@/contexts/ChatContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/input';
 import { ChatWindow } from '@/components/chat/ChatWindow';
 import { ConversationsList } from '@/components/chat/ConversationsList';
 import { FollowingUsersList } from '@/components/chat/FollowingUsersList';
+import { MobileHeader } from '@/components/chat/MobileHeader';
 
 // Types
 interface User {
@@ -25,7 +27,8 @@ const MessagesPage: React.FC = () => {
   const { useCurrentProfile } = useSocial();
   const { token } = useGoogleAuth(); // Use token from auth hook
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const { selectedConversationId, setSelectedConversationId } = useChatContext();
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<'conversations' | 'following'>('conversations');
   
   // Get current user data
@@ -44,12 +47,8 @@ const MessagesPage: React.FC = () => {
     queryKey: ['following', actualUserId],
     queryFn: async () => {
       if (!actualUserId || !token) {
-        console.log('⚠️ MessagesPage: Missing actualUserId or token', { actualUserId, token: !!token });
         return [];
       }
-      
-      console.log('🔍 MessagesPage fetching following for userId:', actualUserId);
-      console.log('🔍 API URL:', `${API_BASE_URL}/api/users/${actualUserId}/following?limit=50`);
       
       const response = await fetch(`${API_BASE_URL}/api/users/${actualUserId}/following?limit=50`, {
         headers: {
@@ -57,34 +56,18 @@ const MessagesPage: React.FC = () => {
           'Authorization': `Bearer ${token}`
         }
       });
-
-      console.log('🔍 Response status:', response.status);
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Following fetch failed:', response.status, response.statusText, errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('✅ Following data received:', data);
-      console.log('📊 Following users count:', data.data?.length || 0);
       return data.data || data || [];
     },
     enabled: !!actualUserId && !!token,
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
   
-  // Debug logs
-  console.log('🛠️ MessagesPage Debug:', {
-    actualUserId,
-    token: !!token,
-    followingUsers,
-    followingUsersLength: followingUsers?.length,
-    isLoadingFollowing,
-    followingError,
-    activeTab
-  });
   
   // Filter conversations based on search
   const filteredConversations = conversations.filter(conversation => {
@@ -104,8 +87,6 @@ const MessagesPage: React.FC = () => {
   // Start chat with a user
   const startChatWithUser = async (userId: string) => {
     try {
-      console.log('🚀 Starting chat with userId:', userId);
-      
       // Call API directly to create or get conversation
       const response = await fetch(`${API_BASE_URL}/api/chat/conversations/direct/${userId}`, {
         method: 'GET',
@@ -120,27 +101,37 @@ const MessagesPage: React.FC = () => {
       }
       
       const data = await response.json();
-      console.log('✅ Conversation created/found:', data);
       
       if (data?.success && data.data) {
         setSelectedConversationId(data.data._id);
         setActiveTab('conversations');
-        console.log('🎯 Conversation selected:', data.data._id);
         
         // Refresh conversations list
         queryClient.invalidateQueries({ queryKey: ['chat', 'conversations'] });
       }
     } catch (error) {
-      console.error('❌ Failed to start chat:', error);
+      // Handle error silently or show user-friendly message
     }
   };
 
   return (
-    <div className="max-w-6xl mx-auto h-screen flex">
-      {/* Conversations Sidebar */}
-      <div className="w-80 border-r bg-card flex flex-col">
-        {/* Header */}
-        <div className="p-4 border-b">
+    <div className="w-full h-full flex bg-background">
+      {/* Mobile: Show either sidebar or chat, Desktop: Show both */}
+      <div className={`${
+        selectedConversationId 
+          ? 'hidden md:flex md:w-80 lg:w-96' 
+          : 'flex w-full md:w-80 lg:w-96'
+      } border-r border-border bg-background md:bg-card/50 md:backdrop-blur-sm flex-col`}>
+        
+        {/* Mobile Header */}
+        <MobileHeader 
+          title="Messages"
+          showEdit={true}
+          showSearch={true}
+        />
+        
+        {/* Desktop Header */}
+        <div className="hidden md:block p-4 border-b">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <MessageSquare className="w-6 h-6 text-primary" />
@@ -151,40 +142,91 @@ const MessagesPage: React.FC = () => {
             </Button>
           </div>
           
-          {/* Tabs */}
-          <div className="flex bg-muted rounded-lg p-1 mb-4">
+          {/* Tabs - Instagram style */}
+          <div className="flex border-b border-border mb-0">
             <button
               onClick={() => setActiveTab('conversations')}
-              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors relative ${
                 activeTab === 'conversations'
-                  ? 'bg-background text-foreground shadow-sm'
+                  ? 'text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <MessageSquare className="w-4 h-4" />
-              Chats
+              <span className="hidden sm:inline">Chats</span>
+              {activeTab === 'conversations' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+              )}
             </button>
             <button
               onClick={() => setActiveTab('following')}
-              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors relative ${
                 activeTab === 'following'
-                  ? 'bg-background text-foreground shadow-sm'
+                  ? 'text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <UserCheck className="w-4 h-4" />
-              Following
+              <span className="hidden sm:inline">Following</span>
+              {activeTab === 'following' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+              )}
             </button>
           </div>
           
-          {/* Search */}
-          <div className="relative">
+          {/* Search - Desktop only, mobile has it in header */}
+          <div className="relative mt-4">
             <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder={activeTab === 'conversations' ? 'Search conversations...' : 'Search following...'}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
+            />
+          </div>
+        </div>
+        
+        {/* Mobile Tabs */}
+        <div className="md:hidden flex border-b border-border">
+          <button
+            onClick={() => setActiveTab('conversations')}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors relative ${
+              activeTab === 'conversations'
+                ? 'text-foreground'
+                : 'text-muted-foreground'
+            }`}
+          >
+            <MessageSquare className="w-4 h-4" />
+            Chats
+            {activeTab === 'conversations' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('following')}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors relative ${
+              activeTab === 'following'
+                ? 'text-foreground'
+                : 'text-muted-foreground'
+            }`}
+          >
+            <UserCheck className="w-4 h-4" />
+            Following
+            {activeTab === 'following' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+            )}
+          </button>
+        </div>
+        
+        {/* Mobile Search */}
+        <div className="md:hidden p-3 border-b border-border">
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder={activeTab === 'conversations' ? 'Search conversations...' : 'Search following...'}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-muted/30 border-0 rounded-xl"
             />
           </div>
         </div>
@@ -196,7 +238,10 @@ const MessagesPage: React.FC = () => {
               conversations={filteredConversations}
               currentUserId={currentUserId || ''}
               selectedConversationId={selectedConversationId}
-              onSelectConversation={setSelectedConversationId}
+              onSelectConversation={(conversationId, user) => {
+                setSelectedConversationId(conversationId);
+                setSelectedUser(user);
+              }}
               isLoading={isLoading}
               error={error}
               onSwitchToFollowing={() => setActiveTab('following')}
@@ -204,7 +249,10 @@ const MessagesPage: React.FC = () => {
           ) : (
             <FollowingUsersList
               users={filteredFollowingUsers}
-              onStartChat={startChatWithUser}
+              onStartChat={(userId, user) => {
+                startChatWithUser(userId);
+                setSelectedUser(user || null);
+              }}
               isLoading={isLoadingFollowing}
             />
           )}
@@ -212,24 +260,62 @@ const MessagesPage: React.FC = () => {
       </div>
       
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className={`${
+        selectedConversationId 
+          ? 'flex w-full md:flex-1' 
+          : 'hidden md:flex md:flex-1'
+      } flex-col bg-background relative`}>
         {selectedConversationId ? (
-          <ChatWindow conversationId={selectedConversationId} />
+          <>
+            {/* Mobile Chat Header - Instagram style */}
+            <ChatWindowWithMobileHeader 
+              conversationId={selectedConversationId} 
+              user={selectedUser}
+              onBack={() => {
+                setSelectedConversationId(null);
+                setSelectedUser(null);
+              }} 
+            />
+          </>
         ) : (
-          <div className="flex-1 flex items-center justify-center bg-muted/20">
-            <div className="text-center">
-              <MessageSquare className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-foreground mb-2">
-                Select a conversation
+          <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-muted/20 to-muted/5">
+            <div className="text-center p-8">
+              <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <MessageSquare className="w-10 h-10 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold text-foreground mb-3">
+                Welcome to Messages
               </h3>
-              <p className="text-muted-foreground">
-                Choose a conversation from the sidebar to start messaging
+              <p className="text-muted-foreground max-w-sm mx-auto leading-relaxed">
+                Select a conversation from the sidebar to start messaging, or find people to chat with from your following list.
               </p>
             </div>
           </div>
         )}
       </div>
     </div>
+  );
+};
+
+// Component wrapper để hiển thị user info trong mobile header
+const ChatWindowWithMobileHeader: React.FC<{
+  conversationId: string;
+  user: User | null;
+  onBack: () => void;
+}> = ({ conversationId, user, onBack }) => {
+  
+  return (
+    <>
+      <MobileHeader 
+        title={user?.displayName || user?.username || 'Chat Partner'}
+        showBack={true}
+        onBack={onBack}
+        showMore={true}
+        avatar={user?.avatar}
+        userId={user?._id}
+      />
+      <ChatWindow conversationId={conversationId} />
+    </>
   );
 };
 

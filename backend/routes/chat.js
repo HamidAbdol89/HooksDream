@@ -24,6 +24,7 @@ router.use(authMiddleware);
 
 // Conversation routes
 router.get('/conversations', conversationLimiter, chatController.getConversations);
+router.get('/conversations/:conversationId', chatController.getConversation);
 router.get('/conversations/direct/:userId', conversationLimiter, chatController.getOrCreateDirectConversation);
 
 // Message routes
@@ -34,5 +35,8 @@ router.put('/conversations/:conversationId/read', chatController.markAsRead);
 // Message actions
 router.delete('/messages/:messageId', chatController.deleteMessage);
 router.post('/messages/:messageId/reactions', chatController.addReaction);
+
+// User status
+router.get('/users/:userId/status', chatController.getUserStatus);
 
 module.exports = router;
