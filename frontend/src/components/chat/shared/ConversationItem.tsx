@@ -3,7 +3,7 @@ import React from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
 import { useOnlineUsers } from '@/hooks/useOnlineUsers';
 import { Conversation } from '@/types/chat';
-import { Image } from 'lucide-react';
+import { Image, Video, Volume2 } from 'lucide-react';
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -69,13 +69,27 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
             </h3>
             <div className="flex items-center gap-1 mt-0.5">
               <div className="flex items-center gap-1 flex-1 min-w-0">
-                {/* Image indicator */}
+                {/* Media indicators */}
                 {conversation.lastMessage?.content?.image && (
                   <Image className="w-3 h-3 text-muted-foreground flex-shrink-0" />
                 )}
+                {conversation.lastMessage?.content?.video && (
+                  <Video className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                )}
+                {conversation.lastMessage?.content?.audio && (
+                  <Volume2 className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                )}
                 <p className="text-sm text-muted-foreground truncate">
-                  {conversation.lastMessage?.content?.image && conversation.lastMessage?.content?.text
+                  {conversation.lastMessage?.content?.video && conversation.lastMessage?.content?.text
                     ? conversation.lastMessage.content.text
+                    : conversation.lastMessage?.content?.audio && conversation.lastMessage?.content?.text
+                    ? conversation.lastMessage.content.text
+                    : conversation.lastMessage?.content?.image && conversation.lastMessage?.content?.text
+                    ? conversation.lastMessage.content.text
+                    : conversation.lastMessage?.content?.video
+                    ? 'Đã gửi một video'
+                    : conversation.lastMessage?.content?.audio
+                    ? 'Đã gửi tin nhắn âm thanh'
                     : conversation.lastMessage?.content?.image 
                     ? 'Đã gửi một ảnh'
                     : conversation.lastMessage?.content?.text || 'Tap to start chatting'

@@ -19,6 +19,16 @@ const messageSchema = new mongoose.Schema({
     image: {
       type: String // URL to image
     },
+    video: {
+      url: String,
+      duration: Number, // Duration in seconds
+      thumbnail: String // Thumbnail URL
+    },
+    audio: {
+      url: String,
+      duration: Number, // Duration in seconds
+      waveform: [Number] // Audio waveform data for visualization
+    },
     file: {
       url: String,
       name: String,
@@ -28,7 +38,7 @@ const messageSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['text', 'image', 'file', 'system'],
+    enum: ['text', 'image', 'video', 'audio', 'file', 'system'],
     default: 'text'
   },
   // Message status
@@ -106,7 +116,7 @@ messageSchema.index({ 'readBy.user': 1 });
 
 // Virtual để check if message has content
 messageSchema.virtual('hasContent').get(function() {
-  return !!(this.content.text || this.content.image || this.content.file);
+  return !!(this.content.text || this.content.image || this.content.video || this.content.audio || this.content.file);
 });
 
 // Method để mark as read by user

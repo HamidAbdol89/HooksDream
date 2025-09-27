@@ -34,15 +34,32 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: (req, file) => {
     const isVideo = file.mimetype.startsWith('video/');
-    const folder = isVideo ? 'uploads/videos' : 'uploads/images';
-    const resourceType = isVideo ? 'video' : 'image';
+    const isImage = file.mimetype.startsWith('image/');
+    const isAudio = file.mimetype.startsWith('audio/');
+    
+    let folder, resourceType;
+    
+    if (isVideo) {
+      folder = 'uploads/videos';
+      resourceType = 'video';
+    } else if (isImage) {
+      folder = 'uploads/images';
+      resourceType = 'image';
+    } else if (isAudio) {
+      folder = 'uploads/audio';
+      resourceType = 'video'; // Cloudinary treats audio as video resource type
+    } else {
+      // For documents and other files
+      folder = 'uploads/files';
+      resourceType = 'raw'; // Raw resource type for documents
+    }
     
     return {
       folder: folder,
       resource_type: resourceType,
       public_id: `${Date.now()}-${Math.round(Math.random() * 1e9)}`,
-      format: isVideo ? undefined : 'jpg', // ✅ SỬA: Không force format cho video
-      quality: isVideo ? undefined : 'auto:good', // ✅ SỬA: Không set quality cho video
+      format: isImage ? 'jpg' : undefined, // Only format images
+      quality: isImage ? 'auto:good' : undefined, // Only quality for images
     };
   }
 });
@@ -88,19 +105,43 @@ const upload = multer({
       'video/webm',
       'video/ogg',
       'video/avi',
-      'video/quicktime', // ✅ THÊM: Hỗ trợ .mov files
-      'video/x-msvideo'  // ✅ THÊM: Hỗ trợ .avi files
+      'video/quicktime',
+      'video/x-msvideo'
     ];
 
-    const allAllowed = [...allowedImageTypes, ...allowedVideoTypes];
+    const allowedAudioTypes = [
+      'audio/mpeg',
+      'audio/mp3',
+      'audio/wav',
+      'audio/webm',
+      'audio/ogg'
+    ];
 
-    if (!allAllowed.includes(file.mimetype)) {
-      const error = new Error(`File type not supported: ${file.mimetype}`);
-      error.code = 'INVALID_FILE_TYPE';
-      return cb(error, false);
-    }
+    const allowedFileTypes = [
+      // Documents
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'text/plain',
+      'text/csv',
+      // Archives
+      'application/zip',
+      'application/x-rar-compressed',
+      'application/x-7z-compressed',
+      'application/gzip',
+      // Other
+      'application/json',
+      'application/xml',
+      'text/xml'
+    ];
 
-    // ✅ SỬA: Field-specific validation với better logic
+    const allAllowed = [...allowedImageTypes, ...allowedVideoTypes, ...allowedAudioTypes, ...allowedFileTypes];
+
+    // Field-specific validation
     if (file.fieldname === 'images' && !allowedImageTypes.includes(file.mimetype)) {
       const error = new Error('Images field only accepts image files');
       error.code = 'INVALID_IMAGE_TYPE';
@@ -113,10 +154,24 @@ const upload = multer({
       return cb(error, false);
     }
 
-    // ✅ THÊM: Cho phép mixed content cho images field (nếu cần)
-    // Nếu frontend gửi video vào images field, có thể accept
-    if (file.fieldname === 'images' && allowedVideoTypes.includes(file.mimetype)) {
-      }
+    if (file.fieldname === 'audio' && !allowedAudioTypes.includes(file.mimetype)) {
+      const error = new Error('Audio field only accepts audio files');
+      error.code = 'INVALID_AUDIO_TYPE';
+      return cb(error, false);
+    }
+
+    if (file.fieldname === 'file' && !allAllowed.includes(file.mimetype)) {
+      const error = new Error(`File type not supported: ${file.mimetype}`);
+      error.code = 'INVALID_FILE_TYPE';
+      return cb(error, false);
+    }
+
+    // General validation for other fields
+    if (!allAllowed.includes(file.mimetype)) {
+      const error = new Error(`File type not supported: ${file.mimetype}`);
+      error.code = 'INVALID_FILE_TYPE';
+      return cb(error, false);
+    }
 
     cb(null, true);
   }

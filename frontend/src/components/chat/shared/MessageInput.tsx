@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/input';
 import { useMessageStatus } from '@/hooks/useMessageStatus';
 import { ImageUpload } from './ImageUpload';
+import { VideoUpload } from './VideoUpload';
+import { AudioRecorder } from './AudioRecorder';
 
 interface MessageInputProps {
   conversationId: string;
@@ -44,8 +46,8 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     }
   };
 
-  const handleImageSent = () => {
-    // Refresh messages or handle image sent callback
+  const handleMediaSent = () => {
+    // Refresh messages or handle media sent callback
     // The real-time update will be handled by socket
   };
 
@@ -58,17 +60,24 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       <div className="flex items-center gap-3">
    
         
-        {/* Image upload button */}
+        {/* Media upload buttons */}
         <ImageUpload
           conversationId={conversationId}
-          onImageSent={handleImageSent}
+          onImageSent={handleMediaSent}
           disabled={disabled}
         />
         
-        {/* Desktop attachment button (for other files) */}
-        <Button variant="ghost" size="sm" className="hidden md:flex h-10 w-10 p-0 rounded-full">
-          <Paperclip className="w-4 h-4" />
-        </Button>
+        <VideoUpload
+          conversationId={conversationId}
+          onVideoSent={handleMediaSent}
+          disabled={disabled}
+        />
+        
+        <AudioRecorder
+          conversationId={conversationId}
+          onAudioSent={handleMediaSent}
+          disabled={disabled}
+        />
         <div className="flex-1 relative">
           <Input
             value={messageText}

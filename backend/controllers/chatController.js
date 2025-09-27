@@ -410,6 +410,186 @@ exports.sendImageMessage = (req, res) => {
   });
 };
 
+// Send video message
+exports.sendVideoMessage = (req, res) => {
+  const videoUpload = upload.single('video');
+  
+  videoUpload(req, res, async (err) => {
+    try {
+      if (err) {
+        return res.status(400).json(createResponse(false, `Upload failed: ${err.message}`, null, null, 400));
+      }
+      
+      if (!req.file) {
+        return res.status(400).json(createResponse(false, 'No video uploaded', null, null, 400));
+      }
+      
+      const currentUserId = req.userId;
+      const { conversationId } = req.params;
+      const { text, duration, thumbnail } = req.body;
+      
+      // Check if user is participant
+      const conversation = await Conversation.findById(conversationId);
+      if (!conversation || !conversation.isParticipant(currentUserId)) {
+        return res.status(403).json(createResponse(false, 'Access denied', null, null, 403));
+      }
+      
+      // Create video message
+      const messageData = {
+        conversation: conversationId,
+        sender: currentUserId,
+        content: {
+          video: {
+            url: req.file.path,
+            duration: duration ? parseFloat(duration) : undefined,
+            thumbnail: thumbnail || undefined
+          }
+        },
+        type: 'video'
+      };
+      
+      // Add text if provided
+      if (text && text.trim()) {
+        messageData.content.text = text.trim();
+      }
+      
+      const message = await Message.create(messageData);
+      
+      // Update conversation
+      await Conversation.findByIdAndUpdate(conversationId, {
+        lastActivity: new Date(),
+        lastMessage: message._id
+      });
+      
+      // Populate sender info
+      await message.populate('sender', 'username displayName avatar');
+      
+      const messageWithStatus = {
+        ...message.toObject(),
+        messageStatus: {
+          status: 'sent',
+          timestamp: new Date().toISOString(),
+          readBy: []
+        }
+      };
+      
+      // Emit socket event
+      if (global.socketServer) {
+        conversation.participants.forEach(participantId => {
+          if (participantId.toString() !== currentUserId) {
+            global.socketServer.emitToUser(participantId.toString(), 'message:new', {
+              conversationId,
+              message: message.toObject()
+            });
+          }
+        });
+        
+        conversation.participants.forEach(participantId => {
+          global.socketServer.emitToUser(participantId.toString(), 'conversation:updated', {
+            conversationId,
+            lastMessage: message.toObject(),
+            lastActivity: new Date()
+          });
+        });
+      }
+      
+      res.json(createResponse(true, 'Video message sent successfully', messageWithStatus));
+      
+    } catch (error) {
+      console.error('Send video message error:', error);
+      res.status(500).json(createResponse(false, 'Internal server error', null, null, 500));
+    }
+  });
+};
+
+// Send audio message
+exports.sendAudioMessage = (req, res) => {
+  const audioUpload = upload.single('audio');
+  
+  audioUpload(req, res, async (err) => {
+    try {
+      if (err) {
+        return res.status(400).json(createResponse(false, `Upload failed: ${err.message}`, null, null, 400));
+      }
+      
+      if (!req.file) {
+        return res.status(400).json(createResponse(false, 'No audio uploaded', null, null, 400));
+      }
+      
+      const currentUserId = req.userId;
+      const { conversationId } = req.params;
+      const { duration, waveform } = req.body;
+      
+      // Check if user is participant
+      const conversation = await Conversation.findById(conversationId);
+      if (!conversation || !conversation.isParticipant(currentUserId)) {
+        return res.status(403).json(createResponse(false, 'Access denied', null, null, 403));
+      }
+      
+      // Create audio message
+      const messageData = {
+        conversation: conversationId,
+        sender: currentUserId,
+        content: {
+          audio: {
+            url: req.file.path,
+            duration: duration ? parseFloat(duration) : undefined,
+            waveform: waveform ? JSON.parse(waveform) : undefined
+          }
+        },
+        type: 'audio'
+      };
+      
+      const message = await Message.create(messageData);
+      
+      // Update conversation
+      await Conversation.findByIdAndUpdate(conversationId, {
+        lastActivity: new Date(),
+        lastMessage: message._id
+      });
+      
+      // Populate sender info
+      await message.populate('sender', 'username displayName avatar');
+      
+      const messageWithStatus = {
+        ...message.toObject(),
+        messageStatus: {
+          status: 'sent',
+          timestamp: new Date().toISOString(),
+          readBy: []
+        }
+      };
+      
+      // Emit socket event
+      if (global.socketServer) {
+        conversation.participants.forEach(participantId => {
+          if (participantId.toString() !== currentUserId) {
+            global.socketServer.emitToUser(participantId.toString(), 'message:new', {
+              conversationId,
+              message: message.toObject()
+            });
+          }
+        });
+        
+        conversation.participants.forEach(participantId => {
+          global.socketServer.emitToUser(participantId.toString(), 'conversation:updated', {
+            conversationId,
+            lastMessage: message.toObject(),
+            lastActivity: new Date()
+          });
+        });
+      }
+      
+      res.json(createResponse(true, 'Audio message sent successfully', messageWithStatus));
+      
+    } catch (error) {
+      console.error('Send audio message error:', error);
+      res.status(500).json(createResponse(false, 'Internal server error', null, null, 500));
+    }
+  });
+};
+
+
 // Mark messages as read
 exports.markAsRead = async (req, res) => {
   try {

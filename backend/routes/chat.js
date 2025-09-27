@@ -31,6 +31,8 @@ router.get('/conversations/direct/:userId', conversationLimiter, chatController.
 router.get('/conversations/:conversationId/messages', chatController.getMessages);
 router.post('/conversations/:conversationId/messages', chatLimiter, chatController.sendMessage);
 router.post('/conversations/:conversationId/messages/image', chatLimiter, chatController.sendImageMessage);
+router.post('/conversations/:conversationId/messages/video', chatLimiter, chatController.sendVideoMessage);
+router.post('/conversations/:conversationId/messages/audio', chatLimiter, chatController.sendAudioMessage);
 router.put('/conversations/:conversationId/read', chatController.markAsRead);
 
 // Message actions

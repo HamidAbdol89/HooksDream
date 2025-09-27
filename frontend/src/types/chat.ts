@@ -18,7 +18,18 @@ export interface Message {
   content: {
     text?: string;
     image?: string;
+    video?: {
+      url: string;
+      duration?: number;
+      thumbnail?: string;
+    };
+    audio?: {
+      url: string;
+      duration?: number;
+      waveform?: number[];
+    };
   };
+  type?: 'text' | 'image' | 'video' | 'audio' | 'file' | 'system';
   createdAt: string;
   updatedAt?: string;
   messageStatus?: MessageStatus;
@@ -33,7 +44,18 @@ export interface Conversation {
     content: {
       text?: string;
       image?: string;
+      video?: {
+        url: string;
+        duration?: number;
+        thumbnail?: string;
+      };
+      audio?: {
+        url: string;
+        duration?: number;
+        waveform?: number[];
+      };
     };
+    type?: 'text' | 'image' | 'video' | 'audio' | 'file' | 'system';
     sender: User;
     createdAt: string;
     messageStatus?: MessageStatus;

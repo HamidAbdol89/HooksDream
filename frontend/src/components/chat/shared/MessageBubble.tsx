@@ -1,8 +1,10 @@
 // components/chat/shared/MessageBubble.tsx - Shared message bubble for both desktop and mobile
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
 import { Message } from '@/types/chat';
 import { ImageLightbox } from './ImageLightbox';
+import { Play, Pause, Volume2 } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 
 interface MessageBubbleProps {
   message: Message;
@@ -36,6 +38,37 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   isLastInGroup
 }) => {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+
+  const toggleVideo = () => {
+    if (videoRef.current) {
+      if (isVideoPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+    }
+  };
+
+  const toggleAudio = () => {
+    if (audioRef.current) {
+      if (isAudioPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+    }
+  };
   return (
     <div className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
   {/* Avatar */}
@@ -71,7 +104,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               ? 'bg-primary text-primary-foreground rounded-br-sm'
               : 'bg-muted text-foreground rounded-bl-sm'
           } ${isLastInGroup ? 'mb-2' : 'mb-1'} ${
-            message.content.image ? 'p-1' : 'px-3 py-2.5'
+            message.content.image || message.content.video ? 'p-1' : 'px-3 py-2.5'
           }`}
         >
           {/* Image content */}
@@ -98,9 +131,84 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               )}
             </div>
           )}
-          
+
+          {/* Video content */}
+          {message.content.video && (
+            <div className="relative">
+              <video
+                ref={videoRef}
+                src={message.content.video.url}
+                className="max-w-full h-auto rounded-xl max-h-80 object-cover"
+                onPlay={() => setIsVideoPlaying(true)}
+                onPause={() => setIsVideoPlaying(false)}
+                onEnded={() => setIsVideoPlaying(false)}
+                controls
+                preload="metadata"
+              />
+              
+              {/* Duration indicator */}
+              {message.content.video.duration && (
+                <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                  {formatDuration(message.content.video.duration)}
+                </div>
+              )}
+
+              {/* Text overlay if both video and text */}
+              {message.content.text && (
+                <div className={`absolute bottom-0 left-0 right-0 p-2 rounded-b-xl ${
+                  isOwn ? 'bg-primary/80' : 'bg-muted/80'
+                } backdrop-blur-sm`}>
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap text-white">
+                    {message.content.text}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Audio content */}
+          {message.content.audio && (
+            <div className={`flex items-center gap-3 p-3 rounded-xl ${
+              isOwn ? 'bg-primary/10' : 'bg-muted/50'
+            }`}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleAudio}
+                className="h-10 w-10 p-0 rounded-full"
+              >
+                {isAudioPlaying ? (
+                  <Pause className="w-5 h-5" />
+                ) : (
+                  <Play className="w-5 h-5" />
+                )}
+              </Button>
+              
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <Volume2 className="w-4 h-4 text-muted-foreground" />
+                  <div className="flex-1 h-1 bg-muted rounded-full">
+                    <div className="h-full bg-primary rounded-full w-0" />
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {message.content.audio.duration ? formatDuration(message.content.audio.duration) : '0:00'}
+                  </span>
+                </div>
+              </div>
+
+              <audio
+                ref={audioRef}
+                src={message.content.audio.url}
+                onPlay={() => setIsAudioPlaying(true)}
+                onPause={() => setIsAudioPlaying(false)}
+                onEnded={() => setIsAudioPlaying(false)}
+                preload="metadata"
+              />
+            </div>
+          )}
+
           {/* Text-only content */}
-          {message.content.text && !message.content.image && (
+          {message.content.text && !message.content.image && !message.content.video && (
             <p className="text-sm leading-relaxed whitespace-pre-wrap">
               {message.content.text}
             </p>
