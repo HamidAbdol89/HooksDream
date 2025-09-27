@@ -9,7 +9,7 @@ interface NavItem {
   onClick: () => void;
 }
 
-export const useNavItems = (onSearchClick?: () => void) => {
+export const useNavItems = () => {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
 
@@ -17,12 +17,12 @@ export const useNavItems = (onSearchClick?: () => void) => {
     {
       icon: <Home className="w-5 h-5" />,
       label: t('nav.home'),
-      onClick: () => navigate('/feed') // chuyển page
+      onClick: () => navigate('/feed')
     },
     {
       icon: <Search className="w-5 h-5" />,
       label: t('nav.search'),
-      onClick: onSearchClick || (() => navigate('/search'))
+      onClick: () => navigate('/search')
     },
     {
       icon: <Bell className="w-5 h-5" />,

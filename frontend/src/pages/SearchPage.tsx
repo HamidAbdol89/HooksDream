@@ -1,8 +1,6 @@
 import React from 'react';
 import { AdvancedSearch } from '@/components/search/AdvancedSearch';
 import { Search } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { Profile } from '@/store/useAppStore';
 
 export const SearchPage: React.FC = () => {
   return (

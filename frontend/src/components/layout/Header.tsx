@@ -6,7 +6,6 @@ import { useGoogleAuth } from '../../hooks/useGoogleAuth';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/Avatar";
 import { useAppStore } from "@/store/useAppStore";
 import { SettingsModal } from './setting/SettingsModal';
-import { MobileSearch } from './MobileSearch';
 import { useNavItems } from './NavItems';
 import { useNavigate } from 'react-router-dom';
 import { useSocial } from '../../hooks/useSocial';
@@ -68,11 +67,9 @@ export const Header: React.FC = () => {
   }, [profileData?.data, user, profile, typedUser]);
 
   // Navigation function
-  const navItems = useNavItems(useCallback(() => setIsSearchOpen(true), []));
+  const navItems = useNavItems();
   
   // State và refs
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const searchInputRef = useRef<HTMLInputElement>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobileUserMenuOpen, setIsMobileUserMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -114,24 +111,6 @@ export const Header: React.FC = () => {
     }
   }, [isConnected, stableUserId, navigate]);
 
-  // Auto focus search input khi mở trên mobile
-  useEffect(() => {
-    if (isSearchOpen && searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
-  }, [isSearchOpen]);
-
-  // Đóng mobile search khi click bên ngoài
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (isSearchOpen && searchInputRef.current && !searchInputRef.current.contains(event.target as Node)) {
-        setIsSearchOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isSearchOpen]);
 
   // Đóng dropdown khi click outside
   useEffect(() => {
@@ -390,12 +369,6 @@ export const Header: React.FC = () => {
         onClose={closeSettings}
       />
 
-      {/* Mobile Search */}
-      <MobileSearch 
-        isOpen={isSearchOpen}
-        onClose={() => setIsSearchOpen(false)}
-        searchInputRef={searchInputRef}
-      />
     </>
   );
 };

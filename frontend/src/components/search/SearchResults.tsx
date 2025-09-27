@@ -36,16 +36,19 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   }
 
   const handleUserClick = (user: Profile) => {
-    // Đóng search modal/page trước
+    // Đóng search modal trước nếu có (không áp dụng cho SearchPage)
     if (onClose) {
       onClose();
-    }
-    
-    // Delay nhỏ để modal đóng mượt mà trước khi navigate
-    setTimeout(() => {
+      // Delay nhỏ để modal đóng mượt mà trước khi navigate
+      setTimeout(() => {
+        const userId = user._id || user.id;
+        navigate(`/profile/${userId}`);
+      }, 100);
+    } else {
+      // Direct navigation cho SearchPage
       const userId = user._id || user.id;
       navigate(`/profile/${userId}`);
-    }, 100);
+    }
     
     if (onUserSelect) {
       onUserSelect(user);
@@ -53,15 +56,17 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   };
 
   const handlePostClick = (post: any) => {
-    // Đóng search modal/page trước
+    // Đóng search modal trước nếu có (không áp dụng cho SearchPage)
     if (onClose) {
       onClose();
-    }
-    
-    // Delay nhỏ để modal đóng mượt mà trước khi navigate
-    setTimeout(() => {
+      // Delay nhỏ để modal đóng mượt mà trước khi navigate
+      setTimeout(() => {
+        navigate(`/post/${post._id}`);
+      }, 100);
+    } else {
+      // Direct navigation cho SearchPage
       navigate(`/post/${post._id}`);
-    }, 100);
+    }
     
     if (onPostSelect) {
       onPostSelect(post);
