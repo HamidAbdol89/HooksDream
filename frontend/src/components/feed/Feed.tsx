@@ -4,7 +4,6 @@ import { useSocial } from '@/hooks/useSocial';
 import { useTranslation } from 'react-i18next';
 import { CreatePostModal } from '../posts/CreatePostModal';
 import { FeedHeader } from './FeedHeader';
-import { PopularUsersSection } from './PopularUsersSection';
 import { PostList } from './PostList';
 import { LoadingState } from './LoadingState';
 import { ErrorState } from './ErrorState';
@@ -20,10 +19,8 @@ interface FeedContainerProps {
   isRefreshing: boolean;
   hasMore: boolean;
   isLoadingMore: boolean;
-  popularUsers: any[];
-  isLoadingPopularUsers: boolean;
   currentUserProfile?: any;
-  profile?: any; // ✅ thêm dòng này
+  profile?: any;
   onRefresh: () => void;
   onLoadMore: () => void;
   onLike: (postId: string) => void;
@@ -42,8 +39,6 @@ export const FeedContainer: React.FC<FeedContainerProps> = React.memo(({
   isRefreshing,
   hasMore,
   isLoadingMore,
-  popularUsers,
-  isLoadingPopularUsers,
   currentUserProfile,
   onRefresh,
   onLoadMore,
@@ -96,15 +91,6 @@ export const FeedContainer: React.FC<FeedContainerProps> = React.memo(({
           profile={profile}
           onCreatePost={handleCreatePost}
         />
-
-        <div className="p-4">
-          <PopularUsersSection
-            popularUsers={popularUsers}
-            isLoading={isLoadingPopularUsers}
-            onFollow={onFollow}
-            isFollowLoading={isFollowLoading}
-          />
-        </div>
 
         <div className="pb-20">
           {error ? (

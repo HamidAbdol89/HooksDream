@@ -1,7 +1,7 @@
 // ProtectedApp.tsx
 import React from "react";
-import { useAppStore } from "@/store/useAppStore";
 import { Routes, Route } from "react-router-dom";
+import { useAppStore } from "@/store/useAppStore";
 import { AuthConnect } from "@/components/auth/AuthConnect";
 import { Header } from "@/components/layout/Header";
 import SidebarLeft from "@/components/layout/SidebarLeft";
@@ -11,12 +11,12 @@ import { TooltipProvider } from "@radix-ui/react-tooltip";
 import ProfilePage from "@/pages/ProfilePage";
 import SearchPage from "@/pages/SearchPage";
 import PostDetailPage from "@/pages/PostDetailPage";
+import FriendPage from "@/pages/FriendPage";
+import MessagesPage from "@/pages/MessagesPage";
 import { UnfollowConfirmProvider } from "@/contexts/UnfollowConfirmContext";
 
 const ProtectedApp: React.FC = () => {
   const { isConnected, user } = useAppStore();
-
-  // Show login screen if not connected
   if (!isConnected || !user) {
     return <AuthConnect />;
   }
@@ -42,6 +42,8 @@ const ProtectedApp: React.FC = () => {
                   <Route path="/profile/:userId" element={<ProfilePage />} />
                   <Route path="/profile/me" element={<ProfilePage />} />
                   <Route path="/search" element={<SearchPage />} />
+                  <Route path="/friend" element={<FriendPage />} />
+                  <Route path="/messages" element={<MessagesPage />} />
                   <Route path="/post/:postId" element={<PostDetailPage />} />
                   <Route path="/*" element={<Feed />} />
                 </Routes>

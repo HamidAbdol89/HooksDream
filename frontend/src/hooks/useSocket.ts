@@ -106,6 +106,65 @@ interface SocketEvents {
     followingCount: number;
     timestamp: string;
   }) => void;
+
+  // Chat events
+  'message:new': (data: {
+    conversationId: string;
+    message: any;
+  }) => void;
+
+  'messages:read': (data: {
+    conversationId: string;
+    readBy: string;
+    messageIds: string[];
+  }) => void;
+
+  'message:deleted': (data: {
+    conversationId: string;
+    messageId: string;
+  }) => void;
+
+  'message:reaction': (data: {
+    conversationId: string;
+    messageId: string;
+    reaction: {
+      user: string;
+      emoji: string;
+    };
+  }) => void;
+
+  'chat:typing:update': (data: {
+    conversationId: string;
+    userId: string;
+    isTyping: boolean;
+    timestamp: string;
+  }) => void;
+
+  'chat:user:joined': (data: {
+    userId: string;
+    conversationId: string;
+    timestamp: string;
+  }) => void;
+
+  'chat:user:left': (data: {
+    userId: string;
+    conversationId: string;
+    timestamp: string;
+  }) => void;
+
+  'chat:user:status': (data: {
+    userId: string;
+    status: 'online' | 'offline';
+    timestamp: string;
+  }) => void;
+
+  'chat:message:status': (data: {
+    messageId: string;
+    conversationId: string;
+    status: 'delivered' | 'read';
+    userId: string;
+    timestamp: string;
+  }) => void;
 }
 
 export const useSocket = () => {
@@ -532,5 +591,150 @@ export const useFollowSocket = () => {
     onFollowUpdate,
     onFollowActivity,
     emitFollow
+  };
+};
+
+// Hook for chat real-time updates
+export const useChatSocket = (conversationId?: string) => {
+  const { on, off, emit, isConnected } = useSocket();
+
+  // Join conversation room
+  useEffect(() => {
+    if (conversationId && isConnected) {
+      emit('chat:join', conversationId);
+      
+      return () => {
+        emit('chat:leave', conversationId);
+      };
+    }
+  }, [conversationId, isConnected, emit]);
+
+  // Listen for new messages
+  const onNewMessage = useCallback((callback: (data: {
+    conversationId: string;
+    message: any;
+  }) => void) => {
+    on('message:new', callback);
+  }, [on]);
+
+  // Listen for message read receipts
+  const onMessagesRead = useCallback((callback: (data: {
+    conversationId: string;
+    readBy: string;
+    messageIds: string[];
+  }) => void) => {
+    on('messages:read', callback);
+  }, [on]);
+
+  // Listen for message deletions
+  const onMessageDeleted = useCallback((callback: (data: {
+    conversationId: string;
+    messageId: string;
+  }) => void) => {
+    on('message:deleted', callback);
+  }, [on]);
+
+  // Listen for message reactions
+  const onMessageReaction = useCallback((callback: (data: {
+    conversationId: string;
+    messageId: string;
+    reaction: { user: string; emoji: string; };
+  }) => void) => {
+    on('message:reaction', callback);
+  }, [on]);
+
+  // Listen for typing indicators
+  const onTypingUpdate = useCallback((callback: (data: {
+    conversationId: string;
+    userId: string;
+    isTyping: boolean;
+  }) => void) => {
+    on('chat:typing:update', callback);
+  }, [on]);
+
+  // Listen for user status updates
+  const onUserStatus = useCallback((callback: (data: {
+    userId: string;
+    status: 'online' | 'offline';
+  }) => void) => {
+    on('chat:user:status', callback);
+  }, [on]);
+
+  // Listen for message status updates
+  const onMessageStatus = useCallback((callback: (data: {
+    messageId: string;
+    conversationId: string;
+    status: 'delivered' | 'read';
+    userId: string;
+  }) => void) => {
+    on('chat:message:status', callback);
+  }, [on]);
+
+  // Emit typing indicator
+  const emitTyping = useCallback((isTyping: boolean) => {
+    if (conversationId) {
+      emit('chat:typing', {
+        conversationId,
+        isTyping
+      });
+    }
+  }, [emit, conversationId]);
+
+  // Emit message delivered
+  const emitMessageDelivered = useCallback((messageId: string) => {
+    if (conversationId) {
+      emit('chat:message:delivered', {
+        conversationId,
+        messageId
+      });
+    }
+  }, [emit, conversationId]);
+
+  // Emit message read
+  const emitMessageRead = useCallback((messageId: string) => {
+    if (conversationId) {
+      emit('chat:message:read', {
+        conversationId,
+        messageId
+      });
+    }
+  }, [emit, conversationId]);
+
+  // Emit online status
+  const emitOnlineStatus = useCallback(() => {
+    emit('chat:status:online');
+  }, [emit]);
+
+  return {
+    onNewMessage,
+    onMessagesRead,
+    onMessageDeleted,
+    onMessageReaction,
+    onTypingUpdate,
+    onUserStatus,
+    onMessageStatus,
+    emitTyping,
+    emitMessageDelivered,
+    emitMessageRead,
+    emitOnlineStatus
+  };
+};
+
+export default useSocket;
+
+// Hook for global chat notifications
+export const useChatNotifications = () => {
+  const { on, off } = useSocket();
+
+  // Listen for new messages across all conversations
+  const onGlobalNewMessage = useCallback((callback: (data: {
+    conversationId: string;
+    message: any;
+  }) => void) => {
+    on('message:new', callback);
+  }, [on]);
+
+  return {
+    onGlobalNewMessage
   };
 };

@@ -3,6 +3,7 @@ import React from 'react';
 import { User, Loader2, Users, Crown, UserPlus, Clock, TrendingUp } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/Avatar';
+import { FollowButton } from '../ui/FollowButton';
 import { UserProfile } from '@/hooks/useSocial';
 
 interface SuggestedUser extends UserProfile {
@@ -12,15 +13,11 @@ interface SuggestedUser extends UserProfile {
 interface PopularUsersSectionProps {
   popularUsers: SuggestedUser[];
   isLoading: boolean;
-  onFollow: (userId: string, currentStatus: boolean) => void;
-  isFollowLoading: boolean;
 }
 
 export const PopularUsersSection: React.FC<PopularUsersSectionProps> = ({
   popularUsers,
-  isLoading,
-  onFollow,
-  isFollowLoading
+  isLoading
 }) => {
   // Lọc ra user không phải mình và chưa follow
   const filteredUsers = popularUsers.filter(user =>
@@ -31,6 +28,8 @@ export const PopularUsersSection: React.FC<PopularUsersSectionProps> = ({
   const uniqueUsers = Array.from(
     new Map(filteredUsers.map(u => [u._id, u])).values()
   );
+
+  // FollowButton sẽ tự handle follow/unfollow logic
 
   const getSuggestionConfig = (suggestionType: string) => {
     switch (suggestionType) {
@@ -149,19 +148,15 @@ export const PopularUsersSection: React.FC<PopularUsersSectionProps> = ({
                 </div>
               </div>
 
-              <Button
-                size="sm"
+              <FollowButton
+                userId={user._id}
+                initialIsFollowing={user.isFollowing || false}
                 variant={config.buttonVariant}
-                className="h-7 px-3 rounded-full text-xs ml-2"
-                onClick={() => onFollow(user._id, user.isFollowing || false)}
-                disabled={isFollowLoading}
-              >
-                {isFollowLoading ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : user.suggestionType === 'follows_you' ? (
-                  'Theo dõi lại'
-                ) : 'Theo dõi'}
-              </Button>
+                size="sm"
+                showIcon={false}
+                className="h-7 px-3 text-xs ml-2"
+                username={user.username || user.displayName}
+              />
             </div>
           );
         })}

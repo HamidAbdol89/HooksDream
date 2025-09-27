@@ -50,12 +50,14 @@ const userRoutes = require('./routes/users');
 const postRoutes = require('./routes/posts');
 const commentRoutes = require('./routes/comments');
 const searchRoutes = require('./routes/search');
+const chatRoutes = require('./routes/chat');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/search', searchRoutes);
+app.use('/api/chat', chatRoutes);
 // Xử lý lỗi
 app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Something went wrong!' });

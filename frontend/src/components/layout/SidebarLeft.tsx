@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Home, 
   Bell, 
@@ -8,7 +9,8 @@ import {
   Settings,
   TrendingUp,
   Hash,
-  Users
+  Users,
+  UserPlus
 } from 'lucide-react';
 
 // TODO: Import your actual UI components from shadcn
@@ -128,6 +130,7 @@ const Badge: React.FC<BadgeProps> = ({
 
 const SidebarLeft: React.FC = () => {
   const [activeItem, setActiveItem] = useState('home');
+  const navigate = useNavigate();
 
   // TODO: Get real user profile from your store
   // const { profile, isConnected } = useAppStore();
@@ -146,6 +149,7 @@ const SidebarLeft: React.FC = () => {
   const navigationItems = [
     { id: 'trending', icon: TrendingUp, label: 'Trending', badge: null, route: '/trending' },
     { id: 'following', icon: Users, label: 'Following', badge: null, route: '/following' },
+    { id: 'friends', icon: UserPlus, label: 'Gợi ý kết bạn', badge: null, route: '/friend' },
     { id: 'topics', icon: Hash, label: 'Topics', badge: null, route: '/topics' },
     { id: 'bookmarks', icon: Bookmark, label: 'Đã lưu', badge: null, route: '/bookmarks' },
     { id: 'profile', icon: User, label: 'Hồ sơ', badge: null, route: '/profile/me' },
@@ -155,14 +159,12 @@ const SidebarLeft: React.FC = () => {
   // TODO: Create CreatePostModal component and implement functionality
   const handleCreatePost = () => {
     console.log('Open create post modal');
-    // Implement create post modal
   };
 
   // TODO: Implement navigation functionality
   const handleNavigation = (item: any) => {
     setActiveItem(item.id);
-    console.log('Navigate to:', item.route);
-    // Use your router to navigate: navigate(item.route)
+    navigate(item.route);
   };
 
   // TODO: Implement quick action functionality

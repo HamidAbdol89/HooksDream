@@ -1,0 +1,75 @@
+// components/chat/ChatWindow.tsx
+import React from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useGoogleAuth } from '@/hooks/useGoogleAuth';
+import { useChat } from '@/hooks/useChat';
+import { ChatHeader } from './ChatHeader';
+import { MessagesList } from './MessagesList';
+import { MessageInput } from './MessageInput';
+
+interface ChatWindowProps {
+  conversationId: string;
+}
+
+export const ChatWindow: React.FC<ChatWindowProps> = ({ conversationId }) => {
+  const { token } = useGoogleAuth();
+  const queryClient = useQueryClient();
+  const { currentUserId } = useChat();
+  
+  // Get messages for this conversation
+  const { data: messagesData, isLoading: isLoadingMessages } = useQuery({
+    queryKey: ['chat', 'messages', conversationId],
+    queryFn: async () => {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/chat/conversations/${conversationId}/messages`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Failed to fetch messages');
+      const data = await response.json();
+      return data.data || [];
+    },
+    enabled: !!conversationId && !!token,
+    refetchInterval: 3000, // Refresh every 3 seconds for real-time feel
+  });
+  
+  const messages = messagesData || [];
+  
+  // Send message function
+  const handleSendMessage = async (text: string) => {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/chat/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        text: text
+      })
+    });
+    
+    if (!response.ok) throw new Error('Failed to send message');
+    
+    // Refresh messages
+    queryClient.invalidateQueries({ queryKey: ['chat', 'messages', conversationId] });
+  };
+
+  return (
+    <div className="flex-1 flex flex-col bg-background">
+      <ChatHeader />
+      
+      <MessagesList 
+        messages={messages}
+        currentUserId={currentUserId || ''}
+        isLoading={isLoadingMessages}
+      />
+      
+      <MessageInput 
+        onSendMessage={handleSendMessage}
+        disabled={!token}
+      />
+    </div>
+  );
+};

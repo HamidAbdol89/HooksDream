@@ -10,6 +10,7 @@ import {
 } from '@tanstack/react-query';
 import { useMemo, useEffect, useRef, useCallback } from 'react';
 import { useAppStore } from '@/store/useAppStore';
+import { api } from '@/services/api';
 
 // Types (same as before)
 export interface ApiResponse<T = any> {

@@ -1,0 +1,85 @@
+// components/chat/MessageBubble.tsx
+import React from 'react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
+
+interface Message {
+  _id: string;
+  sender: {
+    _id: string;
+    username: string;
+    displayName: string;
+    avatar?: string;
+  };
+  content: {
+    text?: string;
+    image?: string;
+  };
+  createdAt: string;
+}
+
+interface MessageBubbleProps {
+  message: Message;
+  isOwn: boolean;
+  showAvatar: boolean;
+  isLastInGroup: boolean;
+}
+
+export const MessageBubble: React.FC<MessageBubbleProps> = ({
+  message,
+  isOwn,
+  showAvatar,
+  isLastInGroup
+}) => {
+  return (
+    <div className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+      {/* Avatar */}
+      <div className="flex-shrink-0">
+        {!isOwn && showAvatar ? (
+          <Avatar className="w-8 h-8">
+            <AvatarImage src={message.sender.avatar} />
+            <AvatarFallback className="text-xs">
+              {message.sender.displayName?.charAt(0) || message.sender.username?.charAt(0) || 'U'}
+            </AvatarFallback>
+          </Avatar>
+        ) : (
+          <div className="w-8 h-8" />
+        )}
+      </div>
+      
+      {/* Message Bubble */}
+      <div className={`flex flex-col max-w-xs lg:max-w-md ${isOwn ? 'items-end' : 'items-start'}`}>
+        {!isOwn && showAvatar && (
+          <span className="text-xs text-muted-foreground mb-1 px-3">
+            {message.sender.displayName || message.sender.username}
+          </span>
+        )}
+        
+        <div
+          className={`px-4 py-2.5 rounded-2xl shadow-sm transition-all hover:shadow-md ${
+            isOwn
+              ? 'bg-primary text-primary-foreground rounded-br-md'
+              : 'bg-card text-foreground border rounded-bl-md'
+          } ${isLastInGroup ? 'mb-2' : 'mb-1'}`}
+        >
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">
+            {message.content.text}
+          </p>
+        </div>
+        
+        {isLastInGroup && (
+          <div className={`flex items-center gap-1 text-xs text-muted-foreground px-3 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+            <span>
+              {new Date(message.createdAt).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </span>
+            {isOwn && (
+              <span className="text-primary">✓</span>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

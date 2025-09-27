@@ -222,6 +222,83 @@ class SocketServer {
                 });
             });
 
+            // ===== CHAT EVENTS =====
+            
+            // Join conversation room
+            socket.on('chat:join', (conversationId) => {
+                const roomName = `conversation:${conversationId}`;
+                socket.join(roomName);
+                this.userRooms.get(socket.userId).add(roomName);
+                
+                // Notify others in conversation that user joined
+                socket.to(roomName).emit('chat:user:joined', {
+                    userId: socket.userId,
+                    conversationId,
+                    timestamp: new Date().toISOString()
+                });
+            });
+
+            // Leave conversation room
+            socket.on('chat:leave', (conversationId) => {
+                const roomName = `conversation:${conversationId}`;
+                socket.leave(roomName);
+                this.userRooms.get(socket.userId).delete(roomName);
+                
+                // Notify others in conversation that user left
+                socket.to(roomName).emit('chat:user:left', {
+                    userId: socket.userId,
+                    conversationId,
+                    timestamp: new Date().toISOString()
+                });
+            });
+
+            // Handle typing indicators for chat
+            socket.on('chat:typing', (data) => {
+                socket.to(`conversation:${data.conversationId}`).emit('chat:typing:update', {
+                    conversationId: data.conversationId,
+                    userId: socket.userId,
+                    isTyping: data.isTyping,
+                    timestamp: new Date().toISOString()
+                });
+            });
+
+            // Handle message delivery confirmation
+            socket.on('chat:message:delivered', (data) => {
+                socket.to(`conversation:${data.conversationId}`).emit('chat:message:status', {
+                    messageId: data.messageId,
+                    conversationId: data.conversationId,
+                    status: 'delivered',
+                    userId: socket.userId,
+                    timestamp: new Date().toISOString()
+                });
+            });
+
+            // Handle message read confirmation
+            socket.on('chat:message:read', (data) => {
+                socket.to(`conversation:${data.conversationId}`).emit('chat:message:status', {
+                    messageId: data.messageId,
+                    conversationId: data.conversationId,
+                    status: 'read',
+                    userId: socket.userId,
+                    timestamp: new Date().toISOString()
+                });
+            });
+
+            // Handle user online status for chat
+            socket.on('chat:status:online', () => {
+                // Broadcast online status to all conversations user is part of
+                const userRooms = this.userRooms.get(socket.userId) || new Set();
+                userRooms.forEach(room => {
+                    if (room.startsWith('conversation:')) {
+                        socket.to(room).emit('chat:user:status', {
+                            userId: socket.userId,
+                            status: 'online',
+                            timestamp: new Date().toISOString()
+                        });
+                    }
+                });
+            });
+
             // Handle disconnect
             socket.on('disconnect', (reason) => {
                 // Clean up user data
@@ -256,6 +333,31 @@ class SocketServer {
     // Check if user is online
     isUserOnline(userId) {
         return this.connectedUsers.has(userId);
+    }
+
+    // Chat-specific utility methods
+    emitToConversation(conversationId, event, data) {
+        this.io.to(`conversation:${conversationId}`).emit(event, data);
+    }
+
+    // Get users in conversation
+    getUsersInConversation(conversationId) {
+        const room = this.io.sockets.adapter.rooms.get(`conversation:${conversationId}`);
+        return room ? Array.from(room) : [];
+    }
+
+    // Broadcast user status to conversations
+    broadcastUserStatus(userId, status) {
+        const userRooms = this.userRooms.get(userId) || new Set();
+        userRooms.forEach(room => {
+            if (room.startsWith('conversation:')) {
+                this.io.to(room).emit('chat:user:status', {
+                    userId,
+                    status,
+                    timestamp: new Date().toISOString()
+                });
+            }
+        });
     }
 }
 

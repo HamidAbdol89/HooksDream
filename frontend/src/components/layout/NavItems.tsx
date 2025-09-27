@@ -32,12 +32,12 @@ export const useNavItems = () => {
     {
       icon: <MessageSquare className="w-5 h-5" />,
       label: t('nav.messages'),
-      onClick: () => console.log('Navigate to Messages')
+      onClick: () => navigate('/messages')
     },
     {
       icon: <Users className="w-5 h-5" />,
       label: t('nav.friends'),
-      onClick: () => console.log('Navigate to Friends')
+      onClick: () => navigate('/friend')
     }
   ];
 

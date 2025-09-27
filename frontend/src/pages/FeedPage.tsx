@@ -16,8 +16,6 @@ export const Feed: React.FC = () => {
   const { useCurrentProfile, prefetchProfile, toggleFollow, isFollowLoading } = useSocial();
   const { data: currentProfileData, isLoading: isCurrentProfileLoading } = useCurrentProfile();
   const currentUserProfile = currentProfileData?.data;
-  const [popularUsers, setPopularUsers] = useState<any[]>([]);
-  const [isLoadingPopularUsers, setIsLoadingPopularUsers] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -98,25 +96,6 @@ export const Feed: React.FC = () => {
     }
   };
 
-  // 🔥 Debounced load popular users - Tránh multiple calls
-  const loadPopularUsers = useCallback(async () => {
-    if (isLoadingPopularUsers) return; // Tránh duplicate calls
-    
-    try {
-      setIsLoadingPopularUsers(true);
-      const response = await userApi.getPopularUsers();
-      
-      if (response.success) {
-        setPopularUsers(response.data || []);
-      } else {
-        console.error('Failed to load popular users:', response.message);
-      }
-    } catch (err) {
-      console.error('Load popular users error:', err);
-    } finally {
-      setIsLoadingPopularUsers(false);
-    }
-  }, [isLoadingPopularUsers]);
 
   // 🔥 Optimized load more with throttling
   const loadMorePosts = useCallback(async () => {
@@ -174,13 +153,6 @@ export const Feed: React.FC = () => {
       try {
         // Load posts trước - quan trọng nhất
         await loadPosts(true);
-        
-        // Load popular users sau - không quan trọng lắm
-        if (mounted) {
-          setTimeout(() => {
-            if (mounted) loadPopularUsers();
-          }, 1000); // Delay 1s để posts load xong
-        }
       } catch (err) {
         console.error('Initialize feed error:', err);
         if (mounted) {
@@ -283,16 +255,6 @@ export const Feed: React.FC = () => {
       )
     );
     
-    setPopularUsers(prevUsers => 
-      prevUsers.map(user => 
-        user._id === userId 
-          ? { 
-              ...user, 
-              isFollowing: !currentStatus
-            }
-          : user
-      )
-    );
     
     try {
       await toggleFollow(userId, currentStatus);
@@ -314,16 +276,6 @@ export const Feed: React.FC = () => {
         )
       );
       
-      setPopularUsers(prevUsers => 
-        prevUsers.map(user => 
-          user._id === userId 
-            ? { 
-                ...user, 
-                isFollowing: currentStatus
-              }
-            : user
-        )
-      );
     }
   };
 
@@ -339,10 +291,10 @@ export const Feed: React.FC = () => {
     setIsRefreshing(true);
     try {
       await loadPosts(true);
-      // Load popular users trong background
-      setTimeout(() => loadPopularUsers(), 500);
     } catch (err) {
       console.error('Refresh error:', err);
+    } finally {
+      setIsRefreshing(false);
     }
   }, [isRefreshing]);
 
@@ -365,8 +317,6 @@ export const Feed: React.FC = () => {
       isRefreshing={isRefreshing}
       hasMore={hasMore}
       isLoadingMore={isLoadingMore}
-      popularUsers={popularUsers}
-      isLoadingPopularUsers={isLoadingPopularUsers}
       currentUserProfile={currentUserProfile}
       onRefresh={handleRefresh}
       onLoadMore={loadMorePosts}
