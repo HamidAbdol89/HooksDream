@@ -10,6 +10,7 @@ import { Feed } from "../pages/FeedPage";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 import ProfilePage from "@/pages/ProfilePage";
 import SearchPage from "@/pages/SearchPage";
+import PostDetailPage from "@/pages/PostDetailPage";
 import { UnfollowConfirmProvider } from "@/contexts/UnfollowConfirmContext";
 
 const ProtectedApp: React.FC = () => {
@@ -41,6 +42,7 @@ const ProtectedApp: React.FC = () => {
                   <Route path="/profile/:userId" element={<ProfilePage />} />
                   <Route path="/profile/me" element={<ProfilePage />} />
                   <Route path="/search" element={<SearchPage />} />
+                  <Route path="/post/:postId" element={<PostDetailPage />} />
                   <Route path="/*" element={<Feed />} />
                 </Routes>
               </TooltipProvider>

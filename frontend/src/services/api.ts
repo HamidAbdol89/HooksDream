@@ -424,6 +424,69 @@ export const userApi = {
   },
 };
 
+// Advanced Search API
+export const searchApi = {
+  // Unified search - tìm kiếm cả users và posts
+  unifiedSearch: async (params: {
+    q: string;
+    type?: 'all' | 'users' | 'posts';
+    page?: number;
+    limit?: number;
+    sort?: 'relevance' | 'latest' | 'popular';
+  }) => {
+    const searchParams = new URLSearchParams();
+    searchParams.append('q', params.q);
+    if (params.type) searchParams.append('type', params.type);
+    if (params.page) searchParams.append('page', params.page.toString());
+    if (params.limit) searchParams.append('limit', params.limit.toString());
+    if (params.sort) searchParams.append('sort', params.sort);
+    
+    return apiCall(`/api/search?${searchParams.toString()}`);
+  },
+
+  // Search posts với advanced filters
+  searchPosts: async (params: {
+    q?: string;
+    hashtag?: string;
+    page?: number;
+    limit?: number;
+    sort?: 'relevance' | 'latest' | 'popular';
+    dateFrom?: string;
+    dateTo?: string;
+    hasMedia?: boolean;
+  }) => {
+    const searchParams = new URLSearchParams();
+    if (params.q) searchParams.append('q', params.q);
+    if (params.hashtag) searchParams.append('hashtag', params.hashtag);
+    if (params.page) searchParams.append('page', params.page.toString());
+    if (params.limit) searchParams.append('limit', params.limit.toString());
+    if (params.sort) searchParams.append('sort', params.sort);
+    if (params.dateFrom) searchParams.append('dateFrom', params.dateFrom);
+    if (params.dateTo) searchParams.append('dateTo', params.dateTo);
+    if (params.hasMedia !== undefined) searchParams.append('hasMedia', params.hasMedia.toString());
+    
+    return apiCall(`/api/search/posts?${searchParams.toString()}`);
+  },
+
+  // Get search suggestions
+  getSearchSuggestions: async (params: { q: string; limit?: number }) => {
+    const searchParams = new URLSearchParams();
+    searchParams.append('q', params.q);
+    if (params.limit) searchParams.append('limit', params.limit.toString());
+    
+    return apiCall(`/api/search/suggestions?${searchParams.toString()}`);
+  },
+
+  // Get trending hashtags
+  getTrendingHashtags: async (params?: { limit?: number; period?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.limit) searchParams.append('limit', params.limit.toString());
+    if (params?.period) searchParams.append('period', params.period.toString());
+    
+    return apiCall(`/api/search/trending?${searchParams.toString()}`);
+  },
+};
+
 // Post API
 export const api = {
   post: {

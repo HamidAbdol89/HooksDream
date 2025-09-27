@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { SearchUsers } from '@/components/search/SearchUsers';
+import { AdvancedSearch } from '@/components/search/AdvancedSearch';
 import { Profile } from '@/store/useAppStore';
 
 interface MobileSearchProps {
@@ -16,10 +16,12 @@ export const MobileSearch = ({ isOpen, onClose, searchInputRef }: MobileSearchPr
   const { t } = useTranslation('common');
   const navigate = useNavigate();
 
-  const handleUserSelect = (user: Profile) => {
-    const userId = user._id || user.id;
-    navigate(`/profile/${userId}`);
-    onClose();
+  // SearchResults sẽ tự handle navigation, chỉ cần close modal
+  const handleSearchAction = () => {
+    // Modal sẽ tự close khi user navigate
+    setTimeout(() => {
+      onClose();
+    }, 100);
   };
 
   return (
@@ -48,16 +50,16 @@ export const MobileSearch = ({ isOpen, onClose, searchInputRef }: MobileSearchPr
               >
                 <X className="w-6 h-6" />
               </motion.button>
-              <h2 className="text-lg font-semibold">{t('header.search')}</h2>
+              <h2 className="text-lg font-semibold">Tìm kiếm nâng cao</h2>
               <div className="w-10"></div> {/* Placeholder for alignment */}
             </div>
 
-            {/* Search Content */}
+            {/* Advanced Search Content */}
             <div className="flex-1 overflow-y-auto p-4">
-              <SearchUsers
-                onUserSelect={handleUserSelect}
-                showFollowButton={true}
-                placeholder={t('header.searchPlaceholder') || "Tìm kiếm người dùng..."}
+              <AdvancedSearch
+                defaultTab="all"
+                className="mobile-optimized"
+                onClose={onClose}
               />
             </div>
           </motion.div>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/Button';
 import { Search } from 'lucide-react';
-import { SearchUsers } from './SearchUsers';
+import { AdvancedSearch } from './AdvancedSearch';
 import { Profile } from '@/store/useAppStore';
 import { useNavigate } from 'react-router-dom';
 
@@ -15,20 +15,15 @@ interface SearchModalProps {
 export const SearchModal: React.FC<SearchModalProps> = ({
   isOpen,
   onClose,
-  title = "Tìm kiếm người dùng"
+  title = "Tìm kiếm nâng cao"
 }) => {
   const navigate = useNavigate();
 
-  const handleUserSelect = (user: Profile) => {
-    // Navigate to user profile
-    const userId = user._id || user.id;
-    navigate(`/profile/${userId}`);
-    onClose();
-  };
+  // SearchResults sẽ tự handle navigation
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Search className="h-5 w-5" />
@@ -37,10 +32,10 @@ export const SearchModal: React.FC<SearchModalProps> = ({
         </DialogHeader>
         
         <div className="flex-1 overflow-y-auto">
-          <SearchUsers
-            onUserSelect={handleUserSelect}
-            showFollowButton={true}
-            className="px-1"
+          <AdvancedSearch
+            defaultTab="all"
+            className="modal-optimized"
+            onClose={onClose}
           />
         </div>
       </DialogContent>

@@ -49,11 +49,13 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const postRoutes = require('./routes/posts');
 const commentRoutes = require('./routes/comments');
+const searchRoutes = require('./routes/search');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/comments', commentRoutes);
+app.use('/api/search', searchRoutes);
 // Xử lý lỗi
 app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Something went wrong!' });
