@@ -1,8 +1,10 @@
 import React from 'react';
 import { Edit3, MoreHorizontal, MessageCircle, Share2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { FollowButton } from '@/components/ui/FollowButton';
+import { usePageTransition } from '@/components/ui/PageTransition';
 
 interface ProfileActionsProps {
   isOwnProfile: boolean;
@@ -21,14 +23,23 @@ export const ProfileActions: React.FC<ProfileActionsProps> = ({
   userId,
   followerCount
 }) => {
+  const navigate = useNavigate();
+  const { startTransition } = usePageTransition();
+
+  const handleEditProfile = () => {
+    startTransition(() => {
+      navigate('/edit-profile');
+    }, 100);
+  };
+
   // Show edit profile button only for own profile
   if (isOwnProfile) {
     return (
       <div className="flex justify-center space-x-3 px-4 mb-4">
         <Button 
-          onClick={onEditProfile}
+          onClick={handleEditProfile}
           variant="outline"
-          className="flex-1 max-w-[200px] flex items-center justify-center space-x-2 rounded-full py-2 text-sm font-medium"
+          className="flex-1 max-w-[200px] flex items-center justify-center space-x-2 rounded-full py-2 text-sm font-medium hover:bg-primary hover:text-primary-foreground transition-all duration-200 hover:scale-105"
         >
           <Edit3 className="h-4 w-4" />
           <span>Chỉnh sửa</span>

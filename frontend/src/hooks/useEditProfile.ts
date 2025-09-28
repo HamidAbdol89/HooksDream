@@ -133,11 +133,20 @@ export function useEditProfile({ isOpen, user, onSave, onClose }: UseEditProfile
 // ✅ THÊM VÀO useEditProfile.ts - trong handleImageUpload
 
 const handleImageUpload = async (
-  e: React.ChangeEvent<HTMLInputElement>,
+  file: File,
   type: 'avatar' | 'coverImage'
 ) => {
-  const file = e.target.files?.[0];
   if (!file || !resolvedUser?._id) return;
+  
+  // ✅ Handle empty file for removal
+  if (file.size === 0) {
+    // Handle image removal
+    setFormData(prev => ({ ...prev, [type]: '' }));
+    setResolvedUser(prev => prev ? { ...prev, [type]: '' } : null);
+    updateUser({ [type]: '' });
+    await onSave({ [type]: '' });
+    return;
+  }
 
   try {
     isUploadingRef.current = true;
@@ -225,7 +234,6 @@ const handleImageUpload = async (
     }, 2000); // Tăng delay lên 2s
     
     setImageUploading(null);
-    if (e.target) e.target.value = '';
   }
 };
   const handleSubmit = async (e: React.FormEvent) => {

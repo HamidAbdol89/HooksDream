@@ -13,6 +13,7 @@ import SearchPage from "@/pages/SearchPage";
 import PostDetailPage from "@/pages/PostDetailPage";
 import FriendPage from "@/pages/FriendPage";
 import MessagesPage from "@/pages/MessagesPage";
+import EditProfilePage from "@/pages/EditProfilePage";
 import { UnfollowConfirmProvider } from "@/contexts/UnfollowConfirmContext";
 import { ChatProvider, useChatContext } from "@/contexts/ChatContext";
 import { useSocket } from "@/hooks/useSocket";
@@ -37,6 +38,7 @@ const ProtectedAppContent: React.FC = () => {
   
   // Check if current page should hide sidebars
   const isMessagesPage = location.pathname === '/messages';
+  const isEditProfilePage = location.pathname === '/edit-profile';
   // Get chat context
   const { selectedConversationId } = useChatContext();
   const isInChat = isMessagesPage && !!selectedConversationId && isMobile;
@@ -48,11 +50,20 @@ const ProtectedAppContent: React.FC = () => {
   return (
     <UnfollowConfirmProvider>
       <div className="min-h-screen bg-background text-foreground transition-colors duration-200">
-        {/* Hide header when in individual chat */}
-        <Header isInChat={isInChat} />
+        {/* Hide header when in individual chat or edit profile */}
+        {!isEditProfilePage && <Header isInChat={isInChat} />}
         
-        <main className={`w-full ${isMessagesPage || isInChat ? 'px-0 py-0' : 'px-0 py-6 lg:px-8'}`}>
-          {isMessagesPage || isInChat ? (
+        <main className={`w-full ${isMessagesPage || isInChat || isEditProfilePage ? 'px-0 py-0' : 'px-0 py-6 lg:px-8'}`}>
+          {isEditProfilePage ? (
+            // Full width layout for Edit Profile page
+            <div className="w-full">
+              <TooltipProvider>
+                <Routes>
+                  <Route path="/edit-profile" element={<EditProfilePage />} />
+                </Routes>
+              </TooltipProvider>
+            </div>
+          ) : isMessagesPage || isInChat ? (
             // Full width layout for Messages page and individual chats
             <div className={`w-full ${isInChat && isMobile ? 'h-screen' : 'h-[calc(100vh-64px)]'}`}>
               <TooltipProvider>
@@ -80,6 +91,7 @@ const ProtectedAppContent: React.FC = () => {
                   <Routes>
                     <Route path="/profile/:userId" element={<ProfilePage />} />
                     <Route path="/profile/me" element={<ProfilePage />} />
+                    <Route path="/edit-profile" element={<EditProfilePage />} />
                     <Route path="/search" element={<SearchPage />} />
                     <Route path="/friend" element={<FriendPage />} />
                     <Route path="/post/:postId" element={<PostDetailPage />} />

@@ -1,23 +1,58 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/Button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
 import { Card, CardContent } from '@/components/ui/Card';
-import { Camera, User, Loader2, Image as ImageIcon } from 'lucide-react';
+import { Camera, User, Loader2, Image as ImageIcon, Crop } from 'lucide-react';
 import { ProfileFormData } from '@/types/profile';
+import { ImageCropModal } from '@/components/ui/ImageCropModal';
 
 interface ImagesFormProps {
   formData: ProfileFormData;
   imageUploading: 'avatar' | 'cover' | null;
-  onImageUpload: (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'coverImage') => void;
+  onImageUpload: (file: File, type: 'avatar' | 'coverImage') => void;
 }
 
 export function ImagesForm({ formData, imageUploading, onImageUpload }: ImagesFormProps) {
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  
+  // ✅ Crop modal state
+  const [cropModal, setCropModal] = useState<{
+    isOpen: boolean;
+    file: File | null;
+    type: 'avatar' | 'cover';
+  }>({ isOpen: false, file: null, type: 'avatar' });
 
   const triggerFileInput = (ref: React.RefObject<HTMLInputElement>) => {
     ref.current?.click();
+  };
+
+  // ✅ Handle file selection for cropping
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'coverImage') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Open crop modal
+    setCropModal({
+      isOpen: true,
+      file,
+      type: type === 'avatar' ? 'avatar' : 'cover'
+    });
+  };
+
+  // ✅ Handle crop completion
+  const handleCropComplete = (croppedFile: File) => {
+    onImageUpload(croppedFile, cropModal.type === 'avatar' ? 'avatar' : 'coverImage');
+    setCropModal({ isOpen: false, file: null, type: 'avatar' });
+  };
+
+  // ✅ Handle crop modal close
+  const handleCropClose = () => {
+    setCropModal({ isOpen: false, file: null, type: 'avatar' });
+    // Clear file input
+    if (avatarInputRef.current) avatarInputRef.current.value = '';
+    if (coverInputRef.current) coverInputRef.current.value = '';
   };
 
   const getImageUrl = (url: string | undefined) => {
@@ -73,13 +108,9 @@ export function ImagesForm({ formData, imageUploading, onImageUpload }: ImagesFo
                         if (avatarInputRef.current) {
                           avatarInputRef.current.value = '';
                         }
-                        const event = {
-                          target: {
-                            name: 'avatar',
-                            value: null
-                          }
-                        } as unknown as React.ChangeEvent<HTMLInputElement>;
-                        onImageUpload(event, 'avatar');
+                        // Remove avatar by uploading empty file
+                        const emptyFile = new File([], 'empty', { type: 'image/jpeg' });
+                        onImageUpload(emptyFile, 'avatar');
                       }}
                       disabled={imageUploading === 'avatar'}
                       className="w-full sm:w-auto text-destructive hover:text-destructive/90"
@@ -92,16 +123,17 @@ export function ImagesForm({ formData, imageUploading, onImageUpload }: ImagesFo
                 <input
                   type="file"
                   ref={avatarInputRef}
-                  onChange={(e) => onImageUpload(e, 'avatar')}
+                  onChange={(e) => handleFileSelect(e, 'avatar')}
                   accept="image/jpeg,image/png,image/webp,image/gif"
                   className="hidden"
                 />
                 
                 <p className="text-sm text-muted-foreground">
-                  Square image recommended, at least 400×400px. Max 10MB.
+                  <Crop className="h-3 w-3 inline mr-1" />
+                  Auto-cropped to 1:1 ratio, 400×400px output. Max 10MB.
                   {formData.avatar?.includes('cloudinary.com') && (
                     <span className="block text-green-600 mt-1">
-                      Stored securely on Cloudinary CDN
+                      ✅ Stored securely on Cloudinary CDN
                     </span>
                   )}
                 </p>
@@ -160,7 +192,7 @@ export function ImagesForm({ formData, imageUploading, onImageUpload }: ImagesFo
             <input
               type="file"
               ref={coverInputRef}
-              onChange={(e) => onImageUpload(e, 'coverImage')}
+              onChange={(e) => handleFileSelect(e, 'coverImage')}
               accept="image/jpeg,image/png,image/webp"
               className="hidden"
             />
@@ -168,10 +200,11 @@ export function ImagesForm({ formData, imageUploading, onImageUpload }: ImagesFo
             <div className="p-3 sm:p-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <p className="text-sm text-muted-foreground flex-1">
-                  Recommended: 1200×400px or larger. Max 10MB.
+                  <Crop className="h-3 w-3 inline mr-1" />
+                  Auto-cropped to 3:1 ratio, 1200×400px output. Max 10MB.
                   {formData.coverImage?.includes('cloudinary.com') && (
                     <span className="block text-green-600 mt-1">
-                      Optimized and delivered via CDN
+                      ✅ Optimized and delivered via CDN
                     </span>
                   )}
                 </p>
@@ -185,13 +218,9 @@ export function ImagesForm({ formData, imageUploading, onImageUpload }: ImagesFo
                       if (coverInputRef.current) {
                         coverInputRef.current.value = '';
                       }
-                      const event = {
-                        target: {
-                          name: 'coverImage',
-                          value: null
-                        }
-                      } as unknown as React.ChangeEvent<HTMLInputElement>;
-                      onImageUpload(event, 'coverImage');
+                      // Remove cover by uploading empty file
+                      const emptyFile = new File([], 'empty', { type: 'image/jpeg' });
+                      onImageUpload(emptyFile, 'coverImage');
                     }}
                     disabled={imageUploading === 'cover'}
                     className="text-destructive hover:text-destructive/90 text-sm"
@@ -204,6 +233,15 @@ export function ImagesForm({ formData, imageUploading, onImageUpload }: ImagesFo
           </CardContent>
         </Card>
       </div>
+
+      {/* ✅ Image Crop Modal */}
+      <ImageCropModal
+        isOpen={cropModal.isOpen}
+        onClose={handleCropClose}
+        imageFile={cropModal.file}
+        cropType={cropModal.type}
+        onCropComplete={handleCropComplete}
+      />
     </div>
   );
 }
