@@ -331,58 +331,94 @@ export const PostMedia: React.FC<PostMediaProps> = memo(({
       );
     }
 
-    // Single image with simple display
-    if (imageCount === 1) {
-      return (
-        <div ref={containerRef} className="relative rounded-xl overflow-hidden bg-secondary/20 group cursor-pointer">
-          {renderOptimizedImage(
-            images[0],
-            0,
-            "w-full h-auto object-cover max-h-[500px]",
-            content || "Post image"
-          )}
-        </div>
-      );
-    }
+    // Smart layout based on image count
+    const getSmartLayout = () => {
+      switch (imageCount) {
+        case 1:
+          return (
+            <div className="relative rounded-xl overflow-hidden bg-secondary/20 group cursor-pointer">
+              {renderOptimizedImage(
+                images[0],
+                0,
+                'w-full h-auto object-cover max-h-[600px]',
+                content || "Post image"
+              )}
+            </div>
+          );
 
-    // Multiple images with smart layout
-    return (
-      <div 
-        ref={containerRef}
-        className="grid grid-cols-2 gap-1 rounded-xl overflow-hidden"
-        style={{}}
-      >
-        {images.slice(0, maxDisplayImages).map((image, index) => (
-          <div
-            key={index}
-            className="relative bg-secondary/20 group cursor-pointer overflow-hidden aspect-square"
-          >
-            {renderOptimizedImage(
-              image,
-              index,
-              'w-full h-full object-cover',
-              `Image ${index + 1} - ${content}`
-            )}
-            
-            {/* Hiển thị số ảnh còn lại trên ảnh cuối cùng */}
-            {index === 3 && imageCount > 4 && (
-              <div 
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center cursor-pointer transition-all duration-500 hover:bg-black/70 hover:backdrop-blur-md"
-                onClick={() => onImageClick(images, index)}
-              >
-                <div className="text-white text-center">
-                  <div className="text-2xl font-bold mb-1">+{imageCount - 4}</div>
-                  <div className="text-xs opacity-90">ảnh khác</div>
+        case 2:
+          return (
+            <div className="grid grid-cols-2 gap-1 rounded-xl overflow-hidden">
+              {images.slice(0, 2).map((image, index) => (
+                <div key={index} className="relative bg-secondary/20 aspect-square overflow-hidden">
+                  {renderOptimizedImage(
+                    image,
+                    index,
+                    'w-full h-full object-cover',
+                    `Image ${index + 1}`
+                  )}
                 </div>
+              ))}
+            </div>
+          );
+
+        case 3:
+          return (
+            <div className="grid grid-cols-2 gap-1 rounded-xl overflow-hidden">
+              <div className="relative bg-secondary/20 aspect-square overflow-hidden">
+                {renderOptimizedImage(
+                  images[0],
+                  0,
+                  'w-full h-full object-cover',
+                  'Image 1'
+                )}
               </div>
-            )}
-          </div>
-        ))}
+              <div className="grid grid-rows-2 gap-1">
+                {images.slice(1, 3).map((image, index) => (
+                  <div key={index + 1} className="relative bg-secondary/20 aspect-square overflow-hidden">
+                    {renderOptimizedImage(
+                      image,
+                      index + 1,
+                      'w-full h-full object-cover',
+                      `Image ${index + 2}`
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+
+        default:
+          return (
+            <div className="grid grid-cols-2 gap-1 rounded-xl overflow-hidden">
+              {images.slice(0, 4).map((image, index) => (
+                <div key={index} className="relative bg-secondary/20 aspect-square overflow-hidden">
+                  {renderOptimizedImage(
+                    image,
+                    index,
+                    'w-full h-full object-cover',
+                    `Image ${index + 1}`
+                  )}
+                  {index === 3 && imageCount > 4 && (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                      <span className="text-white font-semibold text-lg">
+                        +{imageCount - 4}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          );
+      }
+    };
+
+    return (
+      <div ref={containerRef}>
+        {getSmartLayout()}
       </div>
     );
   }
-
-  return null;
 });
 
 PostMedia.displayName = 'PostMedia';
