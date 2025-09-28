@@ -209,46 +209,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             </div>
           )}
 
-          {/* Audio content */}
-          {message.content.audio && (
-            <div className={`flex items-center gap-3 p-3 rounded-xl ${
-              isOwn ? 'bg-primary/10' : 'bg-muted/50'
-            }`}>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleAudio}
-                className="h-10 w-10 p-0 rounded-full"
-              >
-                {isAudioPlaying ? (
-                  <Pause className="w-5 h-5" />
-                ) : (
-                  <Play className="w-5 h-5" />
-                )}
-              </Button>
-              
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <Volume2 className="w-4 h-4 text-muted-foreground" />
-                  <div className="flex-1 h-1 bg-muted rounded-full">
-                    <div className="h-full bg-primary rounded-full w-0" />
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {message.content.audio.duration ? formatDuration(message.content.audio.duration) : '0:00'}
-                  </span>
-                </div>
-              </div>
-
-              <audio
-                ref={audioRef}
-                src={message.content.audio.url}
-                onPlay={() => setIsAudioPlaying(true)}
-                onPause={() => setIsAudioPlaying(false)}
-                onEnded={() => setIsAudioPlaying(false)}
-                preload="metadata"
-              />
-            </div>
-          )}
 
           {/* Text-only content */}
           {message.content.text && !message.content.image && !message.content.video && (

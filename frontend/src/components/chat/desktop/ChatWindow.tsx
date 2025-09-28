@@ -20,12 +20,15 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ conversationId }) => {
   const { data: conversationData } = useQuery({
     queryKey: ['chat', 'conversation', conversationId],
     queryFn: async () => {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/chat/conversations/${conversationId}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/chat/conversations/${conversationId}`, 
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
         }
-      });
+      );
       
       if (!response.ok) throw new Error('Failed to fetch conversation');
       const data = await response.json();
@@ -43,12 +46,15 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ conversationId }) => {
   const { data: messagesData, isLoading: isLoadingMessages } = useQuery({
     queryKey: ['chat', 'messages', conversationId],
     queryFn: async () => {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/chat/conversations/${conversationId}/messages`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/chat/conversations/${conversationId}/messages`, 
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
         }
-      });
+      );
       
       if (!response.ok) throw new Error('Failed to fetch messages');
       const data = await response.json();
@@ -62,16 +68,17 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ conversationId }) => {
   
   // Send message function
   const handleSendMessage = async (text: string) => {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/chat/conversations/${conversationId}/messages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        text: text
-      })
-    });
+    const response = await fetch(
+      `${import.meta.env.VITE_API_BASE_URL}/api/chat/conversations/${conversationId}/messages`, 
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ text })
+      }
+    );
     
     if (!response.ok) throw new Error('Failed to send message');
     
@@ -81,20 +88,28 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ conversationId }) => {
 
   return (
     <div className="flex-1 flex flex-col bg-background h-full">
-      {/* Desktop always shows ChatHeader */}
-      <ChatHeader user={otherParticipant} />
+      {/* Fixed Header */}
+      <div className="flex-shrink-0">
+        <ChatHeader user={otherParticipant} />
+      </div>
       
-      <MessagesList 
-        messages={messages}
-        currentUserId={currentUserId || ''}
-        conversationId={conversationId}
-        isLoading={isLoadingMessages}
-      />
+      {/* Scrollable Messages Area */}
+      <div className="flex-1 overflow-y-auto scrollbar-desktop">
+        <MessagesList 
+          messages={messages}
+          currentUserId={currentUserId || ''}
+          conversationId={conversationId}
+          isLoading={isLoadingMessages}
+        />
+      </div>
       
-      <MessageInput 
-        conversationId={conversationId}
-        disabled={!token}
-      />
+      {/* Fixed Input */}
+      <div className="flex-shrink-0">
+        <MessageInput 
+          conversationId={conversationId}
+          disabled={!token}
+        />
+      </div>
     </div>
   );
 };
