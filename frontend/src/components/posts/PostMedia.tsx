@@ -90,14 +90,14 @@ export const PostMedia: React.FC<PostMediaProps> = memo(({
   const { t } = useTranslation("common");
   const [imageErrors, setImageErrors] = useState<boolean[]>([]);
   const [imageDimensions, setImageDimensions] = useState<ImageDimensions[]>([]);
-  const [isLoadingDimensions, setIsLoadingDimensions] = useState(true);
+  const [isLoadingDimensions, setIsLoadingDimensions] = useState(false); // Skip loading for testing
   const isMobileDevice = isMobile;
   const mobileLayout = isMobileDevice ? 'grid-cols-2 gap-1' : 'grid-cols-3 gap-2';
-  const maxDisplayImages = isMobileDevice ? 3 : 4;
+  const maxDisplayImages = 4; // Always show 4 images
 
   // Intersection Observer ref for lazy loading
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isInView, setIsInView] = useState(false);
+  const [isInView, setIsInView] = useState(true); // Always true for testing
 
   const getImageUrl = useCallback((imagePath: string): string => {
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
@@ -261,14 +261,14 @@ export const PostMedia: React.FC<PostMediaProps> = memo(({
 
   const renderOptimizedImage = useCallback((image: string, index: number, className: string, alt: string) => {
     return (
-      <OptimizedImage
+      <img
         src={image}
         alt={alt}
         className={className}
         onClick={() => onImageClick(images!, index)}
         onError={() => handleImageError(index)}
-        priority={index === 0} // First image has priority
-        sizes={index === 0 ? '(max-width: 768px) 100vw, 80vw' : '(max-width: 768px) 50vw, 40vw'}
+        loading={index === 0 ? 'eager' : 'lazy'}
+        decoding="async"
       />
     );
   }, [images, onImageClick, handleImageError]);
@@ -331,23 +331,14 @@ export const PostMedia: React.FC<PostMediaProps> = memo(({
       );
     }
 
-    // Single image with smart sizing
+    // Single image with simple display
     if (imageCount === 1) {
-      const isPortrait = imageDimensions[0]?.isPortrait;
-      const isLandscape = imageDimensions[0]?.isLandscape;
-      
       return (
         <div ref={containerRef} className="relative rounded-xl overflow-hidden bg-secondary/20 group cursor-pointer">
           {renderOptimizedImage(
             images[0],
             0,
-            `w-full object-contain ${
-              isPortrait 
-                ? 'max-h-[700px] min-h-[400px]' 
-                : isLandscape 
-                ? 'max-h-[500px] min-h-[300px]' 
-                : 'max-h-[600px] min-h-[400px]'
-            }`,
+            "w-full h-auto object-cover max-h-[500px]",
             content || "Post image"
           )}
         </div>
@@ -358,25 +349,13 @@ export const PostMedia: React.FC<PostMediaProps> = memo(({
     return (
       <div 
         ref={containerRef}
-        className={`grid gap-1 rounded-xl overflow-hidden ${
-          optimalLayout === 'masonry-portrait' ? 'grid-cols-2' :
-          optimalLayout === 'masonry-landscape' ? 'grid-cols-1' :
-          optimalLayout === 'masonry-grid' ? 'grid-cols-2 md:grid-cols-3' :
-          'grid-cols-2'
-        }`}
-        style={{
-          // Sử dụng masonry layout nếu trình duyệt hỗ trợ
-          gridTemplateRows: 'masonry'
-        }}
+        className="grid grid-cols-2 gap-1 rounded-xl overflow-hidden"
+        style={{}}
       >
         {images.slice(0, maxDisplayImages).map((image, index) => (
           <div
             key={index}
-            className={`relative bg-secondary/20 group cursor-pointer overflow-hidden ${
-              optimalLayout === 'masonry-portrait' && index === 0 ? 'row-span-2' :
-              optimalLayout === 'masonry-landscape' ? 'aspect-video' :
-              'aspect-square'
-            }`}
+            className="relative bg-secondary/20 group cursor-pointer overflow-hidden aspect-square"
           >
             {renderOptimizedImage(
               image,

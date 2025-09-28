@@ -1,5 +1,5 @@
 // src/components/feed/PostItem.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { Heart, MessageSquare, MoreHorizontal, UserCheck, UserPlus } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/Avatar';
@@ -17,7 +17,7 @@ interface PostItemProps {
   isFollowLoading: boolean;
 }
 
-export const PostItem: React.FC<PostItemProps> = ({
+export const PostItem: React.FC<PostItemProps> = memo(({
   post,
   onLike,
   onFollow,
@@ -28,7 +28,7 @@ export const PostItem: React.FC<PostItemProps> = ({
   const [isLiked, setIsLiked] = useState(post.isLiked || false);
   const [likeCount, setLikeCount] = useState(post.likeCount || 0);
   const [isExpanded, setIsExpanded] = useState(false);
-const [commentCount, setCommentCount] = useState<number | null>(null);
+// const [commentCount, setCommentCount] = useState<number | null>(null); // Removed for performance
 
   const hasMedia = (post.images && post.images.length > 0) || post.video;
   const contentExceedsLimit = post.content.length > 150;
@@ -63,25 +63,26 @@ const [commentCount, setCommentCount] = useState<number | null>(null);
     }
   };
 
-  useEffect(() => {
-  const fetchComments = async () => {
-    try {
-      const res = await fetch(`/api/comments/count?postId=${post._id}`);
-      if (!res.ok) {
-        console.error("Fetch failed:", res.status, res.statusText);
-        setCommentCount(0);
-        return;
-      }
-      const data = await res.json();
-      setCommentCount(data.count);
-    } catch (error) {
-      console.error("Error fetching comment count:", error);
-      setCommentCount(0);
-    }
-  };
+  // Tạm thời comment out để test hiệu suất
+  // useEffect(() => {
+  //   const fetchComments = async () => {
+  //     try {
+  //       const res = await fetch(`/api/comments/count?postId=${post._id}`);
+  //       if (!res.ok) {
+  //         console.error("Fetch failed:", res.status, res.statusText);
+  //         setCommentCount(0);
+  //         return;
+  //       }
+  //       const data = await res.json();
+  //       setCommentCount(data.count);
+  //     } catch (error) {
+  //       console.error("Error fetching comment count:", error);
+  //       setCommentCount(0);
+  //     }
+  //   };
 
-  fetchComments();
-}, [post._id]);
+  //   fetchComments();
+  // }, [post._id]);
 
 
   return (
@@ -154,55 +155,56 @@ const [commentCount, setCommentCount] = useState<number | null>(null);
         </div>
       )}
 
- {/* Media */}
-{hasMedia && (
-  <div className="relative">
-    {post.video ? (
-      <MediaWithFallback
-        mediaPath={post.video}
-        alt="Post video"
-        className="w-full max-h-[500px] object-contain bg-black"
-        isVideo={true}
-      />
-    ) : (post.images?.length ?? 0) === 1 ? (
-      <MediaWithFallback
-        mediaPath={post.images![0]}
-        alt="Post image"
-        className="w-full max-h-[500px] object-contain"
-      />
-    ) : (post.images?.length ?? 0) > 1 ? (
-      <div className="grid grid-cols-2 gap-1 p-1">
-        {post.images!.slice(0, 4).map((image, index) => (
-          <div
-            key={index}
-            className={`relative ${
-              post.images!.length > 2 && index === 3
-                ? 'after:content-[""] after:absolute after:inset-0 after:bg-black/50 after:flex after:items-center after:justify-center after:text-white after:text-lg after:font-bold'
-                : ''
-            }`}
-          >
+      {/* Media */}
+      {hasMedia && (
+        <div className="relative">
+          {post.video ? (
             <MediaWithFallback
-              mediaPath={image}
-              alt={`Post image ${index + 1}`}
-              className="w-full h-40 object-cover"
+              mediaPath={post.video}
+              alt="Post video"
+              className="w-full max-h-[500px] object-contain bg-black"
+              isVideo={true}
             />
-            {post.images!.length > 4 && index === 3 && (
-              <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-lg bg-black/50">
-                +{post.images!.length - 3}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    ) : null}
-  </div>
-)}
+          ) : post.images && post.images.length > 0 ? (
+            <div className="rounded-xl overflow-hidden bg-muted/30 mx-4 mb-3 grid grid-cols-2 gap-1">
+              {post.images.slice(0, 4).map((image, index) => (
+                <div 
+                  key={index} 
+                  className={`
+                    relative group bg-muted/50 overflow-hidden cursor-pointer
+                    ${post.images!.length === 1 ? 'aspect-video max-h-96' : 'aspect-square'}
+                    ${post.images!.length === 3 && index === 0 ? 'row-span-2' : ''}
+                  `}
+                >
+                  <img
+                    src={image}
+                    alt={`Post image ${index + 1}`}
+                    className="w-full h-full object-cover transition-all duration-300 group-hover:scale-105 group-hover:brightness-95"
+                    loading="lazy"
+                    onError={(e) => {
+                      console.log('Image failed:', image);
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                  
+                  {post.images!.length > 4 && index === 3 && (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                      <span className="text-white font-semibold text-lg">
+                        +{post.images!.length - 4}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      )}
 
       {/* Post Actions */}
       <div className="p-3 flex items-center justify-between border-t">
         <Button
           variant="ghost"
-          size="sm"
           className={`h-9 px-3 rounded-xl ${isLiked ? 'text-destructive' : 'text-muted-foreground'}`}
           onClick={handleLike}
           disabled={!isConnected}
@@ -222,12 +224,12 @@ const [commentCount, setCommentCount] = useState<number | null>(null);
           disabled={!isConnected}
         >
           <MessageSquare className="w-4 h-4 mr-1" />
-        {commentCount !== null && (
-  <span className="text-xs font-medium">{commentCount}</span>
-)}
+          {post.commentCount > 0 && (
+            <span className="text-xs font-medium">{post.commentCount}</span>
+          )}
 
         </Button>
       </div>
     </div>
   );
-};
+});

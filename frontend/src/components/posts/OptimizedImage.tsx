@@ -133,7 +133,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = memo(({
   }
 
   return (
-    <div className="relative overflow-hidden">
+    <div className="relative overflow-hidden w-full h-full">
       {/* Blur placeholder */}
       {!isLoaded && (
         <div

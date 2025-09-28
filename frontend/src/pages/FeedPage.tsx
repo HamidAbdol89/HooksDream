@@ -129,17 +129,17 @@ export const Feed: React.FC = () => {
         
         setHasMore(newPosts.length === 10);
         setCurrentPage(prev => prev + 1);
-        
-        console.log(`✅ Loaded ${newPosts.length} more posts`);
-      } else {
-        console.error('❌ Load more failed:', response.message);
-        setHasMore(false);
+        // 🔍 DEBUG: Log posts data structure (commented for performance)
+        // console.log('📊 Posts data:', newPosts);
+        // console.log('📊 First post structure:', newPosts[0]);
+        // if (newPosts[0]?.images) {
+        //   console.log('📊 First post images:', newPosts[0].images);
+        // }
       }
     } catch (err) {
       console.error('❌ Load more error:', err);
       setHasMore(false);
     } finally {
-      setIsLoadingMore(false);
     }
   }, [currentPage, hasMore, isLoadingMore, loading, prefetchProfile]);
 

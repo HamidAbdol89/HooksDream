@@ -14,13 +14,22 @@ export const MediaWithFallback: React.FC<MediaFallbackProps> = ({
   
   const possibleBaseUrls = [
     process.env.REACT_APP_API_URL,
-    'http://localhost:8080',
-    `${window.location.protocol}//${window.location.hostname}:8080`,
+    'http://localhost:5000',
+    `${window.location.protocol}//${window.location.hostname}:5000`,
     window.location.origin,
   ].filter(Boolean);
   
   const cleanPath = mediaPath.startsWith('/') ? mediaPath.slice(1) : mediaPath;
   const currentUrl = `${possibleBaseUrls[currentUrlIndex]}/${cleanPath}`;
+  
+  // Debug: Log URL generation
+  console.log('MediaWithFallback Debug:', {
+    mediaPath,
+    cleanPath, 
+    baseUrl: possibleBaseUrls[currentUrlIndex],
+    finalUrl: currentUrl,
+    urlIndex: currentUrlIndex
+  });
   
   const handleError = () => {
     if (currentUrlIndex < possibleBaseUrls.length - 1) {
@@ -51,6 +60,7 @@ export const MediaWithFallback: React.FC<MediaFallbackProps> = ({
       src={currentUrl}
       className={className}
       onError={handleError}
+      preload="metadata"
     />
   ) : (
     <img
@@ -58,6 +68,8 @@ export const MediaWithFallback: React.FC<MediaFallbackProps> = ({
       alt={alt}
       className={className}
       onError={handleError}
+      loading="lazy"
+      decoding="async"
     />
   );
 };
