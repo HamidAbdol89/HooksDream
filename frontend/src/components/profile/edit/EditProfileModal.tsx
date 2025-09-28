@@ -18,9 +18,7 @@ import { AccountForm } from './forms/AccountForm';
 import { useEditProfile } from '@/hooks/useEditProfile';
 import { User } from '@/store/useAppStore';
 import { useTranslation } from "react-i18next";
-
-// Import ActiveTab type from ProfileTabs to ensure consistency
-import type { ActiveTab } from './ProfileTabs';
+import { ActiveTab } from '@/types/profile';
 
 interface EditProfileModalProps {
   isOpen: boolean;

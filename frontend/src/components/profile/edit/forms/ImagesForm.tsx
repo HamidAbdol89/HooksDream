@@ -4,20 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Camera, User, Loader2, Image as ImageIcon } from 'lucide-react';
-
-// Local types aligned with useAppStore
-type ProfileFormData = {
-  displayName?: string;
-  username?: string;
-  bio?: string;
-  location?: string;
-  website?: string;
-  avatar?: string;
-  coverImage?: string;
-  email?: string;
-  phone?: string;
-  pronouns?: string;
-};
+import { ProfileFormData } from '@/types/profile';
 
 interface ImagesFormProps {
   formData: ProfileFormData;

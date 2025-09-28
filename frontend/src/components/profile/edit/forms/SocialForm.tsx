@@ -6,34 +6,17 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/badge';
 import { AlertCircle, Globe, User } from 'lucide-react';
 
-// Types aligned with useEditProfile hook
-type ProfileFormData = {
-  displayName?: string;
-  username?: string;
-  bio?: string;
-  location?: string;
-  website?: string;
-  avatar?: string;
-  coverImage?: string;
-  email?: string;
-  phone?: string;
-  pronouns?: string;
-};
-
-type FormErrors = {
-  [K in keyof ProfileFormData]?: string;
-};
+import { ProfileFormData, ProfileFormErrors } from '@/types/profile';
 
 interface SocialFormProps {
   formData: ProfileFormData;
-  errors: FormErrors;
+  errors: ProfileFormErrors;
   onInputChange: (field: keyof ProfileFormData, value: string) => void;
 }
 
 export function SocialForm({ formData, errors, onInputChange }: SocialFormProps) {
   return (
     <div className="space-y-6">
-      {/* Website */}
       <div className="space-y-2">
         <Label htmlFor="website" className="text-sm font-medium">
           Website

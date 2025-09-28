@@ -1,27 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { validateProfile, MAX_AVATAR_SIZE, MAX_COVER_SIZE } from '@/utils/profileValidation';
+import { validateProfile, validateFile } from '@/utils/profileValidation';
+import { ProfileFormData, ProfileFormErrors, ActiveTab, PROFILE_API, convertToProfileFormData, addCacheBusting } from '@/types/profile';
 import { useAppStore, User } from '@/store/useAppStore';
 import { useParams } from 'react-router-dom';
-
-// Local types for form management
-type ProfileFormData = {
-  displayName?: string;
-  username?: string;
-  bio?: string;
-  location?: string;
-  website?: string;
-  avatar?: string;
-  coverImage?: string;
-  email?: string;
-  phone?: string;
-  pronouns?: string;
-};
-
-type FormErrors = {
-  [K in keyof ProfileFormData]?: string;
-};
-
-type ActiveTab = 'basic' | 'images' | 'social' | 'account';
 
 interface UseEditProfileProps {
   isOpen: boolean;
@@ -40,8 +21,19 @@ export function useEditProfile({ isOpen, user, onSave, onClose }: UseEditProfile
   } = useAppStore();
   
   const [resolvedUser, setResolvedUser] = useState<User | null>(null);
-  const [formData, setFormData] = useState<ProfileFormData>({});
-  const [errors, setErrors] = useState<FormErrors>({});
+  const [formData, setFormData] = useState<ProfileFormData>({
+    displayName: '',
+    username: '',
+    bio: '',
+    location: '',
+    website: '',
+    avatar: '',
+    coverImage: '',
+    email: '',
+    phone: '',
+    pronouns: ''
+  });
+  const [errors, setErrors] = useState<ProfileFormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>('basic');
   const [imageUploading, setImageUploading] = useState<'avatar' | 'cover' | null>(null);
@@ -52,28 +44,18 @@ export function useEditProfile({ isOpen, user, onSave, onClose }: UseEditProfile
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
-  // Load user data when modal opens - only once
   useEffect(() => {
     const loadUser = async () => {
       try {
         // Prioritize global user state
         if (globalUser && globalUser._id) {
           setResolvedUser(globalUser);
-          // ✅ FIX: Lưu image URLs hiện tại
-          lastUploadedImages.current = {
-            avatar: globalUser.avatar,
-            coverImage: globalUser.coverImage
-          };
           return;
         }
 
         // Fallback to prop user
         if (user && user._id) {
           setResolvedUser(user);
-          lastUploadedImages.current = {
-            avatar: user.avatar,
-            coverImage: user.coverImage
-          };
           return;
         }
 
@@ -83,10 +65,6 @@ export function useEditProfile({ isOpen, user, onSave, onClose }: UseEditProfile
           if (!res.ok) throw new Error('Không tìm thấy user');
           const data = await res.json();
           setResolvedUser(data);
-          lastUploadedImages.current = {
-            avatar: data.avatar,
-            coverImage: data.coverImage
-          };
         }
       } catch (err) {
         console.error('Failed to load user:', err);
@@ -99,7 +77,6 @@ export function useEditProfile({ isOpen, user, onSave, onClose }: UseEditProfile
     }
   }, [isOpen, address, API_BASE]);
 
-  // ✅ FIX: Cải thiện logic sync với globalUser
   useEffect(() => {
     if (!globalUser || !resolvedUser || globalUser._id !== resolvedUser._id) {
       return;
@@ -141,18 +118,7 @@ export function useEditProfile({ isOpen, user, onSave, onClose }: UseEditProfile
   // Initialize form data when user is resolved
   useEffect(() => {
     if (isOpen && resolvedUser && !isUploadingRef.current) {
-      setFormData({
-        displayName: resolvedUser.displayName,
-        username: resolvedUser.username,
-        bio: resolvedUser.bio,
-        location: resolvedUser.location,
-        website: resolvedUser.website,
-        avatar: resolvedUser.avatar,
-        coverImage: resolvedUser.coverImage,
-        email: resolvedUser.email,
-        phone: resolvedUser.phone,
-        pronouns: resolvedUser.pronouns,
-      });
+      setFormData(convertToProfileFormData(resolvedUser));
       setErrors({});
       setActiveTab('basic');
     }
@@ -179,15 +145,17 @@ const handleImageUpload = async (
 
     console.log('📤 Starting image upload:', type);
 
-    const maxSize = type === 'avatar' ? MAX_AVATAR_SIZE : MAX_COVER_SIZE;
-    if (file.size > maxSize) {
-      throw new Error(`File too large. Max size: ${maxSize / (1024 * 1024)}MB`);
+    // ✅ Use unified validation
+    const validationError = validateFile(file, type);
+    if (validationError) {
+      throw new Error(validationError);
     }
 
     const formData = new FormData();
     formData.append(type, file);
 
-    const url = `${API_BASE}/api/users/profile/${resolvedUser._id}`;
+    // ✅ Use correct API endpoint với hashId
+    const url = `${API_BASE}${PROFILE_API.uploadImage(resolvedUser._id)}`;
     const response = await fetch(url, {
       method: 'PUT',
       headers: {

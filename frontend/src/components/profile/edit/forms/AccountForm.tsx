@@ -4,34 +4,17 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { AlertCircle, Mail, Phone, Shield } from 'lucide-react';
 
-// Types aligned with useEditProfile hook
-type ProfileFormData = {
-  displayName?: string;
-  username?: string;
-  bio?: string;
-  location?: string;
-  website?: string;
-  avatar?: string;
-  coverImage?: string;
-  email?: string;
-  phone?: string;
-  pronouns?: string;
-};
-
-type FormErrors = {
-  [K in keyof ProfileFormData]?: string;
-};
+import { ProfileFormData, ProfileFormErrors } from '@/types/profile';
 
 interface AccountFormProps {
   formData: ProfileFormData;
-  errors: FormErrors;
+  errors: ProfileFormErrors;
   onInputChange: (field: keyof ProfileFormData, value: string) => void;
 }
 
 export function AccountForm({ formData, errors, onInputChange }: AccountFormProps) {
   return (
     <div className="space-y-6">
-      {/* Contact Information */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

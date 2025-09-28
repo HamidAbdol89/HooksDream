@@ -5,28 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { AlertCircle } from 'lucide-react';
-
-// Types aligned with useEditProfile hook
-type ProfileFormData = {
-  displayName?: string;
-  username?: string;
-  bio?: string;
-  location?: string;
-  website?: string;
-  avatar?: string;
-  coverImage?: string;
-  email?: string;
-  phone?: string;
-  pronouns?: string;
-};
-
-type FormErrors = {
-  [K in keyof ProfileFormData]?: string;
-};
+import { ProfileFormData, ProfileFormErrors, VALIDATION_RULES } from '@/types/profile';
 
 interface BasicInfoFormProps {
   formData: ProfileFormData;
-  errors: FormErrors;
+  errors: ProfileFormErrors;
   onInputChange: (field: keyof ProfileFormData, value: string) => void;
 }
 
