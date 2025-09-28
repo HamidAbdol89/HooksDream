@@ -20,29 +20,63 @@ interface MessageBubbleProps {
   isLatestMessage?: boolean; // Tin nhắn mới nhất trong conversation
 }
 
-// Message Status Text Component
+// Clean Message Status Component with Text + Icons
 const MessageStatusText: React.FC<{ status: string }> = ({ status }) => {
   const { t } = useTranslation('common');
   
   switch (status) {
     case 'sending':
-      return <span className="text-muted-foreground text-xs">{t('chat.messageStatus.sending')}</span>;
+      return (
+        <span className="text-muted-foreground text-xs opacity-70">
+          {t('chat.messageStatus.sending')}
+        </span>
+      );
     case 'sent':
-      return <span className="text-muted-foreground text-xs">{t('chat.messageStatus.sent')}</span>;
+      return (
+        <div className="flex items-center gap-1">
+          <span className="text-gray-400 text-xs">✓</span>
+          <span className="text-muted-foreground text-xs">{t('chat.messageStatus.sent')}</span>
+        </div>
+      );
     case 'delivered':
-      return <span className="text-muted-foreground text-xs">{t('chat.messageStatus.delivered')}</span>;
+      return (
+        <div className="flex items-center gap-1">
+          <span className="text-gray-400 text-xs">✓✓</span>
+          <span className="text-muted-foreground text-xs">{t('chat.messageStatus.delivered')}</span>
+        </div>
+      );
     case 'read':
-      return <span className="text-blue-500 text-xs">{t('chat.messageStatus.read')}</span>;
+      return (
+        <div className="flex items-center gap-1">
+          <span className="text-blue-500 text-xs">✓✓</span>
+          <span className="text-blue-500 text-xs">{t('chat.messageStatus.read')}</span>
+        </div>
+      );
     case 'failed':
-      return <span className="text-red-500 text-xs">{t('chat.messageStatus.failed')}</span>;
+      return (
+        <div className="flex items-center gap-1">
+          <span className="text-red-500 text-xs">⚠</span>
+          <span className="text-red-500 text-xs">{t('chat.messageStatus.failed')}</span>
+        </div>
+      );
     case 'recalled':
-      return <span className="text-muted-foreground text-xs">{t('chat.messageStatus.recalled')}</span>;
+      return (
+        <div className="flex items-center gap-1">
+          <RotateCcw className="w-3 h-3 text-muted-foreground" />
+          <span className="text-muted-foreground text-xs">{t('chat.messageStatus.recalled')}</span>
+        </div>
+      );
     default:
-      return <span className="text-muted-foreground text-xs">{t('chat.messageStatus.sent')}</span>;
+      return (
+        <div className="flex items-center gap-1">
+          <span className="text-gray-400 text-xs">✓</span>
+          <span className="text-muted-foreground text-xs">{t('chat.messageStatus.sent')}</span>
+        </div>
+      );
   }
 };
 
-export const MessageBubble: React.FC<MessageBubbleProps> = ({
+export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
   message,
   isOwn,
   showAvatar,
@@ -157,20 +191,26 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           </span>
         )}
   
-        {/* Nội dung bubble */}
+        {/* Nội dung bubble - With Smooth Animations & Sending State */}
         <div
           onClick={handleMessageClick}
-          className={`rounded-2xl shadow-sm transition-all hover:shadow-md ${
+          className={`relative ${message.content.image || message.content.video ? '' : 'rounded-2xl'} transition-all duration-300 ease-out transform ${message.content.image || message.content.video ? '' : 'active:scale-[0.98]'} ${
             isLatestMessage ? 'cursor-default' : 'cursor-pointer'
           } ${
             message.content.isRecalled
-              ? 'bg-muted/50 text-muted-foreground border border-dashed'
+              ? 'bg-muted text-muted-foreground border border-dashed border-border'
+              : (message.content.image || message.content.video)
+              ? '' // No background for media messages
               : isOwn
-              ? 'bg-primary text-primary-foreground rounded-br-sm'
-              : 'bg-muted text-foreground rounded-bl-sm'
-          } ${isLastInGroup ? 'mb-2' : 'mb-0.5'} ${
-            message.content.image || message.content.video ? 'p-1' : 'px-3 py-2.5'
-          }`}
+              ? 'bg-blue-500 text-white rounded-br-md shadow-sm'
+              : 'bg-card text-foreground shadow-sm border border-border rounded-bl-md'
+          } ${isLastInGroup ? 'mb-3' : 'mb-1'} ${
+            message.content.image || message.content.video ? 'p-0' : 'px-4 py-3'
+          } ${
+            isSelected ? 'shadow-lg scale-[1.02]' : ''
+          } ${
+            message.messageStatus?.status === 'sending' ? 'opacity-60 animate-pulse' : 'opacity-100'
+          } transition-opacity duration-700 ease-out animate-in slide-in-from-bottom-1 fade-in duration-300`}
         >
           {/* Image content */}
           {message.content.image && (
@@ -178,7 +218,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               <img
                 src={message.content.image}
                 alt="Shared image"
-                className="max-w-full h-auto rounded-xl max-h-80 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                className="max-w-full h-auto max-h-80 object-cover cursor-pointer transition-opacity rounded-xl"
                 onClick={() => setLightboxImage(message.content.image!)}
                 onError={(e) => {
                   e.currentTarget.src = '/default-image.jpg';
@@ -205,7 +245,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               <video
                 ref={videoRef}
                 src={message.content.video.url}
-                className="max-w-full h-auto rounded-xl max-h-80 object-cover"
+                className="max-w-full h-auto max-h-80 object-cover rounded-xl"
                 onPlay={() => setIsVideoPlaying(true)}
                 onPause={() => setIsVideoPlaying(false)}
                 onEnded={() => setIsVideoPlaying(false)}
@@ -261,16 +301,18 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             )}
         </div>
   
-        {/* Actions - Show when selected OR for latest message */}
+        {/* Actions - Smooth Slide Animation */}
         <div
-          className={`flex items-center gap-2 text-xs px-3 transition-all duration-300 ${
-            (isSelected || isLatestMessage) ? 'mt-2 opacity-100 max-h-10' : 'mt-0 opacity-0 max-h-0 overflow-hidden'
+          className={`flex items-center gap-3 text-xs px-2 transition-all duration-500 ease-out ${
+            (isSelected || isLatestMessage) ? 'mt-3 opacity-100 max-h-12 transform translate-y-0' : 'mt-0 opacity-0 max-h-0 overflow-hidden transform -translate-y-2'
           } ${isOwn ? 'flex-row-reverse' : 'flex-row'} group`}
         >
-          {/* Time + Status - Show when selected, last in group, or latest message */}
+          {/* Time + Status - With Animation */}
           {(isSelected || isLastInGroup || isLatestMessage) && (
-            <>
-              <span className="text-muted-foreground">
+            <div className={`flex items-center gap-2 px-3 py-1 bg-muted rounded-full animate-in slide-in-from-left-2 fade-in duration-300 transition-opacity duration-700 ease-out ${
+              message.messageStatus?.status === 'sending' ? 'opacity-70' : 'opacity-100'
+            }`}>
+              <span className="text-muted-foreground text-xs">
                 {new Date(message.createdAt).toLocaleTimeString([], {
                   hour: '2-digit',
                   minute: '2-digit',
@@ -285,7 +327,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   />
                 </>
               )}
-            </>
+            </div>
           )}
 
           {/* Actions - Show when selected OR for latest message */}
@@ -322,7 +364,4 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       />
     </div>
   );
-  
-
-  
-};
+});

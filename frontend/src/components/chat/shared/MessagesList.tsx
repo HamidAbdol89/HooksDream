@@ -163,7 +163,7 @@ export const MessagesList: React.FC<MessagesListProps> = ({
   return (
     <div 
       ref={containerRef}
-      className="flex-1 overflow-y-auto bg-gradient-to-b from-muted/20 to-muted/5 relative"
+      className="flex-1 overflow-y-auto bg-background relative"
     >
       <div className="p-2 md:p-2 space-y-2 md:space-y-2">
         {messages.map((message, index) => {
@@ -174,7 +174,7 @@ export const MessagesList: React.FC<MessagesListProps> = ({
           
           return (
             <MessageBubble
-              key={`${message._id}-${index}`}
+              key={message._id}
               message={message}
               isOwn={isOwn}
               conversationId={conversationId}

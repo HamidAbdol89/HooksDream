@@ -1,19 +1,18 @@
 // components/chat/shared/MessageInput.tsx
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from 'react';
+import { Button } from '@/components/ui/Button';
+import { Send, Plus } from 'lucide-react';
+import TextareaAutosize from 'react-textarea-autosize';
 import { useTranslation } from 'react-i18next';
-import { Send, Smile, Plus } from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import TextareaAutosize from "react-textarea-autosize";
-import { useMessageStatus } from "@/hooks/useMessageStatus";
-import { ImageUpload } from "./ImageUpload";
-import { VideoUpload } from "./VideoUpload";
-import { AudioRecorder } from "./AudioRecorder";
+import { useMessageStatus } from '@/hooks/useMessageStatus';
+import { ImageUpload } from './ImageUpload';
+import { VideoUpload } from './VideoUpload';
+import { AudioRecorder } from './AudioRecorder';
 
 interface MessageInputProps {
   conversationId: string;
   disabled?: boolean;
 }
-
 export const MessageInput: React.FC<MessageInputProps> = ({
   conversationId,
   disabled = false,
@@ -23,16 +22,54 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   const [isSending, setIsSending] = useState(false);
   const { sendMessageWithStatus } = useMessageStatus(conversationId);
   const [showMore, setShowMore] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-focus textarea when component mounts or conversation changes
+  useEffect(() => {
+    const focusTextarea = () => {
+      if (textareaRef.current && !disabled) {
+        textareaRef.current.focus();
+      }
+    };
+
+    // Focus immediately
+    focusTextarea();
+
+    // Also focus when clicking anywhere in the chat area
+    const handleDocumentClick = (e: MouseEvent) => {
+      // Only focus if not clicking on interactive elements
+      const target = e.target as HTMLElement;
+      if (!target.closest('button, input, textarea, [contenteditable], a, .no-focus')) {
+        focusTextarea();
+      }
+    };
+
+    document.addEventListener('click', handleDocumentClick);
+    return () => document.removeEventListener('click', handleDocumentClick);
+  }, [conversationId, disabled]);
 
   const handleSend = async () => {
     if (!messageText.trim() || isSending || disabled) return;
+    
+    const textToSend = messageText.trim();
+    setMessageText(""); // Clear immediately for better UX
     setIsSending(true);
+    
     const tempId = `temp-${Date.now()}-${Math.random()}`;
     try {
-      const result = await sendMessageWithStatus(messageText.trim(), tempId);
-      if (result.success) setMessageText("");
+      const result = await sendMessageWithStatus(textToSend, tempId);
+      if (!result.success) {
+        // Restore text if failed
+        setMessageText(textToSend);
+      }
     } finally {
       setIsSending(false);
+      // Re-focus textarea after sending
+      setTimeout(() => {
+        if (textareaRef.current && !disabled) {
+          textareaRef.current.focus();
+        }
+      }, 100);
     }
   };
 
@@ -46,15 +83,15 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   const handleMediaSent = () => {};
 
   return (
-<div className="p-3 border-t bg-background safe-area-inset-bottom sticky bottom-0 z-20 rounded-t-2xl md:bg-card/50 md:backdrop-blur-sm">
-<div className="flex items-end gap-2"> {/* Changed from items-center to items-end */}
+    <div className="p-4 border-t border-border bg-background safe-area-inset-bottom sticky bottom-0 z-20">
+      <div className="flex items-end gap-3 max-w-4xl mx-auto">{/* Clean container */}
         
         {/* MOBILE: toggle menu */}
-        <div className="md:hidden mb-2"> {/* Added margin-bottom */}
+        <div className="md:hidden mb-2">
           <Button
             size="icon"
             variant="ghost"
-            className="h-10 w-10 rounded-full flex items-center justify-center"
+            className="h-10 w-10 rounded-full bg-muted focus:outline-none focus:ring-0 transition-colors active:scale-95"
             onClick={() => setShowMore((v) => !v)}
           >
             <Plus className="w-5 h-5" />
@@ -62,7 +99,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         </div>
 
         {/* DESKTOP: always show upload buttons */}
-        <div className="hidden md:flex items-center gap-2 mb-2"> {/* Added margin-bottom */}
+        <div className="hidden md:flex items-center gap-3 mb-2">{/* Modern spacing */}
           <ImageUpload
             conversationId={conversationId}
             onImageSent={handleMediaSent}
@@ -80,31 +117,33 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           />
         </div>
 
-        {/* Input + Send - FIXED */}
-        <div className="flex-1 min-w-0 relative"> {/* Removed rounded-full and border */}
-          <div className="bg-muted/50 md:bg-background border-2 rounded-full overflow-hidden"> {/* Wrapper với rounded-full */}
+        {/* Clean Input + Send */}
+        <div className="flex-1 min-w-0 relative">
+          <div className="bg-muted/50 border border-border rounded-2xl overflow-hidden"> 
             <TextareaAutosize
+              ref={textareaRef}
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={t('chat.messageInput.placeholder')}
               minRows={1}
               maxRows={5}
-              className="w-full resize-none py-2 px-4 pr-12 bg-transparent outline-none text-base md:text-sm border-none" /* Removed border */
+              className="w-full resize-none py-3 px-4 pr-14 bg-transparent outline-none focus:outline-none focus:ring-0 text-base placeholder:text-muted-foreground border-none"
               disabled={isSending || disabled}
+              autoFocus
             />
             
-            <div className="absolute right-1 top-1/2 -translate-y-1/2">
+            <div className="absolute right-2 top-1/2 -translate-y-1/2">
               <Button
                 size="icon"
-                className="h-10 w-10 rounded-full"
+                className="h-10 w-10 rounded-full bg-blue-500 focus:outline-none focus:ring-0 transition-all duration-200 active:scale-95 disabled:scale-100"
                 onClick={handleSend}
                 disabled={!messageText.trim() || isSending || disabled}
               >
                 {isSending ? (
-                  <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
-                  <Send className="w-5 h-5" />
+                  <Send className="w-4 h-4 text-white" />
                 )}
               </Button>
             </div>

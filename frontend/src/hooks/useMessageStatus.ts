@@ -3,10 +3,13 @@ import { useEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import { useChatSocket } from '@/hooks/useSocket';
+import { useAppStore } from '@/store/useAppStore';
 import { MessageStatus } from '@/types/chat';
 
 export const useMessageStatus = (conversationId?: string) => {
   const { token } = useGoogleAuth();
+  const { user: currentUser } = useAppStore();
+  const currentUserId = currentUser?._id || currentUser?.id;
   const queryClient = useQueryClient();
   const { 
     onNewMessage, 
@@ -249,21 +252,22 @@ export const useMessageStatus = (conversationId?: string) => {
   ): Promise<{ success: boolean; messageId?: string }> => {
     if (!token || !conversationId) return { success: false };
 
-    // Optimistic update - add message with 'sending' status
+    // Optimistic update - add message with 'sent' status immediately
     const tempMessage = {
       _id: tempId,
       sender: {
-        _id: 'current-user', // Will be replaced with actual user data
-        username: 'You',
-        displayName: 'You',
-        avatar: ''
+        _id: currentUserId, // Use actual current user ID
+        username: currentUser?.username || 'You',
+        displayName: currentUser?.displayName || 'You',
+        avatar: currentUser?.avatar || ''
       },
       content: { text },
       createdAt: new Date().toISOString(),
       messageStatus: {
-        status: 'sending' as const,
+        status: 'sent' as const, // Optimistic: assume success
         timestamp: new Date().toISOString()
-      }
+      },
+      isOptimistic: true // Flag to track optimistic messages
     };
 
     // Update cache optimistically
@@ -274,6 +278,25 @@ export const useMessageStatus = (conversationId?: string) => {
         return [...oldData, tempMessage];
       }
     );
+
+    // Fallback to 'sending' if network is slow (after 500ms)
+    const slowNetworkTimeout = setTimeout(() => {
+      queryClient.setQueryData(
+        ['chat', 'messages', conversationId],
+        (oldData: any) => {
+          if (!oldData) return [];
+          return oldData.map((msg: any) => 
+            msg._id === tempId && msg.isOptimistic ? {
+              ...msg,
+              messageStatus: {
+                status: 'sending',
+                timestamp: new Date().toISOString()
+              }
+            } : msg
+          );
+        }
+      );
+    }, 500); // 500ms threshold for slow network
 
     try {
       const response = await fetch(
@@ -291,6 +314,9 @@ export const useMessageStatus = (conversationId?: string) => {
       if (response.ok) {
         const data = await response.json();
         
+        // Clear slow network timeout - request completed successfully
+        clearTimeout(slowNetworkTimeout);
+        
         // Replace temp message with real message
         queryClient.setQueryData(
           ['chat', 'messages', conversationId],
@@ -300,9 +326,10 @@ export const useMessageStatus = (conversationId?: string) => {
               msg._id === tempId ? {
                 ...data.data,
                 messageStatus: {
-                  status: 'sent',
+                  status: 'delivered', // Upgrade to delivered since server confirmed
                   timestamp: new Date().toISOString()
-                }
+                },
+                isOptimistic: false // No longer optimistic
               } : msg
             );
           }
@@ -315,7 +342,8 @@ export const useMessageStatus = (conversationId?: string) => {
 
         return { success: true, messageId: data.data._id };
       } else {
-        // Mark as failed
+        // Clear timeout and mark as failed
+        clearTimeout(slowNetworkTimeout);
         queryClient.setQueryData(
           ['chat', 'messages', conversationId],
           (oldData: any) => {
@@ -326,7 +354,8 @@ export const useMessageStatus = (conversationId?: string) => {
                 messageStatus: {
                   status: 'failed',
                   timestamp: new Date().toISOString()
-                }
+                },
+                isOptimistic: false
               } : msg
             );
           }
@@ -334,7 +363,8 @@ export const useMessageStatus = (conversationId?: string) => {
         return { success: false };
       }
     } catch (error) {
-      // Mark as failed
+      // Clear timeout and mark as failed
+      clearTimeout(slowNetworkTimeout);
       queryClient.setQueryData(
         ['chat', 'messages', conversationId],
         (oldData: any) => {
@@ -352,7 +382,7 @@ export const useMessageStatus = (conversationId?: string) => {
       );
       return { success: false };
     }
-  }, [token, conversationId, queryClient]);
+  }, [token, conversationId, queryClient, currentUserId, currentUser]);
 
   // Mark single message as read using API
   const markMessageAsRead = useCallback(async (messageId: string) => {

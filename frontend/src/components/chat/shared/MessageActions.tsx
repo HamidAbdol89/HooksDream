@@ -60,14 +60,14 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
 
   return (
     <div className="relative">
-      {/* Trigger button */}
+      {/* Animated Trigger Button */}
       <Button
         variant="ghost"
         size="sm"
         onClick={() => setShowMenu(!showMenu)}
-        className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+        className="h-8 w-8 p-0 rounded-full bg-muted focus:outline-none focus:ring-0 transition-all duration-200 active:scale-95 animate-in zoom-in-50 fade-in duration-300"
       >
-        <MoreHorizontal className="w-3 h-3" />
+        <MoreHorizontal className="w-4 h-4" />
       </Button>
 
       {/* Menu dropdown */}
@@ -79,17 +79,17 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
             onClick={() => setShowMenu(false)}
           />
           
-          {/* Menu */}
-          <div className={`absolute z-50 bg-background border rounded-lg shadow-lg py-1 min-w-32 ${
-            isOwn ? 'right-0 bottom-full mb-1' : 'left-0 bottom-full mb-1'
-          }`}>
+          {/* Animated Menu */}
+          <div className={`absolute z-50 bg-card border border-border rounded-lg shadow-lg py-1 min-w-32 ${
+            isOwn ? 'right-0 bottom-full mb-2' : 'left-0 bottom-full mb-2'
+          } animate-in slide-in-from-bottom-2 fade-in duration-200`}>
             {/* Copy text */}
             {message.content.text && (
               <button
                 onClick={handleCopy}
-                className="w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center gap-2"
+                className="w-full px-3 py-2 text-left text-sm focus:outline-none focus:ring-0 flex items-center gap-2 transition-all duration-200 active:scale-95"
               >
-                <Copy className="w-3 h-3" />
+                <Copy className="w-4 h-4" />
                 {t('chat.messageActions.copy')}
               </button>
             )}
@@ -98,9 +98,9 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
             {canEdit && (
               <button
                 onClick={handleEdit}
-                className="w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center gap-2"
+                className="w-full px-3 py-2 text-left text-sm focus:outline-none focus:ring-0 flex items-center gap-2 transition-all duration-200 active:scale-95"
               >
-                <Edit3 className="w-3 h-3" />
+                <Edit3 className="w-4 h-4" />
                 {t('chat.messageActions.edit')}
               </button>
             )}
@@ -109,9 +109,9 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
             {canRecall && (
               <button
                 onClick={handleRecall}
-                className="w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center gap-2 text-destructive"
+                className="w-full px-3 py-2 text-left text-sm focus:outline-none focus:ring-0 flex items-center gap-2 text-red-600 dark:text-red-400 transition-all duration-200 active:scale-95"
               >
-                <RotateCcw className="w-3 h-3" />
+                <RotateCcw className="w-4 h-4" />
                 {t('chat.messageActions.recall')}
               </button>
             )}
