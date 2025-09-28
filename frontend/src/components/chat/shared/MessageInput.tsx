@@ -1,5 +1,6 @@
 // components/chat/shared/MessageInput.tsx
 import React, { useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { Send, Smile, Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import TextareaAutosize from "react-textarea-autosize";
@@ -17,6 +18,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   conversationId,
   disabled = false,
 }) => {
+  const { t } = useTranslation('common');
   const [messageText, setMessageText] = useState("");
   const [isSending, setIsSending] = useState(false);
   const { sendMessageWithStatus } = useMessageStatus(conversationId);
@@ -85,7 +87,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Message..."
+              placeholder={t('chat.messageInput.placeholder')}
               minRows={1}
               maxRows={5}
               className="w-full resize-none py-2 px-4 pr-12 bg-transparent outline-none text-base md:text-sm border-none" /* Removed border */

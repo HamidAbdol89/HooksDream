@@ -1,5 +1,6 @@
 // hooks/useOnlineUsers.ts - Track online users and last seen
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSocket } from './useSocket';
 import { useGoogleAuth } from './useGoogleAuth';
 
@@ -9,6 +10,7 @@ interface UserStatus {
 }
 
 export const useOnlineUsers = () => {
+  const { t } = useTranslation('common');
   const { on, off, emit, isConnected } = useSocket();
   const { token } = useGoogleAuth();
   const [userStatuses, setUserStatuses] = useState<Map<string, UserStatus>>(new Map());
@@ -58,7 +60,7 @@ export const useOnlineUsers = () => {
     }
     
     if (status.isOnline) {
-      return { isOnline: true, lastSeenText: 'Active now' };
+      return { isOnline: true, lastSeenText: t('chat.onlineStatus.online') };
     }
     
     if (status.lastSeen) {
@@ -69,20 +71,20 @@ export const useOnlineUsers = () => {
       const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
       
       if (diffMinutes < 1) {
-        return { isOnline: false, lastSeenText: 'Last seen just now' };
+        return { isOnline: false, lastSeenText: t('chat.onlineStatus.lastSeen', { time: t('chat.onlineStatus.timeUnits.justNow') }) };
       } else if (diffMinutes < 60) {
-        return { isOnline: false, lastSeenText: `Last seen ${diffMinutes}m ago` };
+        return { isOnline: false, lastSeenText: t('chat.onlineStatus.timeUnits.minutes', { count: diffMinutes }) };
       } else if (diffHours < 24) {
-        return { isOnline: false, lastSeenText: `Last seen ${diffHours}h ago` };
+        return { isOnline: false, lastSeenText: t('chat.onlineStatus.timeUnits.hours', { count: diffHours }) };
       } else if (diffDays < 7) {
-        return { isOnline: false, lastSeenText: `Last seen ${diffDays}d ago` };
+        return { isOnline: false, lastSeenText: t('chat.onlineStatus.timeUnits.days', { count: diffDays }) };
       } else {
-        return { isOnline: false, lastSeenText: 'Last seen a while ago' };
+        return { isOnline: false, lastSeenText: t('chat.onlineStatus.timeUnits.longAgo') };
       }
     }
     
     return { isOnline: false, lastSeenText: '' };
-  }, [userStatuses]);
+  }, [userStatuses, t]);
   
   // Fetch user status from database
   const fetchUserStatusFromDB = useCallback(async (userId: string) => {

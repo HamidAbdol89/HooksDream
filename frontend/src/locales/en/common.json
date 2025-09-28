@@ -281,10 +281,79 @@
     "addComment": "Add a comment...",
     "replyPosted": "Reply posted",
     "replyPostedDesc": "Your reply has been posted successfully"
+  },
+
+
+  "chat": {
+    "messages": "Messages",
+    "chats": "Chats",
+    "following": "Following",
+    "searchConversations": "Search conversations...",
+    "searchFollowing": "Search following...",
+    "noConversations": {
+      "title": "No conversations yet",
+      "description": "Start a conversation with friends from the Following tab"
+    },
+    "noFollowing": {
+      "title": "Not following anyone",
+      "description": "Find and follow friends to start chatting"
+    },
+    "welcomeMessage": {
+      "title": "Welcome to Messages",
+      "description": "Select a conversation from the sidebar to start messaging, or find people to chat with from your following list."
+    },
+    "tapToMessage": "Tap to message",
+    "tapToStartChatting": "Tap to start chatting",
+    "messageInput": {
+      "placeholder": "Message...",
+      "sending": "Sending..."
+    },
+    "messageStatus": {
+      "sending": "Sending...",
+      "sent": "Sent",
+      "delivered": "Delivered",
+      "read": "Read",
+      "failed": "Failed",
+      "recalled": "Recalled"
+    },
+    "messageActions": {
+      "edit": "Edit",
+      "recall": "Recall",
+      "copy": "Copy",
+      "recallConfirm": "Are you sure you want to recall this message? This action cannot be undone.",
+      "editFailed": "Failed to edit message",
+      "recallFailed": "Failed to recall message",
+      "copySuccess": "Message copied to clipboard"
+    },
+    "mediaMessages": {
+      "sentImage": "Sent an image",
+      "sentVideo": "Sent a video",
+      "sentAudio": "Sent an audio message",
+      "sentFile": "Sent a file",
+      "messageRecalled": "Message was recalled"
+    },
+    "onlineStatus": {
+      "online": "Active now",
+      "offline": "Offline",
+      "lastSeen": "Last seen {{time}}",
+      "timeUnits": {
+        "justNow": "just now",
+        "minutes": "{{count}}m ago",
+        "hours": "{{count}}h ago",
+        "days": "{{count}}d ago",
+        "longAgo": "a while ago"
+      }
+    },
+    "editMessage": {
+      "title": "Edit Message",
+      "save": "Save",
+      "cancel": "Cancel",
+      "edited": "(edited)"
+    },
+    "conversationActions": {
+      "viewProfile": "View Profile",
+      "block": "Block",
+      "report": "Report"
+    }
   }
-
-
-  
-
-
 }

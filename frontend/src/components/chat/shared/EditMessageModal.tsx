@@ -1,5 +1,6 @@
 // components/chat/shared/EditMessageModal.tsx - Modal for editing messages
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Save } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +19,7 @@ export const EditMessageModal: React.FC<EditMessageModalProps> = ({
   onClose,
   onSave
 }) => {
+  const { t } = useTranslation('common');
   const [editText, setEditText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -59,7 +61,7 @@ export const EditMessageModal: React.FC<EditMessageModalProps> = ({
       <div className="bg-background rounded-2xl max-w-md w-full shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="font-semibold">Edit Message</h3>
+          <h3 className="font-semibold">{t('chat.editMessage.title')}</h3>
           <Button
             variant="ghost"
             size="sm"
@@ -127,7 +129,7 @@ export const EditMessageModal: React.FC<EditMessageModalProps> = ({
             onClick={onClose}
             disabled={isSaving}
           >
-            Cancel
+            {t('chat.editMessage.cancel')}
           </Button>
           <Button
             onClick={handleSave}
@@ -137,12 +139,12 @@ export const EditMessageModal: React.FC<EditMessageModalProps> = ({
             {isSaving ? (
               <>
                 <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                Saving...
+                {t('commonv2.saving')}
               </>
             ) : (
               <>
                 <Save className="w-4 h-4" />
-                Save
+                {t('chat.editMessage.save')}
               </>
             )}
           </Button>

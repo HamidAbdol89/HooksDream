@@ -1,5 +1,6 @@
 // components/chat/shared/MessageBubble.tsx - Shared message bubble for both desktop and mobile
 import React, { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
 import { Message } from '@/types/chat';
 import { ImageLightbox } from './ImageLightbox';
@@ -20,21 +21,23 @@ interface MessageBubbleProps {
 
 // Message Status Text Component
 const MessageStatusText: React.FC<{ status: string }> = ({ status }) => {
+  const { t } = useTranslation('common');
+  
   switch (status) {
     case 'sending':
-      return <span className="text-muted-foreground text-xs">Đang gửi...</span>;
+      return <span className="text-muted-foreground text-xs">{t('chat.messageStatus.sending')}</span>;
     case 'sent':
-      return <span className="text-muted-foreground text-xs">Đã gửi</span>;
+      return <span className="text-muted-foreground text-xs">{t('chat.messageStatus.sent')}</span>;
     case 'delivered':
-      return <span className="text-muted-foreground text-xs">Đã nhận</span>;
+      return <span className="text-muted-foreground text-xs">{t('chat.messageStatus.delivered')}</span>;
     case 'read':
-      return <span className="text-blue-500 text-xs">Đã xem</span>;
+      return <span className="text-blue-500 text-xs">{t('chat.messageStatus.read')}</span>;
     case 'failed':
-      return <span className="text-red-500 text-xs">Gửi lỗi</span>;
+      return <span className="text-red-500 text-xs">{t('chat.messageStatus.failed')}</span>;
     case 'recalled':
-      return <span className="text-muted-foreground text-xs">Đã thu hồi</span>;
+      return <span className="text-muted-foreground text-xs">{t('chat.messageStatus.recalled')}</span>;
     default:
-      return <span className="text-muted-foreground text-xs">Đã gửi</span>;
+      return <span className="text-muted-foreground text-xs">{t('chat.messageStatus.sent')}</span>;
   }
 };
 
@@ -45,6 +48,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   isLastInGroup,
   conversationId
 }) => {
+  const { t } = useTranslation('common');
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
@@ -61,11 +65,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   };
 
   const handleRecall = async (messageId: string) => {
-    if (confirm('Are you sure you want to recall this message? This action cannot be undone.')) {
+    if (confirm(t('chat.messageActions.recallConfirm'))) {
       try {
         await recallMessage(messageId);
       } catch (error) {
-        alert('Failed to recall message');
+        alert(t('chat.messageActions.recallFailed'));
       }
     }
   };
@@ -227,7 +231,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               )}
               {message.isEdited && !message.content.isRecalled && (
                 <span className="text-xs opacity-70 italic mt-1 block">
-                  (edited)
+                  {t('chat.editMessage.edited')}
                 </span>
               )}
             </div>

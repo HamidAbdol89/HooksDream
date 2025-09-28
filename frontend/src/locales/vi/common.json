@@ -278,14 +278,79 @@
     "noComments": "Chưa có bình luận nào",
     "addComment": "Thêm bình luận...",
     "replyPosted": "Đã trả lời",
-"replyPostedDesc": "Phản hồi của bạn đã được đăng thành công"
+    "replyPostedDesc": "Phản hồi của bạn đã được đăng thành công"
+  },
 
+  "chat": {
+    "messages": "Tin nhắn",
+    "chats": "Trò chuyện",
+    "following": "Đang theo dõi",
+    "searchConversations": "Tìm kiếm cuộc trò chuyện...",
+    "searchFollowing": "Tìm kiếm người theo dõi...",
+    "noConversations": {
+      "title": "Chưa có cuộc trò chuyện",
+      "description": "Bắt đầu trò chuyện với bạn bè từ tab Đang theo dõi"
+    },
+    "noFollowing": {
+      "title": "Chưa theo dõi ai",
+      "description": "Tìm và theo dõi bạn bè để bắt đầu trò chuyện"
+    },
+    "welcomeMessage": {
+      "title": "Chào mừng đến với Tin nhắn",
+      "description": "Chọn một cuộc trò chuyện từ thanh bên để bắt đầu nhắn tin, hoặc tìm người để trò chuyện từ danh sách theo dõi của bạn."
+    },
+    "tapToMessage": "Nhấn để nhắn tin",
+    "tapToStartChatting": "Nhấn để bắt đầu trò chuyện",
+    "messageInput": {
+      "placeholder": "Tin nhắn...",
+      "sending": "Đang gửi..."
+    },
+    "messageStatus": {
+      "sending": "Đang gửi...",
+      "sent": "Đã gửi",
+      "delivered": "Đã nhận",
+      "read": "Đã xem",
+      "failed": "Gửi lỗi",
+      "recalled": "Đã thu hồi"
+    },
+    "messageActions": {
+      "edit": "Chỉnh sửa",
+      "recall": "Thu hồi",
+      "copy": "Sao chép",
+      "recallConfirm": "Bạn có chắc chắn muốn thu hồi tin nhắn này không? Hành động này không thể hoàn tác.",
+      "editFailed": "Không thể chỉnh sửa tin nhắn",
+      "recallFailed": "Không thể thu hồi tin nhắn",
+      "copySuccess": "Đã sao chép tin nhắn vào clipboard"
+    },
+    "mediaMessages": {
+      "sentImage": "Đã gửi một ảnh",
+      "sentVideo": "Đã gửi một video",
+      "sentAudio": "Đã gửi tin nhắn âm thanh",
+      "sentFile": "Đã gửi một file",
+      "messageRecalled": "Tin nhắn đã được thu hồi"
+    },
+    "onlineStatus": {
+      "online": "Đang hoạt động",
+      "offline": "Ngoại tuyến",
+      "lastSeen": "Hoạt động {{time}} trước",
+      "timeUnits": {
+        "justNow": "vừa xong",
+        "minutes": "{{count}} phút trước",
+        "hours": "{{count}} giờ trước",
+        "days": "{{count}} ngày trước",
+        "longAgo": "lâu rồi"
+      }
+    },
+    "editMessage": {
+      "title": "Chỉnh sửa tin nhắn",
+      "save": "Lưu",
+      "cancel": "Hủy",
+      "edited": "(đã chỉnh sửa)"
+    },
+    "conversationActions": {
+      "viewProfile": "Xem hồ sơ",
+      "block": "Chặn",
+      "report": "Báo cáo"
+    }
   }
-
-
-
-
-
-
-
 }

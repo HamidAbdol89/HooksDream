@@ -1,5 +1,6 @@
 // components/chat/mobile/MobileChatWindow.tsx - Mobile chat window
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import { useChat } from '@/hooks/useChat';
@@ -16,6 +17,7 @@ export const MobileChatWindow: React.FC<MobileChatWindowProps> = ({
   conversationId,
   onBack 
 }) => {
+  const { t } = useTranslation('common');
   const { token } = useGoogleAuth();
   const queryClient = useQueryClient();
   const { currentUserId } = useChat();
@@ -87,7 +89,7 @@ export const MobileChatWindow: React.FC<MobileChatWindowProps> = ({
     <div className="md:hidden flex-1 flex flex-col bg-background h-full">
       {/* Mobile header with back button */}
       <MobileHeader
-        title={otherParticipant?.displayName || otherParticipant?.username || 'Chat'}
+        title={otherParticipant?.displayName || otherParticipant?.username || t('user')}
         avatar={otherParticipant?.avatar}
         userId={otherParticipant?._id}
         showBack={true}

@@ -1,5 +1,6 @@
 // components/chat/shared/MessageActions.tsx - Message action menu for edit/recall
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MoreHorizontal, Edit3, RotateCcw, Trash2, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Message } from '@/types/chat';
@@ -19,6 +20,7 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
   onRecall,
   onCopy
 }) => {
+  const { t } = useTranslation('common');
   const [showMenu, setShowMenu] = useState(false);
 
   // Check if message can be edited (within 24 hours, text only, not deleted, not recalled)
@@ -88,7 +90,7 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
                 className="w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center gap-2"
               >
                 <Copy className="w-3 h-3" />
-                Copy
+                {t('chat.messageActions.copy')}
               </button>
             )}
 
@@ -99,7 +101,7 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
                 className="w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center gap-2"
               >
                 <Edit3 className="w-3 h-3" />
-                Edit
+                {t('chat.messageActions.edit')}
               </button>
             )}
 
@@ -110,7 +112,7 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
                 className="w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center gap-2 text-destructive"
               >
                 <RotateCcw className="w-3 h-3" />
-                Recall
+                {t('chat.messageActions.recall')}
               </button>
             )}
           </div>

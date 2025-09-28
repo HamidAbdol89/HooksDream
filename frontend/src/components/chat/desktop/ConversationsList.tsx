@@ -1,5 +1,6 @@
 // components/chat/desktop/ConversationsList.tsx - Desktop conversations list
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { MessageSquare, UserCheck } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
@@ -41,6 +42,7 @@ export const ConversationsList: React.FC<ConversationsListProps> = ({
   error,
   onSwitchToFollowing
 }) => {
+  const { t } = useTranslation('common');
   const { isUserOnline, getUserStatus } = useOnlineUsers();
   
   if (isLoading) {
@@ -62,7 +64,7 @@ export const ConversationsList: React.FC<ConversationsListProps> = ({
   if (error) {
     return (
       <div className="p-4 text-center text-destructive">
-        Failed to load conversations
+        {t('feed.error.loading')}
       </div>
     );
   }
@@ -71,9 +73,9 @@ export const ConversationsList: React.FC<ConversationsListProps> = ({
     return (
       <div className="p-8 text-center">
         <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-        <h3 className="font-medium text-foreground mb-2">No conversations yet</h3>
+        <h3 className="font-medium text-foreground mb-2">{t('chat.noConversations.title')}</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Start a conversation from the Following tab
+          {t('chat.noConversations.description')}
         </p>
         <Button 
           variant="outline" 
@@ -81,7 +83,7 @@ export const ConversationsList: React.FC<ConversationsListProps> = ({
           onClick={onSwitchToFollowing}
         >
           <UserCheck className="w-4 h-4 mr-2" />
-          View Following
+          {t('chat.following')}
         </Button>
       </div>
     );
@@ -127,7 +129,7 @@ export const ConversationsList: React.FC<ConversationsListProps> = ({
                   </h3>
                   <div className="flex items-center gap-1 mt-0.5">
                     <p className="text-sm text-muted-foreground truncate flex-1">
-                      {conversation.lastMessage?.content?.text || 'Tap to start chatting'}
+                      {conversation.lastMessage?.content?.text || t('chat.tapToStartChatting')}
                     </p>
                     {Boolean(conversation.unreadCount && conversation.unreadCount > 0) && (
                       <span className="bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full min-w-[18px] text-center font-medium ml-2">

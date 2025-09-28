@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { MessageSquare, Search, Plus, UserCheck } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useChat } from '@/hooks/useChat';
 import { useSocial } from '@/hooks/useSocial';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
@@ -24,6 +25,7 @@ interface User {
 }
 
 const MessagesPage: React.FC = () => {
+  const { t } = useTranslation('common');
   const queryClient = useQueryClient();
   const { useConversations, useDirectConversation, currentUserId } = useChat();
   const { useCurrentProfile } = useSocial();
@@ -243,7 +245,7 @@ const MessagesPage: React.FC = () => {
         
         {/* Mobile Header */}
         <MobileHeader 
-          title="Messages"
+          title={t('chat.messages')}
           showEdit={true}
           showSearch={true}
         />
@@ -253,7 +255,7 @@ const MessagesPage: React.FC = () => {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <MessageSquare className="w-6 h-6 text-primary" />
-              <h1 className="text-xl font-bold">Messages</h1>
+              <h1 className="text-xl font-bold">{t('chat.messages')}</h1>
             </div>
             <Button size="sm" variant="ghost" className="p-2">
               <Plus className="w-4 h-4" />
@@ -271,7 +273,7 @@ const MessagesPage: React.FC = () => {
               }`}
             >
               <MessageSquare className="w-4 h-4" />
-              <span className="hidden sm:inline">Chats</span>
+              <span className="hidden sm:inline">{t('chat.chats')}</span>
               {activeTab === 'conversations' && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
               )}
@@ -285,7 +287,7 @@ const MessagesPage: React.FC = () => {
               }`}
             >
               <UserCheck className="w-4 h-4" />
-              <span className="hidden sm:inline">Following</span>
+              <span className="hidden sm:inline">{t('chat.following')}</span>
               {activeTab === 'following' && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
               )}
@@ -296,7 +298,7 @@ const MessagesPage: React.FC = () => {
           <div className="relative mt-4">
             <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder={activeTab === 'conversations' ? 'Search conversations...' : 'Search following...'}
+              placeholder={activeTab === 'conversations' ? t('chat.searchConversations') : t('chat.searchFollowing')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -315,7 +317,7 @@ const MessagesPage: React.FC = () => {
             }`}
           >
             <MessageSquare className="w-4 h-4" />
-            Chats
+            {t('chat.chats')}
             {activeTab === 'conversations' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
             )}
@@ -329,7 +331,7 @@ const MessagesPage: React.FC = () => {
             }`}
           >
             <UserCheck className="w-4 h-4" />
-            Following
+            {t('chat.following')}
             {activeTab === 'following' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
             )}
@@ -341,7 +343,7 @@ const MessagesPage: React.FC = () => {
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder={activeTab === 'conversations' ? 'Search conversations...' : 'Search following...'}
+              placeholder={activeTab === 'conversations' ? t('chat.searchConversations') : t('chat.searchFollowing')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 bg-muted/30 border-0 rounded-xl"
@@ -411,9 +413,9 @@ const MessagesPage: React.FC = () => {
                         <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
                           <span className="text-2xl">💬</span>
                         </div>
-                        <h3 className="font-semibold text-foreground mb-2">Chưa có cuộc trò chuyện</h3>
+                        <h3 className="font-semibold text-foreground mb-2">{t('chat.noConversations.title')}</h3>
                         <p className="text-sm text-muted-foreground">
-                          Bắt đầu trò chuyện với bạn bè từ tab Following
+                          {t('chat.noConversations.description')}
                         </p>
                       </div>
                     )}
@@ -480,7 +482,7 @@ const MessagesPage: React.FC = () => {
                             {user.displayName || user.username}
                           </h3>
                           <p className="text-sm text-muted-foreground truncate">
-                            @{user.username} • Tap to message
+                            @{user.username} • {t('chat.tapToMessage')}
                           </p>
                         </div>
                         
@@ -502,9 +504,9 @@ const MessagesPage: React.FC = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                           </svg>
                         </div>
-                        <h3 className="font-semibold text-foreground mb-2">Chưa theo dõi ai</h3>
+                        <h3 className="font-semibold text-foreground mb-2">{t('chat.noFollowing.title')}</h3>
                         <p className="text-sm text-muted-foreground">
-                          Tìm và theo dõi bạn bè để bắt đầu trò chuyện
+                          {t('chat.noFollowing.description')}
                         </p>
                       </div>
                     )}
@@ -537,10 +539,10 @@ const MessagesPage: React.FC = () => {
                 <MessageSquare className="w-10 h-10 text-primary" />
               </div>
               <h3 className="text-xl font-semibold text-foreground mb-3">
-                Welcome to Messages
+                {t('chat.welcomeMessage.title')}
               </h3>
               <p className="text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                Select a conversation from the sidebar to start messaging, or find people to chat with from your following list.
+                {t('chat.welcomeMessage.description')}
               </p>
             </div>
           </div>

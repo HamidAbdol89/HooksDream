@@ -1,5 +1,6 @@
 // components/chat/shared/ConversationItem.tsx - Individual conversation item with new message highlighting
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
 import { useOnlineUsers } from '@/hooks/useOnlineUsers';
 import { Conversation } from '@/types/chat';
@@ -20,6 +21,7 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
   onClick,
   isMobile = false
 }) => {
+  const { t } = useTranslation('common');
   const { isUserOnline, getUserStatus } = useOnlineUsers();
   
   const otherParticipant = conversation.participants.find(p => p._id !== currentUserId);
@@ -81,7 +83,7 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
                 )}
                 <p className="text-sm text-muted-foreground truncate">
                   {conversation.lastMessage?.content?.isRecalled
-                    ? 'Tin nhắn đã được thu hồi'
+                    ? t('chat.mediaMessages.messageRecalled')
                     : conversation.lastMessage?.content?.video && conversation.lastMessage?.content?.text
                     ? conversation.lastMessage.content.text
                     : conversation.lastMessage?.content?.audio && conversation.lastMessage?.content?.text
@@ -89,12 +91,12 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
                     : conversation.lastMessage?.content?.image && conversation.lastMessage?.content?.text
                     ? conversation.lastMessage.content.text
                     : conversation.lastMessage?.content?.video
-                    ? 'Đã gửi một video'
+                    ? t('chat.mediaMessages.sentVideo')
                     : conversation.lastMessage?.content?.audio
-                    ? 'Đã gửi tin nhắn âm thanh'
+                    ? t('chat.mediaMessages.sentAudio')
                     : conversation.lastMessage?.content?.image 
-                    ? 'Đã gửi một ảnh'
-                    : conversation.lastMessage?.content?.text || 'Tap to start chatting'
+                    ? t('chat.mediaMessages.sentImage')
+                    : conversation.lastMessage?.content?.text || t('chat.tapToStartChatting')
                   }
                 </p>
               </div>

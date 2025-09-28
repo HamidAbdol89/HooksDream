@@ -1,5 +1,6 @@
 // components/chat/desktop/FollowingUsersList.tsx - Desktop following users list
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { MessageSquare, Users } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
@@ -23,6 +24,7 @@ export const FollowingUsersList: React.FC<FollowingUsersListProps> = ({
   onStartChat,
   isLoading = false
 }) => {
+  const { t } = useTranslation('common');
   const { isUserOnline } = useOnlineUsers();
   
   if (isLoading) {
@@ -45,13 +47,13 @@ export const FollowingUsersList: React.FC<FollowingUsersListProps> = ({
     return (
       <div className="hidden md:block p-8 text-center">
         <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-        <h3 className="font-medium text-foreground mb-2">No following users</h3>
+        <h3 className="font-medium text-foreground mb-2">{t('chat.noFollowing.title')}</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Follow some users to start chatting with them
+          {t('chat.noFollowing.description')}
         </p>
         <Button variant="outline" size="sm">
           <Users className="w-4 h-4 mr-2" />
-          Find People
+          {t('nav.search')}
         </Button>
       </div>
     );
@@ -85,7 +87,7 @@ export const FollowingUsersList: React.FC<FollowingUsersListProps> = ({
               {user.displayName || user.username}
             </h3>
             <p className="text-sm text-muted-foreground truncate">
-              @{user.username} • Tap to message
+              @{user.username} • {t('chat.tapToMessage')}
             </p>
           </div>
           

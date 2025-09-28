@@ -1,5 +1,6 @@
 // components/chat/desktop/ChatHeader.tsx - Desktop chat header
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { MoreVertical } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
@@ -19,6 +20,7 @@ interface ChatHeaderProps {
 export const ChatHeader: React.FC<ChatHeaderProps> = ({ 
   user
 }) => {
+  const { t } = useTranslation('common');
   const { isUserOnline, getUserStatus } = useOnlineUsers();
   
   const userStatus = user?._id ? getUserStatus(user._id) : { isOnline: false, lastSeenText: '' };
@@ -39,10 +41,10 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           </div>
           <div>
             <h3 className="font-semibold text-foreground">
-              {user?.displayName || user?.username || 'Chat Partner'}
+              {user?.displayName || user?.username || t('user')}
             </h3>
             <p className={`text-sm font-medium ${userStatus.isOnline ? 'text-green-500' : 'text-muted-foreground'}`}>
-              {userStatus.lastSeenText || 'Offline'}
+              {userStatus.lastSeenText || t('chat.onlineStatus.offline')}
             </p>
           </div>
         </div>
