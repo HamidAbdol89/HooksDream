@@ -93,13 +93,20 @@ export default function EditProfilePage() {
           url: apiUrl
         });
         
+        // Special handling for rate limiting
+        if (response.status === 429) {
+          throw new Error('Too many update attempts. Please wait a moment and try again.');
+        }
+        
         throw new Error(errorMessage);
       }
 
       const result = await response.json();
       
       // Update global state with server response
-      updateUser(result.user || updatedData);
+      // Backend trả về data trong result.data, không phải result.user
+      const serverData = result.data || updatedData;
+      updateUser(serverData);
       
       // Reset unsaved changes
       setHasUnsavedChanges(false);
@@ -110,7 +117,8 @@ export default function EditProfilePage() {
         'Your changes have been saved successfully.'
       );
       
-      return Promise.resolve(result.user);
+      // Return server data for useEditProfile
+      return serverData;
     } catch (error) {
       console.error('Failed to save profile:', error);
       
@@ -138,6 +146,7 @@ export default function EditProfilePage() {
     onSave: handleSave, 
     onClose: () => navigate(-1) 
   });
+
 
   const handleGoBack = () => {
     if (hasUnsavedChanges) {
@@ -386,7 +395,11 @@ export default function EditProfilePage() {
                   </CardHeader>
                   <CardContent>
                     <ImagesForm 
-                      formData={formData} 
+                      formData={{
+                        ...formData,
+                        avatar: formData.avatar || currentUser?.avatar || '',
+                        coverImage: formData.coverImage || currentUser?.coverImage || ''
+                      }} 
                       imageUploading={imageUploading} 
                       onImageUpload={handleImageUploadWithTracking} 
                     />
@@ -452,17 +465,7 @@ export default function EditProfilePage() {
               </Card>
             )}
 
-            {/* Success Message */}
-            {!hasUnsavedChanges && !hasErrors && (
-              <Card className="mt-6 border-green-500/50 bg-green-50 dark:bg-green-950/20">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
-                    <Check className="h-4 w-4" />
-                    <span className="font-medium">All changes saved successfully!</span>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+          
           </Tabs>
         </form>
         </div>

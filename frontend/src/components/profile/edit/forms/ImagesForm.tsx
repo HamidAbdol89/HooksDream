@@ -5,8 +5,9 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Camera, User, Loader2, Image as ImageIcon, Crop } from 'lucide-react';
 import { ProfileFormData } from '@/types/profile';
-import { ImageCropModal } from '@/components/ui/ImageCropModal';
 import { MobileImageCropper } from '@/components/ui/MobileImageCropper';
+import { DesktopImageCropper } from '@/components/ui/DesktopImageCropper';
+import { useAppStore } from '@/store/useAppStore';
 
 interface ImagesFormProps {
   formData: ProfileFormData;
@@ -15,9 +16,11 @@ interface ImagesFormProps {
 }
 
 export function ImagesForm({ formData, imageUploading, onImageUpload }: ImagesFormProps) {
+  const { user: currentUser } = useAppStore();
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [isMobile, setIsMobile] = useState(false);
+
   
   // ✅ Crop modal state
   const [cropModal, setCropModal] = useState<{
@@ -103,8 +106,36 @@ export function ImagesForm({ formData, imageUploading, onImageUpload }: ImagesFo
     if (coverInputRef.current) coverInputRef.current.value = '';
   };
 
-  const getImageUrl = (url: string | undefined) => {
-    return url || '';
+  const getImageUrl = (url: string | undefined, type: 'avatar' | 'cover' = 'avatar') => {
+    // First try formData URL
+    if (url && url.trim()) {
+      // Handle different URL formats
+      if (url.startsWith('http')) {
+        return url;
+      }
+      
+      // Handle relative URLs or cloudinary URLs
+      if (url.includes('cloudinary.com') || url.includes('res.cloudinary.com')) {
+        return url;
+      }
+      
+      // Handle local/relative paths
+      if (url.startsWith('/')) {
+        return url;
+      }
+      
+      return url;
+    }
+    
+    // Fallback to currentUser data
+    if (currentUser) {
+      const fallbackUrl = type === 'avatar' ? currentUser.avatar : currentUser.coverImage;
+      if (fallbackUrl && fallbackUrl.trim()) {
+        return fallbackUrl;
+      }
+    }
+    
+    return '';
   };
 
   return (
@@ -119,12 +150,20 @@ export function ImagesForm({ formData, imageUploading, onImageUpload }: ImagesFo
               <div className="relative">
                 <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-2 border-border">
                   <AvatarImage 
-                    src={getImageUrl(formData.avatar) || '/default-avatar.png'} 
+                    src={
+                      formData.avatar || 
+                      currentUser?.avatar || 
+                      (currentUser as any)?.profilePicture ||
+                      (currentUser as any)?.picture ||
+                      (currentUser as any)?.photo ||
+                      getImageUrl(formData.avatar, 'avatar') || 
+                      `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser?.displayName || 'User')}&size=400&background=6366f1&color=ffffff`
+                    } 
                     alt="Profile picture" 
                     className="object-cover"
-                    key={formData.avatar}
+                    key={formData.avatar || currentUser?.avatar || 'placeholder'}
                   />
-                  <AvatarFallback>
+                  <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
                     <User className="h-8 w-8 sm:h-10 sm:w-10" />
                   </AvatarFallback>
                 </Avatar>
@@ -145,10 +184,10 @@ export function ImagesForm({ formData, imageUploading, onImageUpload }: ImagesFo
                     className="w-full sm:w-auto"
                   >
                     <Camera className="h-4 w-4 mr-2" />
-                    {formData.avatar ? 'Change Photo' : 'Upload Photo'}
+                    {(formData.avatar || currentUser?.avatar) ? 'Change Photo' : 'Upload Photo'}
                   </Button>
                   
-                  {formData.avatar && (
+                  {(formData.avatar || currentUser?.avatar) && (
                     <Button
                       type="button"
                       variant="ghost"
@@ -198,13 +237,17 @@ export function ImagesForm({ formData, imageUploading, onImageUpload }: ImagesFo
         <Card className="overflow-hidden">
           <CardContent className="p-0">
             <div className="relative h-32 sm:h-40 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20">
-              {formData.coverImage ? (
+              {(formData.coverImage || currentUser?.coverImage) ? (
                 <>
                   <img
-                    src={getImageUrl(formData.coverImage)}
+                    src={
+                      formData.coverImage || 
+                      currentUser?.coverImage || 
+                      getImageUrl(formData.coverImage, 'cover')
+                    }
                     alt="Cover"
                     className="w-full h-full object-cover"
-                    key={formData.coverImage}
+                    key={formData.coverImage || currentUser?.coverImage || 'default'}
                   />
                   <div className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-all duration-200 flex items-center justify-center">
                     <Button
@@ -257,7 +300,7 @@ export function ImagesForm({ formData, imageUploading, onImageUpload }: ImagesFo
                   )}
                 </p>
                 
-                {formData.coverImage && (
+                {(formData.coverImage || currentUser?.coverImage) && (
                   <Button
                     type="button"
                     variant="ghost"
@@ -294,12 +337,13 @@ export function ImagesForm({ formData, imageUploading, onImageUpload }: ImagesFo
             title={`Crop ${cropModal.type === 'avatar' ? 'Avatar' : 'Cover Image'}`}
           />
         ) : (
-          <ImageCropModal
-            isOpen={cropModal.isOpen}
-            onClose={handleCropClose}
-            imageFile={cropModal.file}
+          <DesktopImageCropper
+            imageUrl={cropModal.imageUrl}
+            aspectRatio={cropModal.type === 'avatar' ? 1 : 3}
             cropType={cropModal.type}
-            onCropComplete={handleDesktopCropComplete}
+            onCrop={handleMobileCropComplete}
+            onCancel={handleCropClose}
+            title={`Crop ${cropModal.type === 'avatar' ? 'Avatar' : 'Cover Image'}`}
           />
         )
       )}

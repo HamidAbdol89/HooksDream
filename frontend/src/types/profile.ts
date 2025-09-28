@@ -103,12 +103,12 @@ export const convertToProfileFormData = (user: any): ProfileFormData => {
     displayName: user.displayName || user.name || '',
     username: user.username || '',
     bio: user.bio || '',
-    location: user.location || '',
-    website: user.website || '',
+    location: user.location || '', // Force empty string if undefined
+    website: user.website || '', // Force empty string if undefined  
     avatar: user.avatar || '',
     coverImage: user.coverImage || '',
     email: user.email || '',
     phone: user.phone || '',
-    pronouns: user.pronouns || ''
+    pronouns: user.pronouns || '' // Force empty string if undefined
   };
 };

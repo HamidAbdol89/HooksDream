@@ -10,16 +10,48 @@ const uploadImageToCloudinary = async (fileBuffer, options = {}) => {
 
 const deleteImageFromCloudinary = async (imageUrl) => {
   try {
-    // ✅ TẮT AUTO DELETE - CHỈ LOG
-    // Trả về kết quả giả để không break existing code
-    return { 
-      result: 'disabled',
-      message: 'Auto-delete disabled for user safety',
-      url: imageUrl
-    };
+    if (!imageUrl || !imageUrl.includes('cloudinary.com')) {
+      return { result: 'skipped', message: 'Not a Cloudinary URL' };
+    }
+
+    // Extract public_id from Cloudinary URL
+    // URL format: https://res.cloudinary.com/cloud_name/image/upload/v1234567890/folder/public_id.jpg
+    const urlParts = imageUrl.split('/');
+    const uploadIndex = urlParts.findIndex(part => part === 'upload');
+    
+    if (uploadIndex === -1) {
+      return { result: 'error', message: 'Invalid Cloudinary URL format' };
+    }
+
+    // Get everything after 'upload/v1234567890/' or 'upload/'
+    let publicIdWithExtension = urlParts.slice(uploadIndex + 1).join('/');
+    
+    // Remove version if present (v1234567890)
+    if (publicIdWithExtension.startsWith('v') && /^v\d+\//.test(publicIdWithExtension)) {
+      publicIdWithExtension = publicIdWithExtension.replace(/^v\d+\//, '');
+    }
+    
+    // Remove file extension
+    const publicId = publicIdWithExtension.replace(/\.[^/.]+$/, '');
+
+    console.log(`🗑️ Deleting Cloudinary image: ${publicId}`);
+    
+    const result = await cloudinary.uploader.destroy(publicId, {
+      resource_type: 'image',
+      invalidate: true // Clear CDN cache
+    });
+
+    if (result.result === 'ok') {
+      console.log(`✅ Successfully deleted: ${publicId}`);
+      return { result: 'success', publicId, message: 'Image deleted successfully' };
+    } else {
+      console.log(`⚠️ Delete result: ${result.result} for ${publicId}`);
+      return { result: result.result, publicId, message: `Delete result: ${result.result}` };
+    }
 
   } catch (err) {
-    return { result: 'disabled', error: err.message };
+    console.error('❌ Error deleting from Cloudinary:', err);
+    return { result: 'error', error: err.message };
   }
 };
 

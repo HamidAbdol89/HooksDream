@@ -35,7 +35,6 @@ export const MobileImageCropper: React.FC<MobileImageCropperProps> = ({
   const [cropArea, setCropArea] = useState<CropArea>({ x: 0, y: 0, width: 0, height: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [scale, setScale] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [imageTransform, setImageTransform] = useState({ x: 0, y: 0, scale: 1 });
 
@@ -43,39 +42,41 @@ export const MobileImageCropper: React.FC<MobileImageCropperProps> = ({
   const initializeCropArea = useCallback(() => {
     if (!imageRef.current || !containerRef.current) return;
 
-    const img = imageRef.current;
     const container = containerRef.current;
-    const containerRect = container.getBoundingClientRect();
-    
-    // Calculate display size maintaining aspect ratio
-    const imgAspectRatio = img.naturalWidth / img.naturalHeight;
-    const containerAspectRatio = containerRect.width / containerRect.height;
-    
-    let displayWidth, displayHeight;
-    if (imgAspectRatio > containerAspectRatio) {
-      displayWidth = containerRect.width;
-      displayHeight = containerRect.width / imgAspectRatio;
-    } else {
-      displayHeight = containerRect.height;
-      displayWidth = containerRect.height * imgAspectRatio;
-    }
+    const { width: vw, height: vh } = container.getBoundingClientRect();
 
-    // Calculate crop area size based on desired aspect ratio
-    const maxCropSize = Math.min(displayWidth, displayHeight) * 0.8;
-    let cropWidth, cropHeight;
-    
+    // Determine crop window size based on viewport, not image size
+    let cropWidth: number;
+    let cropHeight: number;
     if (cropType === 'avatar') {
-      // Square crop for avatar
-      cropWidth = cropHeight = maxCropSize;
+      const size = Math.min(vw, vh) * 0.7; // 70% of the smaller viewport edge
+      cropWidth = size;
+      cropHeight = size;
     } else {
-      // 3:1 ratio for cover
-      cropWidth = maxCropSize;
-      cropHeight = maxCropSize / 3;
+      // 3:1 for cover - better sizing
+      const maxWidth = vw * 0.85; // 85% of viewport width
+      const maxHeight = vh * 0.4;  // 40% of viewport height
+      
+      // Calculate based on 3:1 ratio
+      cropWidth = maxWidth;
+      cropHeight = cropWidth / 3;
+      
+      // If height is too big, constrain by height
+      if (cropHeight > maxHeight) {
+        cropHeight = maxHeight;
+        cropWidth = cropHeight * 3;
+      }
+      
+      // Ensure minimum size
+      if (cropWidth < 300) {
+        cropWidth = 300;
+        cropHeight = 100;
+      }
     }
 
-    // Center the crop area - DEFAULT CENTER FOCUS
-    const x = (displayWidth - cropWidth) / 2;
-    const y = (displayHeight - cropHeight) / 2;
+    // Center the crop area in the viewport
+    const x = (vw - cropWidth) / 2;
+    const y = (vh - cropHeight) / 2;
 
     setCropArea({ x, y, width: cropWidth, height: cropHeight });
     setImageLoaded(true);
@@ -87,6 +88,60 @@ export const MobileImageCropper: React.FC<MobileImageCropperProps> = ({
     }
   }, [initializeCropArea]);
 
+  // Recompute crop window on viewport resize
+  useEffect(() => {
+    const onResize = () => initializeCropArea();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [initializeCropArea]);
+
+  // Lock background scroll while cropper is open and force fullscreen
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    const originalHeight = document.documentElement.style.height;
+    const originalPosition = document.body.style.position;
+    
+    // Lock scroll and force fullscreen
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.height = '100vh';
+    document.documentElement.style.height = '100vh';
+    
+    // Prevent touch events from affecting browser UI
+    const preventTouch = (e: TouchEvent) => {
+      if (e.touches.length > 1) {
+        e.preventDefault();
+      }
+    };
+    
+    const preventScroll = (e: Event) => {
+      e.preventDefault();
+    };
+    
+    // Add event listeners to prevent browser UI changes
+    document.addEventListener('touchstart', preventTouch, { passive: false });
+    document.addEventListener('touchmove', preventScroll, { passive: false });
+    document.addEventListener('scroll', preventScroll, { passive: false });
+    
+    // Hide address bar on mobile
+    setTimeout(() => {
+      window.scrollTo(0, 1);
+    }, 100);
+    
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.position = originalPosition;
+      document.body.style.width = '';
+      document.body.style.height = '';
+      document.documentElement.style.height = originalHeight;
+      
+      document.removeEventListener('touchstart', preventTouch);
+      document.removeEventListener('touchmove', preventScroll);
+      document.removeEventListener('scroll', preventScroll);
+    };
+  }, []);
+
   // Handle image load
   const handleImageLoad = () => {
     initializeCropArea();
@@ -94,6 +149,10 @@ export const MobileImageCropper: React.FC<MobileImageCropperProps> = ({
 
   // Touch event handlers for drag-to-adjust
   const handleTouchStart = (e: React.TouchEvent) => {
+    // Prevent browser UI from showing
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (e.touches.length === 1) {
       setIsDragging(true);
       const touch = e.touches[0];
@@ -102,10 +161,13 @@ export const MobileImageCropper: React.FC<MobileImageCropperProps> = ({
         y: touch.clientY - imageTransform.y 
       });
     }
-    e.preventDefault();
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
+    // Prevent browser UI from showing
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (!isDragging || e.touches.length !== 1) return;
 
     const touch = e.touches[0];
@@ -117,11 +179,13 @@ export const MobileImageCropper: React.FC<MobileImageCropperProps> = ({
       x: newX,
       y: newY
     }));
-    
-    e.preventDefault();
   };
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    // Prevent browser UI from showing
+    e.preventDefault();
+    e.stopPropagation();
+    
     setIsDragging(false);
   };
 
@@ -140,6 +204,9 @@ export const MobileImageCropper: React.FC<MobileImageCropperProps> = ({
   };
 
   const handlePinchStart = (e: React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (e.touches.length === 2) {
       setInitialDistance(getTouchDistance(e.touches));
       setInitialScale(imageTransform.scale);
@@ -147,6 +214,9 @@ export const MobileImageCropper: React.FC<MobileImageCropperProps> = ({
   };
 
   const handlePinchMove = (e: React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (e.touches.length === 2 && initialDistance > 0) {
       const currentDistance = getTouchDistance(e.touches);
       const scaleChange = currentDistance / initialDistance;
@@ -160,6 +230,9 @@ export const MobileImageCropper: React.FC<MobileImageCropperProps> = ({
   };
 
   const handleMultiTouch = (e: React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (e.touches.length === 1) {
       handleTouchStart(e);
     } else if (e.touches.length === 2) {
@@ -168,6 +241,9 @@ export const MobileImageCropper: React.FC<MobileImageCropperProps> = ({
   };
 
   const handleMultiTouchMove = (e: React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (e.touches.length === 1) {
       handleTouchMove(e);
     } else if (e.touches.length === 2) {
@@ -175,7 +251,7 @@ export const MobileImageCropper: React.FC<MobileImageCropperProps> = ({
     }
   };
 
-  // Crop the image
+  // Crop the image - fixed algorithm
   const getCroppedImage = useCallback(async (): Promise<Blob> => {
     if (!imageRef.current || !canvasRef.current || !containerRef.current) {
       throw new Error('Required elements not available');
@@ -195,19 +271,34 @@ export const MobileImageCropper: React.FC<MobileImageCropperProps> = ({
     canvas.width = outputWidth;
     canvas.height = outputHeight;
 
-    // Calculate the actual crop area on the original image
-    const containerRect = container.getBoundingClientRect();
-    const imgRect = img.getBoundingClientRect();
+    // Clear canvas
+    ctx.clearRect(0, 0, outputWidth, outputHeight);
+
+    // Get container dimensions
+    const containerWidth = container.offsetWidth;
+    const containerHeight = container.offsetHeight;
+
+    // Calculate image display size (object-contain)
+    const scaleToDisplay = Math.min(containerWidth / img.naturalWidth, containerHeight / img.naturalHeight);
+    const displayedImgWidth = img.naturalWidth * scaleToDisplay;
+    const displayedImgHeight = img.naturalHeight * scaleToDisplay;
     
-    // Scale factors
-    const scaleX = img.naturalWidth / imgRect.width;
-    const scaleY = img.naturalHeight / imgRect.height;
+    // Image position in container (center + transform)
+    const imgX = (containerWidth - displayedImgWidth) / 2 + imageTransform.x;
+    const imgY = (containerHeight - displayedImgHeight) / 2 + imageTransform.y;
     
-    // Calculate crop area in original image coordinates
-    const cropX = (cropArea.x - (imgRect.left - containerRect.left)) * scaleX / imageTransform.scale;
-    const cropY = (cropArea.y - (imgRect.top - containerRect.top)) * scaleY / imageTransform.scale;
-    const cropWidth = cropArea.width * scaleX / imageTransform.scale;
-    const cropHeight = cropArea.height * scaleY / imageTransform.scale;
+    // Calculate which part of the original image is in the crop area - ROBUST VERSION
+    const scaleFactorX = img.naturalWidth / (displayedImgWidth * imageTransform.scale);
+    const scaleFactorY = img.naturalHeight / (displayedImgHeight * imageTransform.scale);
+    
+    const sourceX = Math.max(0, (cropArea.x - imgX) * scaleFactorX);
+    const sourceY = Math.max(0, (cropArea.y - imgY) * scaleFactorY);
+    const sourceW = Math.min(img.naturalWidth - sourceX, cropArea.width * scaleFactorX);
+    const sourceH = Math.min(img.naturalHeight - sourceY, cropArea.height * scaleFactorY);
+    
+    // Ensure positive dimensions
+    const finalSourceW = Math.max(1, sourceW);
+    const finalSourceH = Math.max(1, sourceH);
 
     // Apply rotation if needed
     if (rotation !== 0) {
@@ -216,18 +307,18 @@ export const MobileImageCropper: React.FC<MobileImageCropperProps> = ({
       ctx.translate(-outputWidth / 2, -outputHeight / 2);
     }
 
-    // Draw the cropped image
-    ctx.drawImage(
-      img,
-      Math.max(0, cropX),
-      Math.max(0, cropY),
-      Math.min(cropWidth, img.naturalWidth),
-      Math.min(cropHeight, img.naturalHeight),
-      0,
-      0,
-      outputWidth,
-      outputHeight
-    );
+    // Draw the cropped image - ensure we have valid dimensions
+    if (finalSourceW > 0 && finalSourceH > 0 && sourceX < img.naturalWidth && sourceY < img.naturalHeight) {
+      ctx.drawImage(
+        img,
+        sourceX, sourceY, finalSourceW, finalSourceH,
+        0, 0, outputWidth, outputHeight
+      );
+    } else {
+      // Fallback: draw the whole image if crop calculation fails
+      console.warn('Crop calculation failed, using whole image');
+      ctx.drawImage(img, 0, 0, outputWidth, outputHeight);
+    }
 
     return new Promise((resolve, reject) => {
       canvas.toBlob((blob) => {
@@ -259,9 +350,26 @@ export const MobileImageCropper: React.FC<MobileImageCropperProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black">
+    <div 
+      className="fixed inset-0 z-[10000] bg-black"
+      style={{ 
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100vh',
+        maxHeight: '100vh',
+        minHeight: '100vh',
+        zIndex: 10000,
+        margin: 0,
+        padding: 0,
+        overflow: 'hidden'
+      }}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-black/90 backdrop-blur text-white">
+      <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 bg-black/90 backdrop-blur text-white z-10">
         <h2 className="text-lg font-medium">{title}</h2>
         <Button
           variant="ghost"
@@ -273,48 +381,90 @@ export const MobileImageCropper: React.FC<MobileImageCropperProps> = ({
         </Button>
       </div>
 
-      {/* Main crop area */}
+      {/* Main crop area - Full viewport */}
       <div 
         ref={containerRef}
-        className="flex-1 relative overflow-hidden"
-        style={{ height: 'calc(100vh - 140px)' }}
+        className="absolute inset-0 overflow-hidden"
+        style={{ 
+          position: 'absolute',
+          width: '100vw',
+          height: '100vh',
+          top: 0,
+          left: 0,
+          minWidth: '100vw',
+          minHeight: '100vh',
+          maxWidth: '100vw',
+          maxHeight: '100vh',
+          contain: 'layout style paint',
+          touchAction: 'none',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          WebkitTouchCallout: 'none'
+        }}
         onTouchStart={handleMultiTouch}
         onTouchMove={handleMultiTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Image */}
-        <img
-          ref={imageRef}
-          src={imageUrl}
-          alt="Crop"
-          className="absolute inset-0 w-full h-full object-contain"
-          style={{
-            transform: `translate(${imageTransform.x}px, ${imageTransform.y}px) scale(${imageTransform.scale}) rotate(${rotation}deg)`,
-            transformOrigin: 'center',
-            willChange: 'transform',
-            touchAction: 'none'
-          }}
-          onLoad={handleImageLoad}
-          draggable={false}
-        />
+        {/* Image Container - Fixed size to prevent layout shift */}
+        <div className="absolute inset-0 overflow-hidden">
+          <img
+            ref={imageRef}
+            src={imageUrl}
+            alt="Crop"
+            className="absolute w-full h-full object-contain"
+            style={{
+              transform: `translate(${imageTransform.x}px, ${imageTransform.y}px) scale(${imageTransform.scale}) rotate(${rotation}deg)`,
+              transformOrigin: 'center center',
+              willChange: 'transform',
+              touchAction: 'none',
+              left: '50%',
+              top: '50%',
+              marginLeft: '-50%',
+              marginTop: '-50%'
+            }}
+            onLoad={handleImageLoad}
+            draggable={false}
+          />
+        </div>
 
-        {/* Crop overlay - fixed center position */}
+        {/* Crop overlay - absolutely fixed position */}
         {imageLoaded && (
-          <div className="absolute inset-0 pointer-events-none">
+          <div 
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              zIndex: 5
+            }}
+          >
             {/* Dark overlay */}
-            <div className="absolute inset-0 bg-black/50" />
+            <div 
+              className="absolute inset-0 bg-black/50"
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%'
+              }}
+            />
             
-            {/* Crop window */}
+            {/* Crop window - completely fixed */}
             <div
               ref={cropOverlayRef}
               className="absolute border-2 border-white shadow-lg"
               style={{
-                left: '50%',
-                top: '50%',
-                width: cropType === 'avatar' ? '280px' : '320px',
-                height: cropType === 'avatar' ? '280px' : '107px',
-                transform: 'translate(-50%, -50%)',
-                boxShadow: '0 0 0 9999px rgba(0,0,0,0.5)'
+                position: 'absolute',
+                left: `${cropArea.x}px`,
+                top: `${cropArea.y}px`,
+                width: `${cropArea.width}px`,
+                height: `${cropArea.height}px`,
+                boxShadow: '0 0 0 9999px rgba(0,0,0,0.5)',
+                transform: 'translateZ(0)', // Force GPU layer
+                backfaceVisibility: 'hidden'
               }}
             >
               {/* Corner indicators */}
@@ -331,14 +481,23 @@ export const MobileImageCropper: React.FC<MobileImageCropperProps> = ({
           </div>
         )}
 
-        {/* Instructions */}
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-black/70 text-white px-4 py-2 rounded-full text-sm backdrop-blur">
+        {/* Instructions - Fixed position */}
+        <div 
+          className="absolute left-1/2 transform -translate-x-1/2 bg-black/70 text-white px-4 py-2 rounded-full text-sm backdrop-blur z-20"
+          style={{
+            position: 'absolute',
+            top: '80px', // Fixed distance from top
+            left: '50%',
+            transform: 'translateX(-50%) translateZ(0)',
+            backfaceVisibility: 'hidden'
+          }}
+        >
           📱 Drag to move • Pinch to zoom
         </div>
       </div>
 
       {/* Bottom controls */}
-      <div className="bg-black/90 backdrop-blur p-4 space-y-4">
+      <div className="absolute bottom-0 left-0 right-0 bg-black/90 backdrop-blur p-4 space-y-4 z-10">
         {/* Quick actions */}
         <div className="flex items-center justify-center gap-4">
           <Button

@@ -17,6 +17,7 @@ interface SocialFormProps {
 export function SocialForm({ formData, errors, onInputChange }: SocialFormProps) {
   return (
     <div className="space-y-6">
+      {/* Website - Only field that should be in Links tab */}
       <div className="space-y-2">
         <Label htmlFor="website" className="text-sm font-medium">
           Website

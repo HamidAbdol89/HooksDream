@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api, userApi } from '@/services/api';
-import { User, Profile, Post, convertUserToProfile, mergeUserWithCloudinaryPriority, NewPostInput } from '@/store/useAppStore';
-
+import { User, Profile, Post, convertUserToProfile, mergeUserWithCloudinaryPriority, NewPostInput, useAppStore } from '@/store/useAppStore';
 
 
 export const useProfile = (userId: string, currentUserId?: string) => {
+  const { updateUser } = useAppStore();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -28,6 +28,11 @@ export const useProfile = (userId: string, currentUserId?: string) => {
         
         setUser(userData);
         setProfile(profileData);
+        
+        // ✅ Update global state if this is current user's profile
+        if (isOwnProfile) {
+          updateUser(userData);
+        }
       }
     } catch (err) {
       console.error('Error refetching profile:', err);
@@ -49,6 +54,11 @@ export const useProfile = (userId: string, currentUserId?: string) => {
         
         setUser(userData);
         setProfile(profileData);
+        
+        // ✅ Update global state if this is current user's profile
+        if (isOwnProfile) {
+          updateUser(userData);
+        }
       } else {
         throw new Error(response.message || 'Failed to load profile');
       }

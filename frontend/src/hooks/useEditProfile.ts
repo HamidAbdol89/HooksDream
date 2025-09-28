@@ -7,7 +7,7 @@ import { useParams } from 'react-router-dom';
 interface UseEditProfileProps {
   isOpen: boolean;
   user: User;
-  onSave: (updatedData: Partial<User>) => Promise<void>;
+  onSave: (updatedData: Partial<User>) => Promise<any>; // Allow return of server data
   onClose: () => void;
 }
 
@@ -118,11 +118,16 @@ export function useEditProfile({ isOpen, user, onSave, onClose }: UseEditProfile
   // Initialize form data when user is resolved
   useEffect(() => {
     if (isOpen && resolvedUser && !isUploadingRef.current) {
-      setFormData(convertToProfileFormData(resolvedUser));
+      const profileData = convertToProfileFormData(resolvedUser);
+      // Force refresh profile data if missing key fields
+      if (!resolvedUser.pronouns && !resolvedUser.location && !resolvedUser.website) {
+        refetchProfile?.();
+      }
+      setFormData(profileData);
       setErrors({});
       setActiveTab('basic');
     }
-  }, [isOpen, resolvedUser]);
+  }, [isOpen, resolvedUser, refetchProfile]);
 
   const handleInputChange = (field: keyof ProfileFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -239,6 +244,12 @@ const handleImageUpload = async (
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Prevent multiple rapid submissions
+    if (isLoading) {
+      console.log('⏳ Already submitting, ignoring duplicate request');
+      return null;
+    }
+
     const validationErrors = validateProfile(formData);
     setErrors(validationErrors);
 
@@ -248,14 +259,25 @@ const handleImageUpload = async (
 
     setIsLoading(true);
     try {
-      // Call onSave to update via parent
-      await onSave(formData);
+      // Call onSave to update via parent - may return server response
+      let serverResponse;
+      try {
+        serverResponse = await onSave(formData);
+      } catch (error) {
+        // onSave throws error, re-throw it
+        throw error;
+      }
       
-      // Update global user state
-      updateUser(formData);
-      
-      // Update resolved user to prevent overwrite
-      setResolvedUser(prev => prev ? { ...prev, ...formData } : null);
+      // Update global user state with server response if available
+      if (serverResponse && typeof serverResponse === 'object') {
+        updateUser(serverResponse);
+        // Update resolved user with server data to prevent overwrite
+        setResolvedUser(serverResponse);
+      } else {
+        // Fallback to formData if no server response (void return)
+        updateUser(formData);
+        setResolvedUser(prev => prev ? { ...prev, ...formData } : null);
+      }
       
       // Trigger profile update notification
       notifyProfileUpdate();

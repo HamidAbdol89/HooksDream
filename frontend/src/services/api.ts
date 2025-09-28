@@ -309,55 +309,7 @@ export const userApi = {
     }
   },
   
-  updateProfile: async (hashId: string, updateData: { 
-    username?: string; 
-    displayName?: string; 
-    bio?: string; 
-    location?: string;
-    website?: string;
-    phone?: string;
-    pronouns?: string;
-    avatarBase64?: string;
-    coverImageBase64?: string;
-  }) => {
-    return apiCall(`/api/users/profile/${hashId}`, {
-      method: 'PUT',
-      body: JSON.stringify(updateData),
-    });
-  },
-
-  updateProfileWithFiles: async (hashId: string, updateData: { 
-    username?: string; 
-    displayName?: string; 
-    bio?: string; 
-    location?: string;
-    website?: string;
-    phone?: string;
-    pronouns?: string;
-    avatarFile?: File;
-    coverImageFile?: File;
-  }) => {
-    const formData = new FormData();
-    
-    if (updateData.username) formData.append('username', updateData.username);
-    if (updateData.displayName) formData.append('displayName', updateData.displayName);
-    if (updateData.bio) formData.append('bio', updateData.bio);
-    if (updateData.location) formData.append('location', updateData.location);
-    if (updateData.website) formData.append('website', updateData.website);
-    if (updateData.phone) formData.append('phone', updateData.phone);
-    if (updateData.pronouns) formData.append('pronouns', updateData.pronouns);
-    
-    if (updateData.avatarFile) {
-      formData.append('avatar', updateData.avatarFile);
-    }
-    if (updateData.coverImageFile) {
-      formData.append('coverImage', updateData.coverImageFile);
-    }
-
-    return apiFormDataCall(`/api/users/profile/${hashId}`, formData, 'PUT');
-  },
-
-  updateProfileSmart: async (hashId: string, updateData: {
+  updateProfile: async (hashId: string, updateData: {
     username?: string; 
     displayName?: string; 
     bio?: string; 
@@ -371,12 +323,35 @@ export const userApi = {
     coverImageFile?: File;
   }) => {
     const hasFiles = updateData.avatarFile || updateData.coverImageFile;
-    const hasBase64 = updateData.avatarBase64 || updateData.coverImageBase64;
 
     if (hasFiles) {
-      return userApi.updateProfileWithFiles(hashId, updateData);
+      // Use FormData for file uploads
+      const formData = new FormData();
+      
+      // Add text fields (use !== undefined to allow empty strings)
+      if (updateData.username) formData.append('username', updateData.username);
+      if (updateData.displayName) formData.append('displayName', updateData.displayName);
+      if (updateData.bio !== undefined) formData.append('bio', updateData.bio);
+      if (updateData.location !== undefined) formData.append('location', updateData.location);
+      if (updateData.website !== undefined) formData.append('website', updateData.website);
+      if (updateData.phone !== undefined) formData.append('phone', updateData.phone);
+      if (updateData.pronouns !== undefined) formData.append('pronouns', updateData.pronouns);
+      
+      // Add files
+      if (updateData.avatarFile) {
+        formData.append('avatar', updateData.avatarFile);
+      }
+      if (updateData.coverImageFile) {
+        formData.append('coverImage', updateData.coverImageFile);
+      }
+
+      return apiFormDataCall(`/api/users/profile/${hashId}`, formData, 'PUT');
     } else {
-      return userApi.updateProfile(hashId, updateData);
+      // Use JSON for text-only updates
+      return apiCall(`/api/users/profile/${hashId}`, {
+        method: 'PUT',
+        body: JSON.stringify(updateData),
+      });
     }
   },
 
@@ -387,7 +362,7 @@ export const userApi = {
 
     try {
       const resizedFile = await resizeImage(file, 400, 400, 0.9);
-      return await userApi.updateProfileWithFiles(hashId, { 
+      return await userApi.updateProfile(hashId, { 
         avatarFile: resizedFile 
       });
     } catch (error) {
@@ -402,7 +377,7 @@ export const userApi = {
 
     try {
       const resizedFile = await resizeImage(file, 1200, 400, 0.85);
-      return await userApi.updateProfileWithFiles(hashId, { 
+      return await userApi.updateProfile(hashId, { 
         coverImageFile: resizedFile 
       });
     } catch (error) {

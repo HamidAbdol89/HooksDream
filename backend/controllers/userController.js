@@ -135,11 +135,29 @@ exports.updateProfile = async (req, res) => {
         if (phone !== undefined) user.phone = phone;
         if (pronouns !== undefined) user.pronouns = pronouns;
         
-        // ✅ UPLOAD ẢNH MỚI - KHÔNG XÓA ẢNH CŨ
+        // ✅ UPLOAD ẢNH MỚI - XÓA ẢNH CŨ TRƯỚC
         // Xử lý avatar upload (file)
         if (req.files?.avatar) {
             try {
-                const optimizedAvatar = await optimizeImage(req.files.avatar[0].buffer, 'avatar');
+                // Check if it's an empty file (remove request)
+                if (req.files.avatar[0].size === 0 || req.files.avatar[0].originalname === 'empty') {
+                    // Delete old avatar if exists
+                    if (user.avatar && user.avatar.includes('cloudinary.com')) {
+                        console.log(`🗑️ Removing avatar: ${user.avatar}`);
+                        const deleteResult = await deleteImageFromCloudinary(user.avatar);
+                        console.log(`Delete result:`, deleteResult);
+                    }
+                    user.avatar = '';
+                    user.hasCustomAvatar = false;
+                } else {
+                    // Delete old avatar if exists
+                    if (user.avatar && user.avatar.includes('cloudinary.com')) {
+                        console.log(`🗑️ Deleting old avatar: ${user.avatar}`);
+                        const deleteResult = await deleteImageFromCloudinary(user.avatar);
+                        console.log(`Delete result:`, deleteResult);
+                    }
+
+                    const optimizedAvatar = await optimizeImage(req.files.avatar[0].buffer, 'avatar');
                 
                 const newAvatarUrl = await uploadImageToCloudinary(optimizedAvatar, {
                     folder: 'uploads/images',
@@ -156,10 +174,11 @@ exports.updateProfile = async (req, res) => {
                     invalidate: true
                 });
                 
-                user.avatar = newAvatarUrl;
-                user.hasCustomAvatar = true; // ✅ Mark as customized
-                // CDN propagate delay
-                await new Promise(resolve => setTimeout(resolve, 1500));
+                    user.avatar = newAvatarUrl;
+                    user.hasCustomAvatar = true; // ✅ Mark as customized
+                    // CDN propagate delay
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                }
                 
             } catch (imgError) {
                 return res.status(400).json(
@@ -171,7 +190,24 @@ exports.updateProfile = async (req, res) => {
         // Xử lý cover image upload (file)
         if (req.files?.coverImage) {
             try {
-                const optimizedCover = await optimizeImage(req.files.coverImage[0].buffer, 'cover');
+                // Check if it's an empty file (remove request)
+                if (req.files.coverImage[0].size === 0 || req.files.coverImage[0].originalname === 'empty') {
+                    // Delete old cover image if exists
+                    if (user.coverImage && user.coverImage.includes('cloudinary.com')) {
+                        console.log(`🗑️ Removing cover image: ${user.coverImage}`);
+                        const deleteResult = await deleteImageFromCloudinary(user.coverImage);
+                        console.log(`Delete result:`, deleteResult);
+                    }
+                    user.coverImage = '';
+                } else {
+                    // Delete old cover image if exists
+                    if (user.coverImage && user.coverImage.includes('cloudinary.com')) {
+                        console.log(`🗑️ Deleting old cover image: ${user.coverImage}`);
+                        const deleteResult = await deleteImageFromCloudinary(user.coverImage);
+                        console.log(`Delete result:`, deleteResult);
+                    }
+
+                    const optimizedCover = await optimizeImage(req.files.coverImage[0].buffer, 'cover');
                 
                 const newCoverUrl = await uploadImageToCloudinary(optimizedCover, {
                     folder: 'uploads/images',
@@ -186,8 +222,9 @@ exports.updateProfile = async (req, res) => {
                     invalidate: true
                 });
                 
-                user.coverImage = newCoverUrl;
-                await new Promise(resolve => setTimeout(resolve, 1500));
+                    user.coverImage = newCoverUrl;
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                }
                 
             } catch (imgError) {
                 return res.status(400).json(

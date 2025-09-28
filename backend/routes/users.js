@@ -12,7 +12,7 @@ const { optionalAuth, authMiddleware } = require('../middleware/auth');
 // Rate limiting cho các endpoints quan trọng
 const updateLimiter = rateLimit({
     windowMs: 5 * 60 * 1000, // 5 phút
-    max: 3, // Tối đa 3 updates
+    max: 15, // Tăng lên 15 updates (cho phép testing và multiple image uploads)
     message: { success: false, message: 'Too many update attempts, please try again later.' }
 });
 
