@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { FollowButton } from '@/components/ui/FollowButton';
 import { usePageTransition } from '@/components/ui/PageTransition';
+import { useAppStore } from '@/store/useAppStore';
 
 interface ProfileActionsProps {
   isOwnProfile: boolean;
@@ -25,21 +26,25 @@ export const ProfileActions: React.FC<ProfileActionsProps> = ({
 }) => {
   const navigate = useNavigate();
   const { startTransition } = usePageTransition();
+  const { user } = useAppStore();
 
   const handleEditProfile = () => {
     startTransition(() => {
-      navigate('/edit-profile');
+      // Navigate with user's hashId or username
+      const userIdentifier = user?.hashId || user?.username || 'me';
+      navigate(`/edit-profile/${userIdentifier}`);
     }, 100);
   };
 
   // Show edit profile button only for own profile
   if (isOwnProfile) {
     return (
-      <div className="flex justify-center space-x-3 px-4 mb-4">
+      <div className="flex justify-center px-4 mb-4">
         <Button 
           onClick={handleEditProfile}
           variant="outline"
-          className="flex-1 max-w-[200px] flex items-center justify-center space-x-2 rounded-full py-2 text-sm font-medium hover:bg-primary hover:text-primary-foreground transition-all duration-200 hover:scale-105"
+          size="default"
+          className="flex items-center gap-2 px-8"
         >
           <Edit3 className="h-4 w-4" />
           <span>Chỉnh sửa</span>
@@ -65,8 +70,8 @@ export const ProfileActions: React.FC<ProfileActionsProps> = ({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button 
-            variant="outline" 
-            size="icon" 
+            variant="ghost" 
+            size="icon"
             className="rounded-full w-8 h-8 md:w-10 md:h-10 flex items-center justify-center shrink-0"
           >
             <MoreHorizontal className="h-3 w-3 md:h-4 md:w-4" />

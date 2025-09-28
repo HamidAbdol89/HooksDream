@@ -17,6 +17,7 @@ import EditProfilePage from "@/pages/EditProfilePage";
 import { UnfollowConfirmProvider } from "@/contexts/UnfollowConfirmContext";
 import { ChatProvider, useChatContext } from "@/contexts/ChatContext";
 import { useSocket } from "@/hooks/useSocket";
+import { ToastProvider } from "@/components/ui/SuccessToast";
 
 const ProtectedAppContent: React.FC = () => {
   const { isConnected, user } = useAppStore();
@@ -38,7 +39,7 @@ const ProtectedAppContent: React.FC = () => {
   
   // Check if current page should hide sidebars
   const isMessagesPage = location.pathname === '/messages';
-  const isEditProfilePage = location.pathname === '/edit-profile';
+  const isEditProfilePage = location.pathname.startsWith('/edit-profile');
   // Get chat context
   const { selectedConversationId } = useChatContext();
   const isInChat = isMessagesPage && !!selectedConversationId && isMobile;
@@ -57,11 +58,14 @@ const ProtectedAppContent: React.FC = () => {
           {isEditProfilePage ? (
             // Full width layout for Edit Profile page
             <div className="w-full">
-              <TooltipProvider>
-                <Routes>
-                  <Route path="/edit-profile" element={<EditProfilePage />} />
-                </Routes>
-              </TooltipProvider>
+              <ToastProvider>
+                <TooltipProvider>
+                  <Routes>
+                    <Route path="/edit-profile/:address" element={<EditProfilePage />} />
+                    <Route path="/edit-profile" element={<EditProfilePage />} />
+                  </Routes>
+                </TooltipProvider>
+              </ToastProvider>
             </div>
           ) : isMessagesPage || isInChat ? (
             // Full width layout for Messages page and individual chats
@@ -91,7 +95,7 @@ const ProtectedAppContent: React.FC = () => {
                   <Routes>
                     <Route path="/profile/:userId" element={<ProfilePage />} />
                     <Route path="/profile/me" element={<ProfilePage />} />
-                    <Route path="/edit-profile" element={<EditProfilePage />} />
+                    <Route path="/edit-profile/:address" element={<EditProfilePage />} />
                     <Route path="/search" element={<SearchPage />} />
                     <Route path="/friend" element={<FriendPage />} />
                     <Route path="/post/:postId" element={<PostDetailPage />} />

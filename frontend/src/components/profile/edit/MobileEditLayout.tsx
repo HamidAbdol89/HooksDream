@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Save, X, User, Image, Globe, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/badge';
 import { ActiveTab, ProfileFormData, ProfileFormErrors } from '@/types/profile';
 
 // Import mobile-optimized form components
@@ -51,6 +50,7 @@ export const MobileEditLayout: React.FC<MobileEditLayoutProps> = ({
 
   const currentTabIndex = TABS.findIndex(tab => tab.id === activeTab);
   const hasErrors = Object.keys(errors).length > 0;
+
 
   // ✅ Swipe gesture handlers
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -114,11 +114,10 @@ export const MobileEditLayout: React.FC<MobileEditLayoutProps> = ({
         return null;
     }
   };
-
   return (
     <div className="h-screen bg-background flex flex-col">
 
-      {/* Compact Tab Navigation */}
+      {/* Ultra Compact Tab Navigation */}
       <div className="bg-background border-b">
         <div className="flex items-center px-2 py-2">
           {TABS.map((tab, index) => {
@@ -129,7 +128,7 @@ export const MobileEditLayout: React.FC<MobileEditLayoutProps> = ({
               <button
                 key={tab.id}
                 onClick={() => navigateToTab(tab.id)}
-                className={`flex-1 flex flex-col items-center gap-1 py-1.5 px-1 transition-colors relative ${
+                className={`flex-1 flex flex-col items-center gap-0.5 py-1.5 transition-colors ${
                   isActive 
                     ? 'text-primary' 
                     : 'text-muted-foreground'
@@ -137,21 +136,10 @@ export const MobileEditLayout: React.FC<MobileEditLayoutProps> = ({
               >
                 <Icon className="h-4 w-4" />
                 <span className="text-xs font-medium">{tab.shortLabel}</span>
-                {hasErrors && Object.keys(errors).some(key => {
-                  if (tab.id === 'basic') return ['displayName', 'username', 'bio', 'location', 'pronouns'].includes(key);
-                  if (tab.id === 'images') return ['avatar', 'coverImage'].includes(key);
-                  if (tab.id === 'social') return ['website'].includes(key);
-                  if (tab.id === 'account') return ['email', 'phone'].includes(key);
-                  return false;
-                }) && (
-                  <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full" />
-                )}
               </button>
             );
           })}
         </div>
-
-        {/* Thin Progress Bar */}
         <div className="h-0.5 bg-muted">
           <div 
             className="h-full bg-primary transition-all duration-300"
@@ -216,29 +204,24 @@ export const MobileEditLayout: React.FC<MobileEditLayoutProps> = ({
         )}
         <div className="flex gap-3">
           <Button
-            variant="outline"
+            variant="secondary"
             onClick={onCancel}
             disabled={isLoading}
-            className="flex-1 py-3"
+            className="flex-1"
+            size="lg"
           >
             Cancel
           </Button>
           <Button
+            variant="default"
             onClick={onSave}
             disabled={isLoading || hasErrors}
-            className="flex-1 py-3"
+            isLoading={isLoading}
+            className="flex-1"
+            size="lg"
           >
-            {isLoading ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4 mr-2" />
-                Save Changes
-              </>
-            )}
+            <Save className="h-4 w-4 mr-2" />
+            Save Changes
           </Button>
         </div>
       </div>

@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Save, X, User, Image, Globe, Settings, Check } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAppStore } from '@/store/useAppStore';
 import { useEditProfile } from '@/hooks/useEditProfile';
-import { ActiveTab } from '@/types/profile';
+import { ActiveTab, PROFILE_API } from '@/types/profile';
 import { MobileEditLayout } from '@/components/profile/edit/MobileEditLayout';
 import { PageTransition } from '@/components/ui/PageTransition';
+import { useSuccessToast } from '@/components/ui/SuccessToast';
 
 // Import form components
 import { BasicInfoForm } from '@/components/profile/edit/forms/BasicInfoForm';
@@ -18,10 +19,15 @@ import { AccountForm } from '@/components/profile/edit/forms/AccountForm';
 
 export default function EditProfilePage() {
   const navigate = useNavigate();
+  const { address } = useParams();
   const { user: currentUser, updateUser } = useAppStore();
   const [activeTab, setActiveTab] = useState<ActiveTab>('basic');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const { showSuccess } = useSuccessToast();
+
+  // Check if user can edit this profile
+  const canEdit = !address || address === currentUser?.hashId || address === currentUser?.username || address === 'me';
 
   // ✅ Detect mobile device
   useEffect(() => {
@@ -35,22 +41,84 @@ export default function EditProfilePage() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Mock onSave function for useEditProfile
+  // Real API save function
   const handleSave = async (updatedData: any) => {
     try {
-      // Here you would call your API
+      if (!currentUser?.hashId) {
+        throw new Error('User not found');
+      }
+
       console.log('Saving profile data:', updatedData);
+
+      // Get API base URL from environment
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
       
-      // Update global state
-      updateUser(updatedData);
+      // Call the actual API - correct endpoint from backend routes
+      const apiUrl = `${API_BASE_URL}/api/users/profile/${currentUser.hashId}`;
+      console.log('API URL:', apiUrl);
+      
+      let response;
+      try {
+        response = await fetch(apiUrl, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('user_hash_id')}`
+          },
+          body: JSON.stringify(updatedData)
+        });
+      } catch (networkError) {
+        console.warn('⚠️ Network error, using local update only:', networkError);
+        // Fallback: Update local state only
+        updateUser(updatedData);
+        setHasUnsavedChanges(false);
+        
+        showSuccess(
+          'Profile updated locally!', 
+          'Changes saved locally (network unavailable).'
+        );
+        
+        return Promise.resolve(updatedData);
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        const errorMessage = errorData.message || `HTTP ${response.status}: ${response.statusText}`;
+        
+        // Log detailed error for debugging
+        console.error('❌ API Error:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData,
+          url: apiUrl
+        });
+        
+        throw new Error(errorMessage);
+      }
+
+      const result = await response.json();
+      
+      // Update global state with server response
+      updateUser(result.user || updatedData);
       
       // Reset unsaved changes
       setHasUnsavedChanges(false);
       
-      // Show success message (you can add toast here)
-      return Promise.resolve();
+      // Show success toast
+      showSuccess(
+        'Profile updated!', 
+        'Your changes have been saved successfully.'
+      );
+      
+      return Promise.resolve(result.user);
     } catch (error) {
       console.error('Failed to save profile:', error);
+      
+      // Show error message to user
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      // You can add error toast here if you have one
+      // For now, we'll just log and re-throw
       throw error;
     }
   };
@@ -83,8 +151,10 @@ export default function EditProfilePage() {
     e.preventDefault();
     try {
       await handleSubmit(e);
-      // Navigate back on success
-      navigate(-1);
+      // Don't navigate immediately, let user see the success toast
+      setTimeout(() => {
+        navigate(-1);
+      }, 2000); // Wait 2 seconds to show toast
     } catch (error) {
       console.error('Failed to save profile:', error);
     }
@@ -100,12 +170,25 @@ export default function EditProfilePage() {
     setHasUnsavedChanges(true);
   };
 
+  // If no user is logged in, redirect to login
   if (!currentUser) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <h2 className="text-xl font-semibold mb-2">Please log in to edit your profile</h2>
           <Button onClick={() => navigate('/login')}>Go to Login</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // If user cannot edit this profile, redirect
+  if (!canEdit) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">You cannot edit this profile</h2>
+          <Button onClick={() => navigate(-1)}>Go Back</Button>
         </div>
       </div>
     );
@@ -382,6 +465,7 @@ export default function EditProfilePage() {
             )}
           </Tabs>
         </form>
+        </div>
       </div>
 
       {/* Mobile Bottom Actions */}
@@ -409,8 +493,8 @@ export default function EditProfilePage() {
 
       {/* Mobile Bottom Padding */}
       <div className="sm:hidden h-20" />
-        </div>
       </div>
     </PageTransition>
   );
 }
+
