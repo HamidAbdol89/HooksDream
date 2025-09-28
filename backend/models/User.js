@@ -101,6 +101,20 @@ phone: {
         default: 0
     },
     
+    // Profile customization tracking
+    hasCustomDisplayName: {
+        type: Boolean,
+        default: false
+    },
+    hasCustomAvatar: {
+        type: Boolean,
+        default: false
+    },
+    lastLoginAt: {
+        type: Date,
+        default: Date.now
+    },
+    
     // Online status tracking
     isOnline: {
         type: Boolean,

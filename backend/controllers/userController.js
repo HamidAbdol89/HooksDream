@@ -125,7 +125,10 @@ exports.updateProfile = async (req, res) => {
         }
         
         // Cập nhật các field text
-        if (displayName !== undefined) user.displayName = displayName;
+        if (displayName !== undefined) {
+            user.displayName = displayName;
+            user.hasCustomDisplayName = true; // ✅ Mark as customized
+        }
         if (bio !== undefined) user.bio = bio;
         if (location !== undefined) user.location = location;
         if (website !== undefined) user.website = website;
@@ -154,6 +157,7 @@ exports.updateProfile = async (req, res) => {
                 });
                 
                 user.avatar = newAvatarUrl;
+                user.hasCustomAvatar = true; // ✅ Mark as customized
                 // CDN propagate delay
                 await new Promise(resolve => setTimeout(resolve, 1500));
                 

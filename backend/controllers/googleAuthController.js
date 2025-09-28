@@ -69,21 +69,23 @@ exports.googleLogin = async (req, res) => {
             
             await user.save();
             } else {
-            // Update existing Google user
+            // Update existing Google user - BUT PRESERVE USER EDITS
             let isUpdated = false;
             
+            // Always update email if changed (security requirement)
             if (googleUserInfo.email && user.email !== googleUserInfo.email.toLowerCase()) {
                 user.email = googleUserInfo.email.toLowerCase();
                 isUpdated = true;
             }
             
-            if (googleUserInfo.name && user.displayName !== googleUserInfo.name) {
+            // ✅ ONLY update displayName if user hasn't customized it
+            if (googleUserInfo.name && !user.hasCustomDisplayName && user.displayName !== googleUserInfo.name) {
                 user.displayName = googleUserInfo.name;
                 isUpdated = true;
             }
             
-            // Update avatar if Google has a new one
-            if (googleUserInfo.picture && user.avatar !== googleUserInfo.picture) {
+            // ✅ ONLY update avatar if user hasn't uploaded custom avatar
+            if (googleUserInfo.picture && !user.hasCustomAvatar && user.avatar !== googleUserInfo.picture) {
                 if (googleUserInfo.picture.startsWith('http') && !googleUserInfo.picture.includes('cloudinary.com')) {
                     try {
                         const response = await axios.get(googleUserInfo.picture, { responseType: 'arraybuffer' });
@@ -100,7 +102,7 @@ exports.googleLogin = async (req, res) => {
                 }
             }
             
-            // Update last login
+            // Always update last login
             user.lastLoginAt = new Date();
             user.updatedAt = new Date();
             
@@ -263,10 +265,46 @@ exports.googleCallback = async (req, res) => {
             
             await user.save();
         } else {
-            // Update existing user
+            // Update existing user - BUT PRESERVE USER EDITS
+            let isUpdated = false;
+            
+            // Always update email if changed (security requirement)
+            if (googleUserInfo.email && user.email !== googleUserInfo.email.toLowerCase()) {
+                user.email = googleUserInfo.email.toLowerCase();
+                isUpdated = true;
+            }
+            
+            // ✅ ONLY update displayName if user hasn't customized it
+            if (googleUserInfo.name && !user.hasCustomDisplayName && user.displayName !== googleUserInfo.name) {
+                user.displayName = googleUserInfo.name;
+                isUpdated = true;
+            }
+            
+            // ✅ ONLY update avatar if user hasn't uploaded custom avatar
+            if (googleUserInfo.picture && !user.hasCustomAvatar && user.avatar !== googleUserInfo.picture) {
+                if (googleUserInfo.picture.startsWith('http') && !googleUserInfo.picture.includes('cloudinary.com')) {
+                    try {
+                        const response = await axios.get(googleUserInfo.picture, { responseType: 'arraybuffer' });
+                        const buffer = Buffer.from(response.data);
+                        user.avatar = await uploadImageToCloudinary(buffer, 'avatar', user._id);
+                        isUpdated = true;
+                    } catch (error) {
+                        user.avatar = googleUserInfo.picture;
+                        isUpdated = true;
+                    }
+                } else {
+                    user.avatar = googleUserInfo.picture;
+                    isUpdated = true;
+                }
+            }
+            
+            // Always update last login
             user.lastLoginAt = new Date();
             user.updatedAt = new Date();
-            await user.save();
+            
+            if (isUpdated) {
+                await user.save();
+            }
         }
         
         // Generate JWT token
