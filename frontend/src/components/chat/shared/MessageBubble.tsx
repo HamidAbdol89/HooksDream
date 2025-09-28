@@ -17,6 +17,7 @@ interface MessageBubbleProps {
   showAvatar: boolean;
   isLastInGroup: boolean;
   conversationId: string;
+  isLatestMessage?: boolean; // Tin nhắn mới nhất trong conversation
 }
 
 // Message Status Text Component
@@ -46,20 +47,37 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   isOwn,
   showAvatar,
   isLastInGroup,
-  conversationId
+  conversationId,
+  isLatestMessage = false
 }) => {
   const { t } = useTranslation('common');
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
-  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isSelected, setIsSelected] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const { token } = useGoogleAuth();
   
-  const { profile } = useGoogleAuth();
-  const { editMessage, recallMessage, copyText } = useMessageActions(conversationId);
+  const { editMessage, recallMessage } = useMessageActions(conversationId);
 
-  // Handler functions for message actions
+  // Copy text function
+  const copyText = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
+
+  // Handle message click to show/hide actions (chỉ cho tin nhắn cũ)
+  const handleMessageClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent event bubbling
+    // Tin nhắn mới nhất không cần click để toggle
+    if (!isLatestMessage) {
+      setIsSelected(!isSelected);
+    }
+  };
+
+  // Handle edit message
   const handleEdit = (messageId: string) => {
     setEditingMessage(message);
   };
@@ -104,53 +122,53 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       }
     }
   };
+
+  
   return (
     <div className={`group flex gap-3 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
-  {/* Avatar */}
-{!isOwn && (
-  <div className="flex-shrink-0">
-    {showAvatar ? (
-      <Avatar className="w-8 h-8">
-        <AvatarImage src={message.sender.avatar} />
-        <AvatarFallback className="text-xs">
-          {message.sender.displayName?.charAt(0) ||
-            message.sender.username?.charAt(0) ||
-            'U'}
-        </AvatarFallback>
-      </Avatar>
-    ) : (
-      <div className="w-8 h-8" />
-    )}
-  </div>
-)}
-
-      
-      {/* Message Bubble */}
-      <div className={`flex flex-col max-w-[280px] sm:max-w-xs lg:max-w-md ${isOwn ? 'items-end' : 'items-start'}`}>
-        {/* Message Actions */}
-        <div className={`flex items-center gap-1 mb-1 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
-          <MessageActions
-            message={message}
-            isOwn={isOwn}
-            onEdit={handleEdit}
-            onRecall={handleRecall}
-            onCopy={copyText}
-          />
+      {/* Avatar */}
+      {!isOwn && (
+        <div className="flex-shrink-0">
+          {showAvatar ? (
+            <Avatar className="w-8 h-8">
+              <AvatarImage src={message.sender.avatar} />
+              <AvatarFallback className="text-xs">
+                {message.sender.displayName?.charAt(0) ||
+                  message.sender.username?.charAt(0) ||
+                  'U'}
+              </AvatarFallback>
+            </Avatar>
+          ) : (
+            <div className="w-8 h-8" />
+          )}
         </div>
+      )}
+  
+      {/* Message Bubble */}
+      <div
+        className={`flex flex-col max-w-[280px] sm:max-w-xs lg:max-w-md ${
+          isOwn ? 'items-end' : 'items-start'
+        }`}
+      >
+        {/* Sender name (nếu là người khác) */}
         {!isOwn && showAvatar && (
           <span className="text-xs text-muted-foreground mb-1 px-3">
             {message.sender.displayName || message.sender.username}
           </span>
         )}
-        
+  
+        {/* Nội dung bubble */}
         <div
+          onClick={handleMessageClick}
           className={`rounded-2xl shadow-sm transition-all hover:shadow-md ${
+            isLatestMessage ? 'cursor-default' : 'cursor-pointer'
+          } ${
             message.content.isRecalled
               ? 'bg-muted/50 text-muted-foreground border border-dashed'
               : isOwn
               ? 'bg-primary text-primary-foreground rounded-br-sm'
               : 'bg-muted text-foreground rounded-bl-sm'
-          } ${isLastInGroup ? 'mb-2' : 'mb-1'} ${
+          } ${isLastInGroup ? 'mb-2' : 'mb-0.5'} ${
             message.content.image || message.content.video ? 'p-1' : 'px-3 py-2.5'
           }`}
         >
@@ -166,11 +184,13 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   e.currentTarget.src = '/default-image.jpg';
                 }}
               />
-              {/* Text overlay if both image and text */}
+              {/* Text overlay */}
               {message.content.text && (
-                <div className={`absolute bottom-0 left-0 right-0 p-2 rounded-b-xl ${
-                  isOwn ? 'bg-primary/80' : 'bg-muted/80'
-                } backdrop-blur-sm`}>
+                <div
+                  className={`absolute bottom-0 left-0 right-0 p-2 rounded-b-xl ${
+                    isOwn ? 'bg-primary/80' : 'bg-muted/80'
+                  } backdrop-blur-sm`}
+                >
                   <p className="text-sm leading-relaxed whitespace-pre-wrap text-white">
                     {message.content.text}
                   </p>
@@ -178,7 +198,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               )}
             </div>
           )}
-
+  
           {/* Video content */}
           {message.content.video && (
             <div className="relative">
@@ -192,19 +212,21 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 controls
                 preload="metadata"
               />
-              
-              {/* Duration indicator */}
+  
+              {/* Duration */}
               {message.content.video.duration && (
                 <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
                   {formatDuration(message.content.video.duration)}
                 </div>
               )}
-
-              {/* Text overlay if both video and text */}
+  
+              {/* Text overlay */}
               {message.content.text && (
-                <div className={`absolute bottom-0 left-0 right-0 p-2 rounded-b-xl ${
-                  isOwn ? 'bg-primary/80' : 'bg-muted/80'
-                } backdrop-blur-sm`}>
+                <div
+                  className={`absolute bottom-0 left-0 right-0 p-2 rounded-b-xl ${
+                    isOwn ? 'bg-primary/80' : 'bg-muted/80'
+                  } backdrop-blur-sm`}
+                >
                   <p className="text-sm leading-relaxed whitespace-pre-wrap text-white">
                     {message.content.text}
                   </p>
@@ -212,50 +234,75 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               )}
             </div>
           )}
-
-
-          {/* Text-only content */}
-          {message.content.text && !message.content.image && !message.content.video && (
-            <div>
-              {message.content.isRecalled ? (
-                <div className="flex items-center gap-2">
-                  <RotateCcw className="w-4 h-4 opacity-50" />
-                  <p className="text-sm italic opacity-70">
+  
+          {/* Text-only */}
+          {message.content.text &&
+            !message.content.image &&
+            !message.content.video && (
+              <div>
+                {message.content.isRecalled ? (
+                  <div className="flex items-center gap-2">
+                    <RotateCcw className="w-4 h-4 opacity-50" />
+                    <p className="text-sm italic opacity-70">
+                      {message.content.text}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap">
                     {message.content.text}
                   </p>
-                </div>
-              ) : (
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                  {message.content.text}
-                </p>
+                )}
+                {message.isEdited && !message.content.isRecalled && (
+                  <span className="text-xs opacity-70 italic mt-1 block">
+                    {t('chat.editMessage.edited')}
+                  </span>
+                )}
+              </div>
+            )}
+        </div>
+  
+        {/* Actions - Show when selected OR for latest message */}
+        <div
+          className={`flex items-center gap-2 text-xs px-3 transition-all duration-300 ${
+            (isSelected || isLatestMessage) ? 'mt-2 opacity-100 max-h-10' : 'mt-0 opacity-0 max-h-0 overflow-hidden'
+          } ${isOwn ? 'flex-row-reverse' : 'flex-row'} group`}
+        >
+          {/* Time + Status - Show when selected, last in group, or latest message */}
+          {(isSelected || isLastInGroup || isLatestMessage) && (
+            <>
+              <span className="text-muted-foreground">
+                {new Date(message.createdAt).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </span>
+    
+              {isOwn && (
+                <>
+                  <span className="text-muted-foreground">•</span>
+                  <MessageStatusText
+                    status={message.messageStatus?.status || 'sent'}
+                  />
+                </>
               )}
-              {message.isEdited && !message.content.isRecalled && (
-                <span className="text-xs opacity-70 italic mt-1 block">
-                  {t('chat.editMessage.edited')}
-                </span>
-              )}
+            </>
+          )}
+
+          {/* Actions - Show when selected OR for latest message */}
+          {(isSelected || isLatestMessage) && (
+            <div className="flex">
+              <MessageActions
+                message={message}
+                isOwn={isOwn}
+                onEdit={handleEdit}
+                onRecall={handleRecall}
+                onCopy={copyText}
+              />
             </div>
           )}
         </div>
-        
-        {isLastInGroup && (
-          <div className={`flex items-center gap-2 text-xs px-3 mt-1 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
-            <span className="text-muted-foreground">
-              {new Date(message.createdAt).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
-            </span>
-            {isOwn && (
-              <>
-                <span className="text-muted-foreground">•</span>
-                <MessageStatusText status={message.messageStatus?.status || 'sent'} />
-              </>
-            )}
-          </div>
-        )}
       </div>
-
+  
       {/* Image Lightbox */}
       {lightboxImage && (
         <ImageLightbox
@@ -265,7 +312,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           alt="Chat image"
         />
       )}
-
+  
       {/* Edit Message Modal */}
       <EditMessageModal
         message={editingMessage}
@@ -275,4 +322,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       />
     </div>
   );
+  
+
+  
 };

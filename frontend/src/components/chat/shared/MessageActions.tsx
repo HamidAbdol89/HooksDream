@@ -80,8 +80,8 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
           />
           
           {/* Menu */}
-          <div className={`absolute z-20 bg-background border rounded-lg shadow-lg py-1 min-w-32 ${
-            isOwn ? 'right-0' : 'left-0'
+          <div className={`absolute z-50 bg-background border rounded-lg shadow-lg py-1 min-w-32 ${
+            isOwn ? 'right-0 bottom-full mb-1' : 'left-0 bottom-full mb-1'
           }`}>
             {/* Copy text */}
             {message.content.text && (

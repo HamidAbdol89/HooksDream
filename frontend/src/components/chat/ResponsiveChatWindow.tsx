@@ -15,10 +15,9 @@ export const ResponsiveChatWindow: React.FC<ResponsiveChatWindowProps> = ({
   return (
     <>
       {/* Desktop version */}
-  <div className="flex-1 overflow-y-auto scrollbar-custom">
-  <ChatWindow conversationId={conversationId} />
-</div>
-
+      <div className="hidden md:flex flex-1 overflow-y-auto scrollbar-custom">
+        <ChatWindow conversationId={conversationId} />
+      </div>
       
       {/* Mobile version */}
       <div className="md:hidden flex-1">

@@ -1,6 +1,6 @@
 // components/chat/mobile/MobileHeader.tsx - Compact Mobile chat header
 import React from 'react';
-import { ArrowLeft, Search, Edit3, MoreHorizontal } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useOnlineUsers } from '@/hooks/useOnlineUsers';
 
@@ -33,8 +33,8 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
   const userStatus = userId ? getUserStatus(userId) : { isOnline: false, lastSeenText: '' };
 
   return (
-    <div className="md:hidden flex items-center justify-between px-3 py-2 bg-background border-b border-border/50 sticky top-0 z-50 backdrop-blur-md bg-background/95">
-      {/* Left side */}
+<div className="md:hidden flex items-center justify-between px-3 py-2 bg-background border-b border-border/50 sticky top-0 z-50 backdrop-blur-md bg-background/95 rounded-b-xl">
+{/* Left side */}
       <div className="flex items-center gap-2 flex-1 min-w-0">
         {showBack && (
           <Button
@@ -92,24 +92,6 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
         </div>
       </div>
 
-      {/* Right actions */}
-      <div className="flex items-center gap-1">
-        {showSearch && (
-          <Button variant="ghost" size="icon" className="h-8 w-8 p-0 rounded-full">
-            <Search className="w-4 h-4" />
-          </Button>
-        )}
-        {showEdit && (
-          <Button variant="ghost" size="icon" className="h-8 w-8 p-0 rounded-full">
-            <Edit3 className="w-4 h-4" />
-          </Button>
-        )}
-        {showMore && (
-          <Button variant="ghost" size="icon" className="h-8 w-8 p-0 rounded-full">
-            <MoreHorizontal className="w-4 h-4" />
-          </Button>
-        )}
-      </div>
     </div>
   );
 };

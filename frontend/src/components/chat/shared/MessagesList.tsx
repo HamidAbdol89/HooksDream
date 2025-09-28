@@ -170,6 +170,7 @@ export const MessagesList: React.FC<MessagesListProps> = ({
           const isOwn = message.sender._id === currentUserId;
           const showAvatar = index === 0 || messages[index - 1]?.sender._id !== message.sender._id;
           const isLastInGroup = index === messages.length - 1 || messages[index + 1]?.sender._id !== message.sender._id;
+          const isLatestMessage = index === messages.length - 1; // Tin nhắn mới nhất
           
           return (
             <MessageBubble
@@ -179,6 +180,7 @@ export const MessagesList: React.FC<MessagesListProps> = ({
               conversationId={conversationId}
               showAvatar={showAvatar}
               isLastInGroup={isLastInGroup}
+              isLatestMessage={isLatestMessage}
             />
           );
         })}
