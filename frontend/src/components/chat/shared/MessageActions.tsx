@@ -1,9 +1,10 @@
 // components/chat/shared/MessageActions.tsx - Message action menu for edit/recall
 import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { MoreHorizontal, Edit3, RotateCcw, Trash2, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { MoreHorizontal, Copy, Edit3, RotateCcw, Reply } from 'lucide-react';
 import { Message } from '@/types/chat';
+import { useTranslation } from 'react-i18next';
+import { useMessageActions } from '@/hooks/useMessageActions';
 
 interface MessageActionsProps {
   message: Message;
@@ -11,6 +12,7 @@ interface MessageActionsProps {
   onEdit: (messageId: string) => void;
   onRecall: (messageId: string) => void;
   onCopy: (text: string) => void;
+  onReply: (message: Message) => void;
 }
 
 export const MessageActions: React.FC<MessageActionsProps> = ({
@@ -18,7 +20,8 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
   isOwn,
   onEdit,
   onRecall,
-  onCopy
+  onCopy,
+  onReply
 }) => {
   const { t } = useTranslation('common');
   const [showMenu, setShowMenu] = useState(false);

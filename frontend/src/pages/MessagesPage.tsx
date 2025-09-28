@@ -9,6 +9,7 @@ import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import { useChatContext } from '@/contexts/ChatContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/input';
+import { Message } from '@/types/chat';
 // Import từ cấu trúc mới
 import { ResponsiveChatWindow } from '@/components/chat/ResponsiveChatWindow';
 import { MobileHeader } from '@/components/chat/mobile';
@@ -34,6 +35,7 @@ const MessagesPage: React.FC = () => {
   const { selectedConversationId, setSelectedConversationId } = useChatContext();
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<'conversations' | 'following'>('conversations');
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   
   // Get current user data first
   const { data: currentUserData } = useCurrentProfile();
@@ -530,7 +532,11 @@ const MessagesPage: React.FC = () => {
             onBack={() => {
               setSelectedConversationId(null);
               setSelectedUser(null);
-            }} 
+              setReplyingTo(null); // Clear reply when switching conversations
+            }}
+            replyingTo={replyingTo}
+            onReply={setReplyingTo}
+            onCancelReply={() => setReplyingTo(null)}
           />
         ) : (
           <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-muted/20 to-muted/5">

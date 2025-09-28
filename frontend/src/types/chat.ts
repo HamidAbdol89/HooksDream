@@ -31,6 +31,7 @@ export interface Message {
     isRecalled?: boolean;
   };
   type?: 'text' | 'image' | 'video' | 'audio' | 'file' | 'system';
+  replyTo?: Message; // Reference to the message being replied to
   createdAt: string;
   updatedAt?: string;
   messageStatus?: MessageStatus;

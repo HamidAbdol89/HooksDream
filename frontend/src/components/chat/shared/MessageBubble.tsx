@@ -6,10 +6,11 @@ import { Message } from '@/types/chat';
 import { ImageLightbox } from './ImageLightbox';
 import { MessageActions } from './MessageActions';
 import { EditMessageModal } from './EditMessageModal';
-import { Play, Pause, Volume2, RotateCcw } from 'lucide-react';
+import { Play, Pause, Volume2, RotateCcw, Reply } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useMessageActions } from '@/hooks/useMessageActions';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
+import { RepliedMessage } from './RepliedMessage';
 
 interface MessageBubbleProps {
   message: Message;
@@ -18,6 +19,7 @@ interface MessageBubbleProps {
   isLastInGroup: boolean;
   conversationId: string;
   isLatestMessage?: boolean; // Tin nhắn mới nhất trong conversation
+  onReply?: (message: Message) => void;
 }
 
 // Clean Message Status Component with Text + Icons
@@ -82,7 +84,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
   showAvatar,
   isLastInGroup,
   conversationId,
-  isLatestMessage = false
+  isLatestMessage = false,
+  onReply
 }) => {
   const { t } = useTranslation('common');
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
@@ -205,13 +208,26 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
               ? 'bg-blue-500 text-white rounded-br-md shadow-sm'
               : 'bg-card text-foreground shadow-sm border border-border rounded-bl-md'
           } ${isLastInGroup ? 'mb-3' : 'mb-1.5'} ${
-            message.content.image || message.content.video ? 'p-0' : 'px-4 py-3'
+            message.content.image || message.content.video ? (message.replyTo ? 'pb-0' : 'p-0') : 'px-4 py-3'
           } ${
             isSelected ? 'shadow-lg scale-[1.02]' : ''
           } ${
             message.messageStatus?.status === 'sending' ? 'opacity-60 animate-pulse' : 'opacity-100'
           } transition-opacity duration-700 ease-out animate-in slide-in-from-bottom-1 fade-in duration-300`}
         >
+          {/* Replied Message */}
+          {message.replyTo && (
+            <div className="px-2 pt-2">
+              <RepliedMessage 
+                repliedMessage={message.replyTo}
+                onClick={() => {
+                  // TODO: Scroll to original message
+                  console.log('Scroll to message:', message.replyTo?._id);
+                }}
+              />
+            </div>
+          )}
+
           {/* Image content */}
           {message.content.image && (
             <div className="relative">
@@ -279,7 +295,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
           {message.content.text &&
             !message.content.image &&
             !message.content.video && (
-              <div>
+              <div className={message.replyTo ? "px-2 pb-2" : ""}>
                 {message.content.isRecalled ? (
                   <div className="flex items-center gap-2">
                     <RotateCcw className="w-4 h-4 opacity-50" />
@@ -330,6 +346,18 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
             </div>
           )}
 
+          {/* Reply Button - Always show when actions visible */}
+          {(isSelected || isLatestMessage) && onReply && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onReply(message)}
+              className="h-8 w-8 p-0 rounded-full bg-muted hover:bg-muted/80 focus:outline-none focus:ring-0 transition-all duration-200 active:scale-95"
+            >
+              <Reply className="w-4 h-4" />
+            </Button>
+          )}
+
           {/* Actions - Show when selected OR for latest message */}
           {(isSelected || isLatestMessage) && (
             <div className="flex">
@@ -339,6 +367,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
                 onEdit={handleEdit}
                 onRecall={handleRecall}
                 onCopy={copyText}
+                onReply={onReply || (() => {})}
               />
             </div>
           )}

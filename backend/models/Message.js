@@ -11,6 +11,11 @@ const messageSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  replyTo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Message',
+    default: null
+  },
   content: {
     text: {
       type: String,
@@ -58,11 +63,6 @@ const messageSchema = new mongoose.Schema({
       default: Date.now
     }
   }],
-  // Reply to another message
-  replyTo: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Message'
-  },
   // Message reactions
   reactions: [{
     user: {

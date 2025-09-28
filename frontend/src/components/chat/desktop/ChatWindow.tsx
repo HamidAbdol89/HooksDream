@@ -3,15 +3,24 @@ import React from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import { useChat } from '@/hooks/useChat';
+import { Message } from '@/types/chat';
 import { ChatHeader } from './ChatHeader';
 import { MessagesList } from '@/components/chat/shared/MessagesList';
 import { MessageInput } from '@/components/chat/shared/MessageInput';
 
 interface ChatWindowProps {
   conversationId: string;
+  replyingTo?: Message | null;
+  onReply?: (message: Message) => void;
+  onCancelReply?: () => void;
 }
 
-export const ChatWindow: React.FC<ChatWindowProps> = ({ conversationId }) => {
+export const ChatWindow: React.FC<ChatWindowProps> = ({ 
+  conversationId, 
+  replyingTo, 
+  onReply, 
+  onCancelReply 
+}) => {
   const { token } = useGoogleAuth();
   const queryClient = useQueryClient();
   const { currentUserId } = useChat();
@@ -99,7 +108,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ conversationId }) => {
           messages={messages}
           currentUserId={currentUserId || ''}
           conversationId={conversationId}
-          isLoading={isLoadingMessages}
+          onReply={onReply}
         />
       </div>
       
@@ -108,6 +117,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ conversationId }) => {
         <MessageInput 
           conversationId={conversationId}
           disabled={!token}
+          replyingTo={replyingTo}
+          onCancelReply={onCancelReply}
         />
       </div>
     </div>

@@ -84,42 +84,125 @@ export const useMessageStatus = (conversationId?: string) => {
     });
   }, [conversationId, onNewMessage, onMessageStatus, onMessagesRead, queryClient]);
 
-  // Mark message as read using socket
-  const markAsRead = useCallback((messageId: string) => {
-    if (conversationId) {
-      emitMessageRead(messageId);
-    }
-  }, [conversationId, emitMessageRead]);
+  // Send message with optimistic status update
+  const sendMessageWithStatus = useCallback(async (
+    text: string,
+    tempId: string,
+    replyTo?: any
+  ): Promise<{ success: boolean; messageId?: string }> => {
+    if (!token || !conversationId) return { success: false };
 
-  // Mark conversation as read (all messages)
-  const markConversationAsRead = useCallback(async () => {
-    if (!token || !conversationId) return;
+    // Optimistic update - add message with 'sent' status immediately
+    const tempMessage = {
+      _id: tempId,
+      sender: {
+        _id: currentUserId,
+        username: currentUser?.username || 'You',
+        displayName: currentUser?.displayName || 'You',
+        avatar: currentUser?.avatar || ''
+      },
+      content: { text },
+      replyTo: replyTo || undefined,
+      createdAt: new Date().toISOString(),
+      messageStatus: {
+        status: 'sent' as const,
+        timestamp: new Date().toISOString()
+      },
+      isOptimistic: true
+    };
+
+    // Update cache optimistically
+    queryClient.setQueryData(
+      ['chat', 'messages', conversationId],
+      (oldData: any) => {
+        if (!oldData) return [tempMessage];
+        return [...oldData, tempMessage];
+      }
+    );
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/chat/conversations/${conversationId}/read`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/chat/conversations/${conversationId}/messages`,
         {
-          method: 'PUT',
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
-          }
+          },
+          body: JSON.stringify({ 
+            text,
+            replyTo: replyTo?._id
+          })
         }
       );
 
       if (response.ok) {
-        // Invalidate queries
-        queryClient.invalidateQueries({ 
-          queryKey: ['chat', 'messages', conversationId] 
-        });
+        const data = await response.json();
+        
+        // Replace temp message with real message
+        queryClient.setQueryData(
+          ['chat', 'messages', conversationId],
+          (oldData: any) => {
+            if (!oldData) return [];
+            return oldData.map((msg: any) => 
+              msg._id === tempId ? {
+                ...data.data,
+                messageStatus: {
+                  status: 'delivered',
+                  timestamp: new Date().toISOString()
+                },
+                isOptimistic: false
+              } : msg
+            );
+          }
+        );
+
+        // Invalidate conversations to update last message
         queryClient.invalidateQueries({ 
           queryKey: ['chat', 'conversations'] 
         });
+
+        return { success: true, messageId: data.data._id };
+      } else {
+        // Mark as failed
+        queryClient.setQueryData(
+          ['chat', 'messages', conversationId],
+          (oldData: any) => {
+            if (!oldData) return [];
+            return oldData.map((msg: any) => 
+              msg._id === tempId ? {
+                ...msg,
+                messageStatus: {
+                  status: 'failed',
+                  timestamp: new Date().toISOString()
+                },
+                isOptimistic: false
+              } : msg
+            );
+          }
+        );
+        return { success: false };
       }
     } catch (error) {
-      console.error('Failed to mark conversation as read:', error);
+      // Mark as failed
+      queryClient.setQueryData(
+        ['chat', 'messages', conversationId],
+        (oldData: any) => {
+          if (!oldData) return [];
+          return oldData.map((msg: any) => 
+            msg._id === tempId ? {
+              ...msg,
+              messageStatus: {
+                status: 'failed',
+                timestamp: new Date().toISOString()
+              }
+            } : msg
+          );
+        }
+      );
+      return { success: false };
     }
-  }, [token, conversationId, queryClient]);
+  }, [token, conversationId, queryClient, currentUserId, currentUser]);
 
   // Send image message with optimistic status update
   const sendImageMessageWithStatus = useCallback(async (
@@ -242,176 +325,6 @@ export const useMessageStatus = (conversationId?: string) => {
         }
       );
       return { success: false };
-    }
-  }, [token, conversationId, queryClient]);
-
-  // Send message with optimistic status update
-  const sendMessageWithStatus = useCallback(async (
-    text: string,
-    tempId: string
-  ): Promise<{ success: boolean; messageId?: string }> => {
-    if (!token || !conversationId) return { success: false };
-
-    // Optimistic update - add message with 'sent' status immediately
-    const tempMessage = {
-      _id: tempId,
-      sender: {
-        _id: currentUserId, // Use actual current user ID
-        username: currentUser?.username || 'You',
-        displayName: currentUser?.displayName || 'You',
-        avatar: currentUser?.avatar || ''
-      },
-      content: { text },
-      createdAt: new Date().toISOString(),
-      messageStatus: {
-        status: 'sent' as const, // Optimistic: assume success
-        timestamp: new Date().toISOString()
-      },
-      isOptimistic: true // Flag to track optimistic messages
-    };
-
-    // Update cache optimistically
-    queryClient.setQueryData(
-      ['chat', 'messages', conversationId],
-      (oldData: any) => {
-        if (!oldData) return [tempMessage];
-        return [...oldData, tempMessage];
-      }
-    );
-
-    // Fallback to 'sending' if network is slow (after 500ms)
-    const slowNetworkTimeout = setTimeout(() => {
-      queryClient.setQueryData(
-        ['chat', 'messages', conversationId],
-        (oldData: any) => {
-          if (!oldData) return [];
-          return oldData.map((msg: any) => 
-            msg._id === tempId && msg.isOptimistic ? {
-              ...msg,
-              messageStatus: {
-                status: 'sending',
-                timestamp: new Date().toISOString()
-              }
-            } : msg
-          );
-        }
-      );
-    }, 500); // 500ms threshold for slow network
-
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/chat/conversations/${conversationId}/messages`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ text })
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        
-        // Clear slow network timeout - request completed successfully
-        clearTimeout(slowNetworkTimeout);
-        
-        // Replace temp message with real message
-        queryClient.setQueryData(
-          ['chat', 'messages', conversationId],
-          (oldData: any) => {
-            if (!oldData) return [];
-            return oldData.map((msg: any) => 
-              msg._id === tempId ? {
-                ...data.data,
-                messageStatus: {
-                  status: 'delivered', // Upgrade to delivered since server confirmed
-                  timestamp: new Date().toISOString()
-                },
-                isOptimistic: false // No longer optimistic
-              } : msg
-            );
-          }
-        );
-
-        // Invalidate conversations to update last message
-        queryClient.invalidateQueries({ 
-          queryKey: ['chat', 'conversations'] 
-        });
-
-        return { success: true, messageId: data.data._id };
-      } else {
-        // Clear timeout and mark as failed
-        clearTimeout(slowNetworkTimeout);
-        queryClient.setQueryData(
-          ['chat', 'messages', conversationId],
-          (oldData: any) => {
-            if (!oldData) return [];
-            return oldData.map((msg: any) => 
-              msg._id === tempId ? {
-                ...msg,
-                messageStatus: {
-                  status: 'failed',
-                  timestamp: new Date().toISOString()
-                },
-                isOptimistic: false
-              } : msg
-            );
-          }
-        );
-        return { success: false };
-      }
-    } catch (error) {
-      // Clear timeout and mark as failed
-      clearTimeout(slowNetworkTimeout);
-      queryClient.setQueryData(
-        ['chat', 'messages', conversationId],
-        (oldData: any) => {
-          if (!oldData) return [];
-          return oldData.map((msg: any) => 
-            msg._id === tempId ? {
-              ...msg,
-              messageStatus: {
-                status: 'failed',
-                timestamp: new Date().toISOString()
-              }
-            } : msg
-          );
-        }
-      );
-      return { success: false };
-    }
-  }, [token, conversationId, queryClient, currentUserId, currentUser]);
-
-  // Mark single message as read using API
-  const markMessageAsRead = useCallback(async (messageId: string) => {
-    if (!token || !conversationId) return;
-
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/chat/conversations/${conversationId}/read`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ messageIds: [messageId] })
-        }
-      );
-
-      if (response.ok) {
-        // Invalidate queries để update UI
-        queryClient.invalidateQueries({ 
-          queryKey: ['chat', 'messages', conversationId] 
-        });
-        queryClient.invalidateQueries({ 
-          queryKey: ['chat', 'conversations'] 
-        });
-      }
-    } catch (error) {
-      console.error('Failed to mark message as read:', error);
     }
   }, [token, conversationId, queryClient]);
 
@@ -661,6 +574,67 @@ export const useMessageStatus = (conversationId?: string) => {
         }
       );
       return { success: false };
+    }
+  }, [token, conversationId, queryClient]);
+
+  // Mark conversation as read (all messages)
+  const markConversationAsRead = useCallback(async () => {
+    if (!token || !conversationId) return;
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/chat/conversations/${conversationId}/read`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      if (response.ok) {
+        // Invalidate queries
+        queryClient.invalidateQueries({ 
+          queryKey: ['chat', 'messages', conversationId] 
+        });
+        queryClient.invalidateQueries({ 
+          queryKey: ['chat', 'conversations'] 
+        });
+      }
+    } catch (error) {
+      console.error('Failed to mark conversation as read:', error);
+    }
+  }, [token, conversationId, queryClient]);
+
+  // Mark single message as read using API
+  const markMessageAsRead = useCallback(async (messageId: string) => {
+    if (!token || !conversationId) return;
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/chat/conversations/${conversationId}/read`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ messageIds: [messageId] })
+        }
+      );
+
+      if (response.ok) {
+        // Invalidate queries để update UI
+        queryClient.invalidateQueries({ 
+          queryKey: ['chat', 'messages', conversationId] 
+        });
+        queryClient.invalidateQueries({ 
+          queryKey: ['chat', 'conversations'] 
+        });
+      }
+    } catch (error) {
+      console.error('Failed to mark message as read:', error);
     }
   }, [token, conversationId, queryClient]);
 

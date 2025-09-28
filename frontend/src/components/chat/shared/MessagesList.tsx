@@ -1,22 +1,22 @@
 // components/chat/shared/MessagesList.tsx - Shared messages list for both desktop and mobile
 import React, { useRef, useEffect, useState } from 'react';
 import { MessageSquare } from 'lucide-react';
-import { MessageBubble } from '@/components/chat/shared/MessageBubble';
 import { Message } from '@/types/chat';
 import { useMessageStatus } from '@/hooks/useMessageStatus';
+import { MessageBubble } from './MessageBubble';
 
 interface MessagesListProps {
   messages: Message[];
-  currentUserId: string;
   conversationId: string;
-  isLoading?: boolean;
+  currentUserId: string;
+  onReply?: (message: Message) => void;
 }
 
 export const MessagesList: React.FC<MessagesListProps> = ({
   messages,
   currentUserId,
   conversationId,
-  isLoading = false
+  onReply
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -123,26 +123,12 @@ export const MessagesList: React.FC<MessagesListProps> = ({
         // Batch mark as read - gọi API 1 lần với array messageIds
         const messageIds = unreadMessages.map(msg => msg._id);
         markAsRead(messageIds[0]); // Tạm thời mark 1 message, sau sẽ fix để mark batch
-      }, 2000); // Tăng delay lên 2 giây
+      }, 1000);
 
       return () => clearTimeout(timer);
     }
   }, [messages, currentUserId, markAsRead]);
 
-  if (isLoading) {
-    return (
-      <div className="flex-1 overflow-y-auto bg-gradient-to-b from-muted/20 to-muted/5">
-        <div className="flex justify-center items-center h-32">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-            <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-            <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
-            <span className="ml-2">Loading messages...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (messages.length === 0) {
     return (
@@ -191,6 +177,7 @@ export const MessagesList: React.FC<MessagesListProps> = ({
               showAvatar={showAvatar}
               isLastInGroup={isLastInGroup}
               isLatestMessage={isLatestMessage}
+              onReply={onReply}
             />
           );
         })}

@@ -4,6 +4,193 @@ const User = require('../models/User');
 const { createResponse } = require('../utils/helpers');
 const { upload } = require('../utils/cloudinary');
 
+// Send a message
+exports.sendMessage = async (req, res) => {
+  try {
+    const currentUserId = req.userId;
+    const { conversationId } = req.params;
+    const { text, image, replyTo } = req.body;
+    
+    // Validate input
+    if (!text && !image) {
+      return res.status(400).json(createResponse(false, 'Message content is required', null, null, 400));
+    }
+    
+    // Check if user is participant
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation || !conversation.isParticipant(currentUserId)) {
+      return res.status(403).json(createResponse(false, 'Access denied', null, null, 403));
+    }
+    
+    // Create message
+    const messageData = {
+      conversation: conversationId,
+      sender: currentUserId,
+      content: {},
+      type: 'text'
+    };
+    
+    // Add replyTo if provided
+    if (replyTo) {
+      messageData.replyTo = replyTo;
+    }
+    
+    if (text) {
+      messageData.content.text = text;
+    }
+    
+    if (image) {
+      messageData.content.image = image;
+      messageData.type = 'image';
+    }
+    
+    const message = await Message.create(messageData);
+    
+    // Update conversation lastActivity and lastMessage
+    await Conversation.findByIdAndUpdate(conversationId, {
+      lastActivity: new Date(),
+      lastMessage: message._id
+    });
+    
+    // Populate sender info
+    await message.populate('sender', 'username displayName avatar');
+    
+    // Populate replyTo message if exists
+    if (message.replyTo) {
+      await message.populate({
+        path: 'replyTo',
+        populate: {
+          path: 'sender',
+          select: 'username displayName avatar'
+        }
+      });
+    }
+    
+    // Add message status to response
+    const messageWithStatus = {
+      ...message.toObject(),
+      messageStatus: {
+        status: 'sent',
+        timestamp: new Date().toISOString(),
+        readBy: []
+      }
+    };
+    
+    // Emit socket event to conversation participants
+    if (global.socketServer) {
+      conversation.participants.forEach(participantId => {
+        if (participantId.toString() !== currentUserId) {
+          global.socketServer.emitToUser(participantId.toString(), 'message:new', {
+            conversationId,
+            message: message.toObject()
+          });
+        }
+      });
+      
+      // Also emit to all participants for conversations list updates
+      conversation.participants.forEach(participantId => {
+        global.socketServer.emitToUser(participantId.toString(), 'conversation:updated', {
+          conversationId,
+          lastMessage: message.toObject(),
+          lastActivity: new Date()
+        });
+      });
+    }
+    
+    res.json(createResponse(true, 'Message sent successfully', messageWithStatus));
+    
+  } catch (error) {
+    console.error('Send message error:', error);
+    res.status(500).json(createResponse(false, 'Internal server error', null, null, 500));
+  }
+};
+
+// Get messages in a conversation
+exports.getMessages = async (req, res) => {
+  try {
+    const currentUserId = req.userId;
+    const { conversationId } = req.params;
+    const { page = 1, limit = 50 } = req.query;
+    
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
+    
+    // Check if user is participant
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation || !conversation.isParticipant(currentUserId)) {
+      return res.status(403).json(createResponse(false, 'Access denied', null, null, 403));
+    }
+    
+    const messages = await Message.find({
+      conversation: conversationId
+    })
+    .populate('sender', 'username displayName avatar')
+    .populate({
+      path: 'replyTo',
+      populate: {
+        path: 'sender',
+        select: 'username displayName avatar'
+      }
+    })
+    .sort({ createdAt: -1 })
+    .limit(limitNum)
+    .skip((pageNum - 1) * limitNum)
+    .lean();
+
+    // Add message status for each message
+    const messagesWithStatus = messages.map(message => {
+      // Handle recalled messages
+      if (message.isDeleted) {
+        return {
+          ...message,
+          content: {
+            text: 'Tin nhắn đã được thu hồi',
+            isRecalled: true
+          },
+          type: 'system',
+          messageStatus: {
+            status: 'recalled',
+            timestamp: message.deletedAt || new Date().toISOString(),
+            readBy: []
+          }
+        };
+      }
+
+      // Determine status based on readBy array
+      let status = 'sent';
+      if (message.readBy && message.readBy.length > 0) {
+        // Check if current user has read it (for messages sent by others)
+        if (message.sender._id.toString() !== currentUserId) {
+          const currentUserRead = message.readBy.find(r => r.user.toString() === currentUserId);
+          status = currentUserRead ? 'read' : 'delivered';
+        } else {
+          // For messages sent by current user, check if others have read
+          const othersRead = message.readBy.some(r => r.user.toString() !== currentUserId);
+          status = othersRead ? 'read' : 'delivered';
+        }
+      }
+
+      return {
+        ...message,
+        messageStatus: {
+          status,
+          timestamp: new Date().toISOString(),
+          readBy: message.readBy ? message.readBy.map(r => r.user.toString()) : []
+        }
+      };
+    });
+    
+    // Reverse to show oldest first
+    messagesWithStatus.reverse();
+    
+    res.json(createResponse(true, 'Messages retrieved successfully', messagesWithStatus));
+    
+  } catch (error) {
+    console.error('Get messages error:', error);
+    res.status(500).json(createResponse(false, 'Internal server error', null, null, 500));
+  }
+};
+
 // Get all conversations for current user
 exports.getConversations = async (req, res) => {
   try {
@@ -24,46 +211,7 @@ exports.getConversations = async (req, res) => {
     .skip((pageNum - 1) * limitNum)
     .lean();
     
-    // Get all conversation IDs for bulk unread count query
-    const conversationIds = conversations.map(conv => conv._id);
-    
-    // Professional aggregation để tính unread count chính xác
-    const unreadCounts = await Message.aggregate([
-      {
-        $match: {
-          conversation: { $in: conversationIds },
-          isDeleted: false,
-          sender: { $ne: currentUserId } // Chỉ tin nhắn từ người khác
-        }
-      },
-      {
-        $addFields: {
-          isReadByCurrentUser: {
-            $in: [currentUserId, '$readBy.user']
-          }
-        }
-      },
-      {
-        $match: {
-          isReadByCurrentUser: false // Chưa được current user đọc
-        }
-      },
-      {
-        $group: {
-          _id: '$conversation',
-          count: { $sum: 1 },
-          lastUnreadMessage: { $last: '$$ROOT' }
-        }
-      }
-    ]);
-    
-    // Create a map for quick lookup
-    const unreadCountMap = {};
-    unreadCounts.forEach(item => {
-      unreadCountMap[item._id.toString()] = item.count;
-    });
-    
-    // Format conversations with unread counts
+    // Format conversations
     const formattedConversations = conversations.map(conv => {
       const otherParticipant = conv.participants.find(p => p._id.toString() !== currentUserId);
       
@@ -75,7 +223,7 @@ exports.getConversations = async (req, res) => {
         participants: conv.participants,
         lastMessage: conv.lastMessage,
         lastActivity: conv.lastActivity,
-        unreadCount: unreadCountMap[conv._id.toString()] || 0
+        unreadCount: 0 // TODO: Calculate unread count
       };
     });
     
@@ -167,175 +315,6 @@ exports.getOrCreateDirectConversation = async (req, res) => {
   }
 };
 
-// Get messages in a conversation
-exports.getMessages = async (req, res) => {
-  try {
-    const currentUserId = req.userId;
-    const { conversationId } = req.params;
-    const { page = 1, limit = 50 } = req.query;
-    
-    const pageNum = Math.max(1, parseInt(page));
-    const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
-    
-    // Check if user is participant
-    const conversation = await Conversation.findById(conversationId);
-    if (!conversation || !conversation.isParticipant(currentUserId)) {
-      return res.status(403).json(createResponse(false, 'Access denied', null, null, 403));
-    }
-    
-    const messages = await Message.find({
-      conversation: conversationId
-    })
-    .populate('sender', 'username displayName avatar')
-    .populate('replyTo')
-    .sort({ createdAt: -1 })
-    .limit(limitNum)
-    .skip((pageNum - 1) * limitNum)
-    .lean();
-
-    // Add message status for each message
-    const messagesWithStatus = messages.map(message => {
-      // Handle recalled messages
-      if (message.isDeleted) {
-        return {
-          ...message,
-          content: {
-            text: 'Tin nhắn đã được thu hồi',
-            isRecalled: true
-          },
-          type: 'system',
-          messageStatus: {
-            status: 'recalled',
-            timestamp: message.deletedAt || new Date().toISOString(),
-            readBy: []
-          }
-        };
-      }
-
-      // Determine status based on readBy array
-      let status = 'sent';
-      if (message.readBy && message.readBy.length > 0) {
-        // Check if current user has read it (for messages sent by others)
-        if (message.sender._id.toString() !== currentUserId) {
-          const currentUserRead = message.readBy.find(r => r.user.toString() === currentUserId);
-          status = currentUserRead ? 'read' : 'delivered';
-        } else {
-          // For messages sent by current user, check if others have read
-          const othersRead = message.readBy.some(r => r.user.toString() !== currentUserId);
-          status = othersRead ? 'read' : 'delivered';
-        }
-      }
-
-      return {
-        ...message,
-        messageStatus: {
-          status,
-          timestamp: new Date().toISOString(),
-          readBy: message.readBy ? message.readBy.map(r => r.user.toString()) : []
-        }
-      };
-    });
-    
-    // Reverse to show oldest first
-    messagesWithStatus.reverse();
-    
-    res.json(createResponse(true, 'Messages retrieved successfully', messagesWithStatus));
-    
-  } catch (error) {
-    console.error('Get messages error:', error);
-    res.status(500).json(createResponse(false, 'Internal server error', null, null, 500));
-  }
-};
-
-// Send a message
-exports.sendMessage = async (req, res) => {
-  try {
-    const currentUserId = req.userId;
-    const { conversationId } = req.params;
-    const { text, image, replyTo } = req.body;
-    
-    // Validate input
-    if (!text && !image) {
-      return res.status(400).json(createResponse(false, 'Message content is required', null, null, 400));
-    }
-    
-    // Check if user is participant
-    const conversation = await Conversation.findById(conversationId);
-    if (!conversation || !conversation.isParticipant(currentUserId)) {
-      return res.status(403).json(createResponse(false, 'Access denied', null, null, 403));
-    }
-    
-    // Create message
-    const messageData = {
-      conversation: conversationId,
-      sender: currentUserId,
-      content: {},
-      type: 'text'
-    };
-    
-    if (text) {
-      messageData.content.text = text;
-    }
-    
-    if (image) {
-      messageData.content.image = image;
-      messageData.type = 'image';
-    }
-    
-    if (replyTo) {
-      messageData.replyTo = replyTo;
-    }
-    
-    const message = await Message.create(messageData);
-    
-    // Update conversation lastActivity and lastMessage
-    await Conversation.findByIdAndUpdate(conversationId, {
-      lastActivity: new Date(),
-      lastMessage: message._id
-    });
-    
-    // Populate sender info
-    await message.populate('sender', 'username displayName avatar');
-    
-    // Add message status to response
-    const messageWithStatus = {
-      ...message.toObject(),
-      messageStatus: {
-        status: 'sent',
-        timestamp: new Date().toISOString(),
-        readBy: []
-      }
-    };
-    
-    // Emit socket event to conversation participants
-    if (global.socketServer) {
-      conversation.participants.forEach(participantId => {
-        if (participantId.toString() !== currentUserId) {
-          global.socketServer.emitToUser(participantId.toString(), 'message:new', {
-            conversationId,
-            message: message.toObject()
-          });
-        }
-      });
-      
-      // Also emit to all participants for conversations list updates
-      conversation.participants.forEach(participantId => {
-        global.socketServer.emitToUser(participantId.toString(), 'conversation:updated', {
-          conversationId,
-          lastMessage: message.toObject(),
-          lastActivity: new Date()
-        });
-      });
-    }
-    
-    res.json(createResponse(true, 'Message sent successfully', messageWithStatus));
-    
-  } catch (error) {
-    console.error('Send message error:', error);
-    res.status(500).json(createResponse(false, 'Internal server error', null, null, 500));
-  }
-};
-
 // Send image message
 exports.sendImageMessage = (req, res) => {
   const imageUpload = upload.single('image');
@@ -352,7 +331,7 @@ exports.sendImageMessage = (req, res) => {
       
       const currentUserId = req.userId;
       const { conversationId } = req.params;
-      const { text } = req.body; // Optional text with image
+      const { text } = req.body;
       
       // Check if user is participant
       const conversation = await Conversation.findById(conversationId);
@@ -395,27 +374,6 @@ exports.sendImageMessage = (req, res) => {
           readBy: []
         }
       };
-      
-      // Emit socket event to conversation participants
-      if (global.socketServer) {
-        conversation.participants.forEach(participantId => {
-          if (participantId.toString() !== currentUserId) {
-            global.socketServer.emitToUser(participantId.toString(), 'message:new', {
-              conversationId,
-              message: message.toObject()
-            });
-          }
-        });
-        
-        // Also emit to all participants for conversations list updates
-        conversation.participants.forEach(participantId => {
-          global.socketServer.emitToUser(participantId.toString(), 'conversation:updated', {
-            conversationId,
-            lastMessage: message.toObject(),
-            lastActivity: new Date()
-          });
-        });
-      }
       
       res.json(createResponse(true, 'Image message sent successfully', messageWithStatus));
       
@@ -489,26 +447,6 @@ exports.sendVideoMessage = (req, res) => {
         }
       };
       
-      // Emit socket event
-      if (global.socketServer) {
-        conversation.participants.forEach(participantId => {
-          if (participantId.toString() !== currentUserId) {
-            global.socketServer.emitToUser(participantId.toString(), 'message:new', {
-              conversationId,
-              message: message.toObject()
-            });
-          }
-        });
-        
-        conversation.participants.forEach(participantId => {
-          global.socketServer.emitToUser(participantId.toString(), 'conversation:updated', {
-            conversationId,
-            lastMessage: message.toObject(),
-            lastActivity: new Date()
-          });
-        });
-      }
-      
       res.json(createResponse(true, 'Video message sent successfully', messageWithStatus));
       
     } catch (error) {
@@ -576,26 +514,6 @@ exports.sendAudioMessage = (req, res) => {
         }
       };
       
-      // Emit socket event
-      if (global.socketServer) {
-        conversation.participants.forEach(participantId => {
-          if (participantId.toString() !== currentUserId) {
-            global.socketServer.emitToUser(participantId.toString(), 'message:new', {
-              conversationId,
-              message: message.toObject()
-            });
-          }
-        });
-        
-        conversation.participants.forEach(participantId => {
-          global.socketServer.emitToUser(participantId.toString(), 'conversation:updated', {
-            conversationId,
-            lastMessage: message.toObject(),
-            lastActivity: new Date()
-          });
-        });
-      }
-      
       res.json(createResponse(true, 'Audio message sent successfully', messageWithStatus));
       
     } catch (error) {
@@ -604,7 +522,6 @@ exports.sendAudioMessage = (req, res) => {
     }
   });
 };
-
 
 // Mark messages as read
 exports.markAsRead = async (req, res) => {
@@ -636,28 +553,6 @@ exports.markAsRead = async (req, res) => {
       }
     );
     
-    // Emit socket event
-    if (global.socketServer) {
-      conversation.participants.forEach(participantId => {
-        if (participantId.toString() !== currentUserId) {
-          global.socketServer.emitToUser(participantId.toString(), 'messages:read', {
-            conversationId,
-            readBy: currentUserId,
-            messageIds
-          });
-        }
-      });
-      
-      // Also emit conversation update for unread count changes
-      conversation.participants.forEach(participantId => {
-        global.socketServer.emitToUser(participantId.toString(), 'conversation:updated', {
-          conversationId,
-          action: 'messages_read',
-          readBy: currentUserId
-        });
-      });
-    }
-    
     res.json(createResponse(true, 'Messages marked as read'));
     
   } catch (error) {
@@ -666,8 +561,8 @@ exports.markAsRead = async (req, res) => {
   }
 };
 
-// Recall a message (soft delete with TTL)
-exports.recallMessage = async (req, res) => {
+// Delete/Recall a message (soft delete with TTL)
+exports.deleteMessage = async (req, res) => {
   try {
     const currentUserId = req.userId;
     const { messageId } = req.params;
@@ -687,27 +582,8 @@ exports.recallMessage = async (req, res) => {
       return res.status(403).json(createResponse(false, 'Only sender can recall message', null, null, 403));
     }
     
-    // Check time limit (e.g., can only recall within 24 hours)
-    const timeLimit = 24 * 60 * 60 * 1000; // 24 hours
-    if (Date.now() - new Date(message.createdAt).getTime() > timeLimit) {
-      return res.status(400).json(createResponse(false, 'Cannot recall message after 24 hours', null, null, 400));
-    }
-    
     // Recall message using model method
     await message.recallMessage(currentUserId);
-    
-    // Emit socket event
-    if (global.socketServer) {
-      const conversation = await Conversation.findById(message.conversation);
-      conversation.participants.forEach(participantId => {
-        global.socketServer.emitToUser(participantId.toString(), 'message:recalled', {
-          conversationId: message.conversation,
-          messageId: message._id,
-          recalledBy: currentUserId,
-          recalledAt: message.deletedAt
-        });
-      });
-    }
     
     res.json(createResponse(true, 'Message recalled successfully', {
       messageId: message._id,
@@ -716,13 +592,13 @@ exports.recallMessage = async (req, res) => {
     }));
     
   } catch (error) {
-    console.error('Recall message error:', error);
+    console.error('Delete message error:', error);
     res.status(500).json(createResponse(false, 'Internal server error', null, null, 500));
   }
 };
 
-// Delete a message (legacy - keep for compatibility)
-exports.deleteMessage = exports.recallMessage;
+// Recall a message (alias for deleteMessage)
+exports.recallMessage = exports.deleteMessage;
 
 // Edit a message
 exports.editMessage = async (req, res) => {
@@ -755,30 +631,11 @@ exports.editMessage = async (req, res) => {
       return res.status(400).json(createResponse(false, 'Can only edit text messages', null, null, 400));
     }
     
-    // Check time limit (e.g., can only edit within 24 hours)
-    const timeLimit = 24 * 60 * 60 * 1000; // 24 hours
-    if (Date.now() - new Date(message.createdAt).getTime() > timeLimit) {
-      return res.status(400).json(createResponse(false, 'Cannot edit message after 24 hours', null, null, 400));
-    }
-    
     // Edit message using model method
     await message.editMessage(text.trim());
     
     // Populate sender info
     await message.populate('sender', 'username displayName avatar');
-    
-    // Emit socket event
-    if (global.socketServer) {
-      const conversation = await Conversation.findById(message.conversation);
-      conversation.participants.forEach(participantId => {
-        global.socketServer.emitToUser(participantId.toString(), 'message:edited', {
-          conversationId: message.conversation,
-          message: message.toObject(),
-          editedBy: currentUserId,
-          editedAt: new Date()
-        });
-      });
-    }
     
     res.json(createResponse(true, 'Message edited successfully', message.toObject()));
     
@@ -805,18 +662,6 @@ exports.addReaction = async (req, res) => {
     }
     
     await message.addReaction(currentUserId, emoji);
-    
-    // Emit socket event
-    if (global.socketServer) {
-      const conversation = await Conversation.findById(message.conversation);
-      conversation.participants.forEach(participantId => {
-        global.socketServer.emitToUser(participantId.toString(), 'message:reaction', {
-          conversationId: message.conversation,
-          messageId: message._id,
-          reaction: { user: currentUserId, emoji }
-        });
-      });
-    }
     
     res.json(createResponse(true, 'Reaction added successfully'));
     

@@ -5,17 +5,23 @@ import { Send, Plus } from 'lucide-react';
 import TextareaAutosize from 'react-textarea-autosize';
 import { useTranslation } from 'react-i18next';
 import { useMessageStatus } from '@/hooks/useMessageStatus';
+import { Message } from '@/types/chat';
 import { ImageUpload } from './ImageUpload';
 import { VideoUpload } from './VideoUpload';
 import { AudioRecorder } from './AudioRecorder';
+import { ReplyPreview } from './ReplyPreview';
 
 interface MessageInputProps {
   conversationId: string;
   disabled?: boolean;
+  replyingTo?: Message | null;
+  onCancelReply?: () => void;
 }
 export const MessageInput: React.FC<MessageInputProps> = ({
   conversationId,
   disabled = false,
+  replyingTo,
+  onCancelReply
 }) => {
   const { t } = useTranslation('common');
   const [messageText, setMessageText] = useState("");
@@ -63,10 +69,16 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     
     const tempId = `temp-${Date.now()}-${Math.random()}`;
     try {
-      const result = await sendMessageWithStatus(textToSend, tempId);
+      // Send message with replyTo support
+      const result = await sendMessageWithStatus(textToSend, tempId, replyingTo);
       if (!result.success) {
         // Restore text if failed
         setMessageText(textToSend);
+      } else {
+        // Clear reply after successful send
+        if (replyingTo && onCancelReply) {
+          onCancelReply();
+        }
       }
     } finally {
       setIsSending(false);
@@ -89,8 +101,15 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   const handleMediaSent = () => {};
 
   return (
-    <div className="p-4 border-t border-border bg-background safe-area-inset-bottom sticky bottom-0 z-20">
-      <div className="flex items-end gap-3 max-w-4xl mx-auto">{/* Clean container */}
+    <div className="border-t border-border bg-background safe-area-inset-bottom sticky bottom-0 z-20">
+      {/* Reply Preview */}
+      <ReplyPreview 
+        replyingTo={replyingTo || null}
+        onCancelReply={onCancelReply || (() => {})}
+      />
+      
+      <div className="p-4">
+        <div className="flex items-end gap-3 max-w-4xl mx-auto">{/* Clean container */}
         
         {/* MOBILE: toggle menu */}
         <div className="md:hidden mb-2">
@@ -177,6 +196,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           />
         </div>
       )}
+      </div>
     </div>
   );
 };

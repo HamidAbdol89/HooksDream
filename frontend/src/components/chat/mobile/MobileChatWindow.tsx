@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import { useChat } from '@/hooks/useChat';
+import { Message } from '@/types/chat';
 import { MobileHeader } from './MobileHeader';
 import { MessagesList } from '@/components/chat/shared/MessagesList';
 import { MessageInput } from '@/components/chat/shared/MessageInput';
@@ -11,11 +12,17 @@ import { MessageInput } from '@/components/chat/shared/MessageInput';
 interface MobileChatWindowProps {
   conversationId: string;
   onBack?: () => void;
+  replyingTo?: Message | null;
+  onReply?: (message: Message) => void;
+  onCancelReply?: () => void;
 }
 
 export const MobileChatWindow: React.FC<MobileChatWindowProps> = ({ 
   conversationId,
-  onBack 
+  onBack,
+  replyingTo,
+  onReply,
+  onCancelReply
 }) => {
   const { t } = useTranslation('common');
   const { token } = useGoogleAuth();
@@ -101,12 +108,14 @@ export const MobileChatWindow: React.FC<MobileChatWindowProps> = ({
         messages={messages}
         currentUserId={currentUserId || ''}
         conversationId={conversationId}
-        isLoading={isLoadingMessages}
+        onReply={onReply}
       />
       
       <MessageInput 
         conversationId={conversationId}
         disabled={!token}
+        replyingTo={replyingTo}
+        onCancelReply={onCancelReply}
       />
     </div>
   );
