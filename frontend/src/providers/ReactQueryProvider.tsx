@@ -19,8 +19,11 @@ const queryClient = new QueryClient({
   },
 });
 
-// ✅ THÊM EVENT LISTENER ĐỂ REFETCH KHI CÓ SỰ KIỆN CUSTOM
+// ✅ EXPOSE queryClient globally for debugging/cache management
 if (typeof window !== 'undefined') {
+  (window as any).queryClient = queryClient;
+  
+  // ✅ THÊM EVENT LISTENER ĐỂ REFETCH KHI CÓ SỰ KIỆN CUSTOM
   window.addEventListener('profile-updated', () => {
     // Invalidates all profile queries khi có update
     queryClient.invalidateQueries({ queryKey: ['social', 'profiles'] });

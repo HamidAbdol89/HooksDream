@@ -99,16 +99,19 @@ export const addCacheBusting = (url?: string): string => {
 
 // ✅ Convert functions để tương thích với useAppStore
 export const convertToProfileFormData = (user: any): ProfileFormData => {
-  return {
+  // Handle case where user might have different field names
+  const result = {
     displayName: user.displayName || user.name || '',
     username: user.username || '',
     bio: user.bio || '',
-    location: user.location || '', // Force empty string if undefined
-    website: user.website || '', // Force empty string if undefined  
+    location: user.location || '',
+    website: user.website || '',
     avatar: user.avatar || '',
     coverImage: user.coverImage || '',
     email: user.email || '',
     phone: user.phone || '',
-    pronouns: user.pronouns || '' // Force empty string if undefined
+    pronouns: user.pronouns || ''
   };
+  
+  return result;
 };

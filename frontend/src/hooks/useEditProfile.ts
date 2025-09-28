@@ -47,15 +47,15 @@ export function useEditProfile({ isOpen, user, onSave, onClose }: UseEditProfile
   useEffect(() => {
     const loadUser = async () => {
       try {
-        // Prioritize global user state
-        if (globalUser && globalUser._id) {
-          setResolvedUser(globalUser);
+        // Prioritize prop user (from useProfile - has fresh data)
+        if (user && user._id) {
+          setResolvedUser(user);
           return;
         }
 
-        // Fallback to prop user
-        if (user && user._id) {
-          setResolvedUser(user);
+        // Fallback to global user state
+        if (globalUser && globalUser._id) {
+          setResolvedUser(globalUser);
           return;
         }
 
@@ -119,15 +119,11 @@ export function useEditProfile({ isOpen, user, onSave, onClose }: UseEditProfile
   useEffect(() => {
     if (isOpen && resolvedUser && !isUploadingRef.current) {
       const profileData = convertToProfileFormData(resolvedUser);
-      // Force refresh profile data if missing key fields
-      if (!resolvedUser.pronouns && !resolvedUser.location && !resolvedUser.website) {
-        refetchProfile?.();
-      }
       setFormData(profileData);
       setErrors({});
       setActiveTab('basic');
     }
-  }, [isOpen, resolvedUser, refetchProfile]);
+  }, [isOpen, resolvedUser]);
 
   const handleInputChange = (field: keyof ProfileFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));

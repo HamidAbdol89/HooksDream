@@ -70,8 +70,19 @@ export const ProfilePageContent: React.FC = () => {
     console.log("Share", postId);
   };
 
-const handleEditProfile = () => {
+const handleEditProfile = async () => {
   setGlobalEditingState(true);
+  
+  // Clear any React Query cache that might interfere
+  if (typeof window !== 'undefined' && (window as any).queryClient) {
+    console.log('🧹 Clearing React Query cache...');
+    (window as any).queryClient.clear();
+  }
+  
+  // Force refresh profile data before opening edit modal
+  console.log('🔄 Refreshing profile data before edit...');
+  await refresh();
+  
   setIsEditingProfile(true);
   console.log('Edit profile started - Web3Auth sync disabled');
 };
@@ -226,7 +237,7 @@ const handleCloseEditModal = () => {
         <EditProfileModal
           isOpen={isEditingProfile}
           onClose={handleCloseEditModal} // ✅ Sử dụng handler có logic reset flag
-          user={profileData}
+          user={user} // Use fresh data from refresh() 
           onSave={handleSaveProfile} // ✅ Handler có tích hợp refreshUserData
         />
       )}
