@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/Button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/Card';
 import { Camera, User, Loader2, Image as ImageIcon, Crop } from 'lucide-react';
 import { ProfileFormData } from '@/types/profile';
 import { ImageCropModal } from '@/components/ui/ImageCropModal';
+import { MobileImageCropper } from '@/components/ui/MobileImageCropper';
 
 interface ImagesFormProps {
   formData: ProfileFormData;
@@ -16,13 +17,27 @@ interface ImagesFormProps {
 export function ImagesForm({ formData, imageUploading, onImageUpload }: ImagesFormProps) {
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
   
   // ✅ Crop modal state
   const [cropModal, setCropModal] = useState<{
     isOpen: boolean;
     file: File | null;
     type: 'avatar' | 'cover';
-  }>({ isOpen: false, file: null, type: 'avatar' });
+    imageUrl: string;
+  }>({ isOpen: false, file: null, type: 'avatar', imageUrl: '' });
+
+  // Detect mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const triggerFileInput = (ref: React.RefObject<HTMLInputElement>) => {
     ref.current?.click();
@@ -33,23 +48,56 @@ export function ImagesForm({ formData, imageUploading, onImageUpload }: ImagesFo
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Create image URL for cropper
+    const imageUrl = URL.createObjectURL(file);
+
     // Open crop modal
     setCropModal({
       isOpen: true,
       file,
-      type: type === 'avatar' ? 'avatar' : 'cover'
+      type: type === 'avatar' ? 'avatar' : 'cover',
+      imageUrl
     });
   };
 
-  // ✅ Handle crop completion
-  const handleCropComplete = (croppedFile: File) => {
+  // ✅ Handle crop completion for mobile
+  const handleMobileCropComplete = (croppedBlob: Blob) => {
+    // Convert blob to file
+    const croppedFile = new File(
+      [croppedBlob], 
+      `cropped_${cropModal.type}_${Date.now()}.jpg`, 
+      { type: 'image/jpeg' }
+    );
+    
     onImageUpload(croppedFile, cropModal.type === 'avatar' ? 'avatar' : 'coverImage');
-    setCropModal({ isOpen: false, file: null, type: 'avatar' });
+    
+    // Cleanup
+    if (cropModal.imageUrl) {
+      URL.revokeObjectURL(cropModal.imageUrl);
+    }
+    setCropModal({ isOpen: false, file: null, type: 'avatar', imageUrl: '' });
+  };
+
+  // ✅ Handle crop completion for desktop
+  const handleDesktopCropComplete = (croppedFile: File) => {
+    onImageUpload(croppedFile, cropModal.type === 'avatar' ? 'avatar' : 'coverImage');
+    
+    // Cleanup
+    if (cropModal.imageUrl) {
+      URL.revokeObjectURL(cropModal.imageUrl);
+    }
+    setCropModal({ isOpen: false, file: null, type: 'avatar', imageUrl: '' });
   };
 
   // ✅ Handle crop modal close
   const handleCropClose = () => {
-    setCropModal({ isOpen: false, file: null, type: 'avatar' });
+    // Cleanup image URL
+    if (cropModal.imageUrl) {
+      URL.revokeObjectURL(cropModal.imageUrl);
+    }
+    
+    setCropModal({ isOpen: false, file: null, type: 'avatar', imageUrl: '' });
+    
     // Clear file input
     if (avatarInputRef.current) avatarInputRef.current.value = '';
     if (coverInputRef.current) coverInputRef.current.value = '';
@@ -234,14 +282,27 @@ export function ImagesForm({ formData, imageUploading, onImageUpload }: ImagesFo
         </Card>
       </div>
 
-      {/* ✅ Image Crop Modal */}
-      <ImageCropModal
-        isOpen={cropModal.isOpen}
-        onClose={handleCropClose}
-        imageFile={cropModal.file}
-        cropType={cropModal.type}
-        onCropComplete={handleCropComplete}
-      />
+      {/* ✅ Mobile vs Desktop Cropper */}
+      {cropModal.isOpen && (
+        isMobile ? (
+          <MobileImageCropper
+            imageUrl={cropModal.imageUrl}
+            aspectRatio={cropModal.type === 'avatar' ? 1 : 3}
+            cropType={cropModal.type}
+            onCrop={handleMobileCropComplete}
+            onCancel={handleCropClose}
+            title={`Crop ${cropModal.type === 'avatar' ? 'Avatar' : 'Cover Image'}`}
+          />
+        ) : (
+          <ImageCropModal
+            isOpen={cropModal.isOpen}
+            onClose={handleCropClose}
+            imageFile={cropModal.file}
+            cropType={cropModal.type}
+            onCropComplete={handleDesktopCropComplete}
+          />
+        )
+      )}
     </div>
   );
 }
