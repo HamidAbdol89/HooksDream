@@ -23,20 +23,26 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   const { sendMessageWithStatus } = useMessageStatus(conversationId);
   const [showMore, setShowMore] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Auto-focus textarea when component mounts or conversation changes
+  // Detect mobile and setup auto-focus - only on desktop, not mobile
   useEffect(() => {
+    const checkIsMobile = window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    setIsMobile(checkIsMobile);
+    
     const focusTextarea = () => {
-      if (textareaRef.current && !disabled) {
+      if (textareaRef.current && !disabled && !checkIsMobile) {
         textareaRef.current.focus();
       }
     };
 
-    // Focus immediately
+    // Focus immediately (desktop only)
     focusTextarea();
 
-    // Also focus when clicking anywhere in the chat area
+    // Also focus when clicking anywhere in the chat area (desktop only)
     const handleDocumentClick = (e: MouseEvent) => {
+      if (checkIsMobile) return; // Skip on mobile
+      
       // Only focus if not clicking on interactive elements
       const target = e.target as HTMLElement;
       if (!target.closest('button, input, textarea, [contenteditable], a, .no-focus')) {
@@ -64,9 +70,9 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       }
     } finally {
       setIsSending(false);
-      // Re-focus textarea after sending
+      // Re-focus textarea after sending (desktop only)
       setTimeout(() => {
-        if (textareaRef.current && !disabled) {
+        if (textareaRef.current && !disabled && !isMobile) {
           textareaRef.current.focus();
         }
       }, 100);
@@ -130,7 +136,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
               maxRows={5}
               className="w-full resize-none py-3 px-4 pr-14 bg-transparent outline-none focus:outline-none focus:ring-0 text-base placeholder:text-muted-foreground border-none"
               disabled={isSending || disabled}
-              autoFocus
+              autoFocus={!isMobile}
             />
             
             <div className="absolute right-2 top-1/2 -translate-y-1/2">
