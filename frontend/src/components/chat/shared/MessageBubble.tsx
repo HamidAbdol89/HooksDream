@@ -204,7 +204,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
               : isOwn
               ? 'bg-blue-500 text-white rounded-br-md shadow-sm'
               : 'bg-card text-foreground shadow-sm border border-border rounded-bl-md'
-          } ${isLastInGroup ? 'mb-3' : 'mb-1'} ${
+          } ${isLastInGroup ? 'mb-3' : 'mb-1.5'} ${
             message.content.image || message.content.video ? 'p-0' : 'px-4 py-3'
           } ${
             isSelected ? 'shadow-lg scale-[1.02]' : ''

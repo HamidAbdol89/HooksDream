@@ -165,11 +165,21 @@ export const MessagesList: React.FC<MessagesListProps> = ({
       ref={containerRef}
       className="flex-1 overflow-y-auto bg-background relative"
     >
-      <div className="p-2 md:p-2 space-y-2 md:space-y-2">
+      <div className="p-2 md:p-2">
         {messages.map((message, index) => {
           const isOwn = message.sender._id === currentUserId;
-          const showAvatar = index === 0 || messages[index - 1]?.sender._id !== message.sender._id;
-          const isLastInGroup = index === messages.length - 1 || messages[index + 1]?.sender._id !== message.sender._id;
+          // Check if should show avatar (first message or different sender or > 5 minutes gap)
+          const prevMessage = messages[index - 1];
+          const showAvatar = index === 0 || 
+            prevMessage?.sender._id !== message.sender._id ||
+            (new Date(message.createdAt).getTime() - new Date(prevMessage.createdAt).getTime()) > 5 * 60 * 1000; // 5 minutes
+          
+          // Check if this is the last message in a group (same sender + within 5 minutes)
+          const nextMessage = messages[index + 1];
+          const isLastInGroup = index === messages.length - 1 || 
+            nextMessage?.sender._id !== message.sender._id ||
+            (new Date(nextMessage.createdAt).getTime() - new Date(message.createdAt).getTime()) > 5 * 60 * 1000; // 5 minutes
+          
           const isLatestMessage = index === messages.length - 1; // Tin nhắn mới nhất
           
           return (
