@@ -112,9 +112,9 @@ export default defineConfig({
     // Thêm headers để tránh CORS issues
     proxy: {
       '/api': {
-        target: 'https://backendverse-production.up.railway.app', 
+        target: 'https://hooksdream.fly.dev', 
         changeOrigin: true,
-        secure: false,
+        secure: true,
       }
     }
   },

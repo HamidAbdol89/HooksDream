@@ -188,7 +188,11 @@ export const useSocket = () => {
       return;
     }
 
-    const SOCKET_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 
+      import.meta.env.VITE_API_BASE_URL || 
+      (import.meta.env.MODE === 'development' 
+        ? 'http://localhost:5000' 
+        : 'https://hooksdream.fly.dev');
 
     socketRef.current = io(SOCKET_URL, {
       auth: {
@@ -196,7 +200,15 @@ export const useSocket = () => {
       },
       transports: ['websocket', 'polling'],
       timeout: 20000,
-      forceNew: true
+      forceNew: true,
+      // Fly.io optimizations
+      upgrade: true,
+      rememberUpgrade: false,
+      // Force reconnection to new server
+      autoConnect: true,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000
     });
 
     const socket = socketRef.current;
