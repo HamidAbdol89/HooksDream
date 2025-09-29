@@ -20,6 +20,53 @@ const PostSchema = new mongoose.Schema({
         type: String, // URL của video
         trim: true
     },
+    // Link previews cho URLs trong content
+    linkPreviews: [{
+        url: {
+            type: String,
+            required: true,
+            trim: true
+        },
+        title: {
+            type: String,
+            maxlength: 100,
+            trim: true
+        },
+        description: {
+            type: String,
+            maxlength: 200,
+            trim: true
+        },
+        image: {
+            type: String,
+            trim: true
+        },
+        siteName: {
+            type: String,
+            maxlength: 50,
+            trim: true
+        },
+        type: {
+            type: String,
+            default: 'website'
+        },
+        publishedTime: {
+            type: String
+        },
+        author: {
+            type: String,
+            maxlength: 50,
+            trim: true
+        },
+        favicon: {
+            type: String,
+            trim: true
+        },
+        crawledAt: {
+            type: Date,
+            default: Date.now
+        }
+    }],
     hashtags: [{
         type: String,
         lowercase: true,
@@ -190,11 +237,32 @@ PostSchema.methods.extractMentions = async function() {
     }
 };
 
-// Pre-save middleware để tự động extract hashtags và mentions
+// Method để extract link previews từ content
+PostSchema.methods.extractLinkPreviews = async function() {
+    if (!this.content) return;
+    
+    const linkPreviewService = require('../services/linkPreviewService');
+    const urls = linkPreviewService.extractUrls(this.content);
+    
+    if (urls.length > 0) {
+        try {
+            const previews = await linkPreviewService.getMultiplePreviews(urls);
+            this.linkPreviews = previews;
+        } catch (error) {
+            console.error('Error extracting link previews:', error);
+            this.linkPreviews = [];
+        }
+    } else {
+        this.linkPreviews = [];
+    }
+};
+
+// Pre-save middleware để tự động extract hashtags, mentions và link previews
 PostSchema.pre('save', async function(next) {
     if (this.isModified('content')) {
         this.extractHashtags();
         await this.extractMentions();
+        await this.extractLinkPreviews();
         
         if (this.isModified() && !this.isNew) {
             this.isEdited = true;

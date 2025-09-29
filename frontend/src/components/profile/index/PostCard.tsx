@@ -1,4 +1,4 @@
-import React, { useState } from 'react'; 
+import React, { useState, useEffect } from 'react'; 
 import { 
   Heart, 
   MessageCircle, 
@@ -10,11 +10,14 @@ import {
   Bookmark,
   BookmarkCheck,
 } from 'lucide-react';
+import { useLinkPreview, useUrlExtraction } from '@/hooks/useLinkPreview';
+import { LinkPreviews } from '../../posts/LinkPreview';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/Card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar';
+import { useAppStore } from '@/store/useAppStore';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Post, Profile } from '@/store/useAppStore';
 
@@ -41,6 +44,17 @@ export const PostCard: React.FC<PostCardProps> = ({
 }) => {
   const [isSaved, setIsSaved] = useState(false);
   const [imageLoading, setImageLoading] = useState(post.images?.map(() => true) || []);
+  
+  // Link preview functionality
+  const { hasUrls } = useUrlExtraction();
+  const { previews, fetchMultiplePreviews, isLoading } = useLinkPreview();
+
+  // Auto-fetch link previews when component mounts
+  useEffect(() => {
+    if (post.content && hasUrls(post.content)) {
+      fetchMultiplePreviews(post.content);
+    }
+  }, [post.content, hasUrls, fetchMultiplePreviews]);
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
@@ -246,6 +260,23 @@ export const PostCard: React.FC<PostCardProps> = ({
             <p className="text-foreground leading-relaxed whitespace-pre-wrap text-sm sm:text-base break-words">
               {detectAndFormatLinks(post.content)}
             </p>
+          </div>
+        )}
+
+        {/* Link Previews */}
+        {previews.length > 0 && (
+          <div className="mb-4">
+            <LinkPreviews previews={previews} maxPreviews={2} />
+          </div>
+        )}
+
+        {/* Loading indicator for link previews */}
+        {isLoading && post.content && hasUrls(post.content) && (
+          <div className="mb-4 p-3 border border-dashed border-border rounded-lg">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              Loading link preview...
+            </div>
           </div>
         )}
 

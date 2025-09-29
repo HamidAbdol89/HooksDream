@@ -287,4 +287,8 @@ router.post('/:postId/comments/:commentId/replies', authMiddleware, async (req, 
 router.get('/:id/comment-count', optionalAuth, getCommentCount);
 router.get('/:id/comment-stats', optionalAuth, getCommentStats);
 
+// Link preview routes
+router.post('/preview-link', postController.getLinkPreview);
+router.post('/preview-links', postController.getMultipleLinkPreviews);
+
 module.exports = router;

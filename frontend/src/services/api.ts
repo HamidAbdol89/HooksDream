@@ -717,6 +717,23 @@ export const api = {
       return apiCall(`/api/users/${userId}/following?${searchParams.toString()}`);
     },
   },
+
+  // Link Preview API
+  linkPreview: {
+    getPreview: async (url: string) => {
+      return apiCall('/api/posts/preview-link', {
+        method: 'POST',
+        body: JSON.stringify({ url }),
+      });
+    },
+
+    getMultiplePreviews: async (content: string) => {
+      return apiCall('/api/posts/preview-links', {
+        method: 'POST',
+        body: JSON.stringify({ content }),
+      });
+    },
+  },
 };
 
 export default api;

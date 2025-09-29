@@ -2,6 +2,8 @@ import React from 'react';
 import { UserInfo } from './UserInfo';
 import { ContentInput } from './ContentInput';
 import { MediaPreview } from './MediaPreview';
+import { useLinkPreview, useUrlExtraction } from '@/hooks/useLinkPreview';
+import { LinkPreviews } from '../LinkPreview';
 
 interface PostFormProps {
   profile: any;
@@ -36,6 +38,18 @@ export const PostForm: React.FC<PostFormProps> = ({
   removeVideo,
   adjustTextareaHeight
 }) => {
+  const { hasUrls } = useUrlExtraction();
+  const { previews, fetchMultiplePreviews, isLoading, clearPreviews } = useLinkPreview();
+
+  // Auto-fetch link previews when content changes
+  React.useEffect(() => {
+    if (hasUrls(content)) {
+      fetchMultiplePreviews(content);
+    } else {
+      clearPreviews();
+    }
+  }, [content, hasUrls, fetchMultiplePreviews, clearPreviews]);
+
   return (
     <div className={`flex-1 overflow-y-auto ${isMobile ? 'px-3' : 'px-4'}`}>
       
@@ -53,6 +67,23 @@ export const PostForm: React.FC<PostFormProps> = ({
           isMobile={isMobile}
           adjustTextareaHeight={adjustTextareaHeight}
         />
+
+        {/* Link Previews */}
+        {previews.length > 0 && (
+          <div className="space-y-2">
+            <LinkPreviews previews={previews} maxPreviews={2} />
+          </div>
+        )}
+
+        {/* Loading indicator for link previews */}
+        {isLoading && hasUrls(content) && (
+          <div className="p-3 border border-dashed border-border rounded-lg">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              Generating link preview...
+            </div>
+          </div>
+        )}
 
         <MediaPreview
           images={images}

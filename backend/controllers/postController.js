@@ -1,6 +1,7 @@
 const Post = require('../models/Post');
 const User = require('../models/User');
 const { createResponse } = require('../utils/helpers');
+const linkPreviewService = require('../services/linkPreviewService');
 
 // Lấy danh sách posts (public feed)
 exports.getPosts = async (req, res) => {
@@ -570,6 +571,73 @@ exports.searchPosts = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Internal server error'
+        });
+    }
+};
+
+// API để lấy link preview cho URL
+exports.getLinkPreview = async (req, res) => {
+    try {
+        const { url } = req.body;
+        
+        if (!url) {
+            return res.status(400).json({
+                success: false,
+                message: 'URL is required'
+            });
+        }
+
+        const preview = await linkPreviewService.getPreview(url);
+        
+        res.json({
+            success: true,
+            data: preview
+        });
+        
+    } catch (error) {
+        console.error('Link preview error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch link preview',
+            error: error.message
+        });
+    }
+};
+
+// API để lấy multiple link previews từ text content
+exports.getMultipleLinkPreviews = async (req, res) => {
+    try {
+        const { content } = req.body;
+        
+        if (!content) {
+            return res.status(400).json({
+                success: false,
+                message: 'Content is required'
+            });
+        }
+
+        const urls = linkPreviewService.extractUrls(content);
+        
+        if (urls.length === 0) {
+            return res.json({
+                success: true,
+                data: []
+            });
+        }
+
+        const previews = await linkPreviewService.getMultiplePreviews(urls);
+        
+        res.json({
+            success: true,
+            data: previews
+        });
+        
+    } catch (error) {
+        console.error('Multiple link preview error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch link previews',
+            error: error.message
         });
     }
 };
