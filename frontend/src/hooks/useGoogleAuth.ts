@@ -1,7 +1,8 @@
 // useGoogleAuth.ts - Google OAuth Authentication Hook
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useAppStore } from "@/store/useAppStore";
+import { persistentAuth } from "@/utils/persistentAuth";
 
 // Google Auth Context Interface
 export interface GoogleAuthContext {
@@ -67,7 +68,21 @@ export const useGoogleAuth = () => {
           throw new Error('Google Identity Services not loaded');
         }
 
-        // Check for existing token
+        // ✅ Check for persistent session first (30 days)
+        const { SessionManager } = await import('@/utils/sessionManager');
+        const savedSession = SessionManager.getAuthSession();
+        
+        if (savedSession && !hasInitialLoadCompleted) {
+          setToken(savedSession.token);
+          setUser(savedSession.user);
+          setProfile(savedSession.profile);
+          setIsConnected(true);
+          setHasInitialLoadCompleted(true);
+          setIsLoading(false);
+          return;
+        }
+
+        // Fallback: Check for legacy token
         const savedToken = localStorage.getItem('auth_token');
         if (savedToken && !hasInitialLoadCompleted) {
           setToken(savedToken);
@@ -148,9 +163,10 @@ export const useGoogleAuth = () => {
           throw new Error('Invalid response structure');
         }
         
-        // Save token
+        // ✅ Save token with 30-day persistent session
         setToken(jwtToken);
-        localStorage.setItem('auth_token', jwtToken);
+        const { SessionManager } = await import('@/utils/sessionManager');
+        SessionManager.saveAuthSession(jwtToken, userData, userData);
         
         // Update app state
         await updateAppState(userData, jwtToken, true);
@@ -232,9 +248,10 @@ export const useGoogleAuth = () => {
       if (data.success) {
         const { user: userData, token: jwtToken } = data.data;
         
-        // Save token
+        // ✅ Save token with 30-day persistent session  
         setToken(jwtToken);
-        localStorage.setItem('auth_token', jwtToken);
+        const { SessionManager } = await import('@/utils/sessionManager');
+        SessionManager.saveAuthSession(jwtToken, userData, userData);
         
         // Update app state
         await updateAppState(userData, jwtToken, true);
@@ -345,9 +362,12 @@ export const useGoogleAuth = () => {
     try {
       setIsLoading(true);
       
+      // ✅ Clear persistent session
+      const { SessionManager } = await import('@/utils/sessionManager');
+      SessionManager.clearAuthSession();
+      
       // Clear local state
       setToken(null);
-      localStorage.removeItem('auth_token');
       setIsConnected(false);
       setUser(null);
       setProfile(null);

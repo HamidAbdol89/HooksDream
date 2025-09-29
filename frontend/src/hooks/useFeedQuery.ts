@@ -35,6 +35,7 @@ export const useFeedQuery = () => {
     hasNextPage,
     isFetchingNextPage,
     isLoading,
+    isFetching,
     isError,
     error,
     refetch
@@ -183,8 +184,8 @@ export const useFeedQuery = () => {
     posts,
     totalPosts,
     
-    // Loading states
-    isLoading,
+    // Loading states - Show loading for initial load OR when no cached data
+    isLoading: isLoading || (isFetching && posts.length === 0),
     isLoadingMore: isFetchingNextPage,
     isError,
     error,

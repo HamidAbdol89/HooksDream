@@ -164,14 +164,12 @@ export const useSocial = () => {
     }
 
     if (!isConnected && !currentUserId) {
-      console.log('🧹 User logged out - scheduling selective cache clear');
       clearTimeoutRef.current = setTimeout(() => {
         // 🚀 OPTIMIZED: Only clear user-specific data, keep static data
         queryClient.removeQueries({ queryKey: socialQueryKeys.all, exact: false });
         lastUserIdRef.current = undefined;
       }, 1000);
     } else if (currentUserId && lastUserIdRef.current && currentUserId !== lastUserIdRef.current) {
-      console.log('🔄 User changed - clearing user-specific cache');
       // 🚀 OPTIMIZED: Only clear current user data, not all profiles
       queryClient.removeQueries({ queryKey: socialQueryKeys.currentProfile(lastUserIdRef.current) });
       queryClient.removeQueries({ queryKey: socialQueryKeys.followStats(lastUserIdRef.current) });
@@ -568,7 +566,6 @@ export const useSocial = () => {
       queryKey: [...socialQueryKeys.popularUsers(), limit, currentUserId],
       queryFn: async () => {
         const response = await fetchWithAuth<UserProfile[]>(`/api/users/popular?limit=${limit}`);
-        console.log('Popular users response:', response);
         return response;
       },
       enabled: !!currentUserId && isConnected,
@@ -644,12 +641,12 @@ export const useSocial = () => {
   }, [queryClient]);
 
   const clearAllCache = useCallback((): void => {
-    console.log('🧹 Manually clearing all social cache');
     queryClient.clear();
     lastUserIdRef.current = undefined;
   }, [queryClient]);
 
   return {
+    // ...
     // Queries
     useProfile,
     useCurrentProfile,

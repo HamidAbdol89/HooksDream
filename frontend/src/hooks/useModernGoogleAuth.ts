@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useAppStore } from "@/store/useAppStore";
+import { persistentAuth } from "@/utils/persistentAuth";
 
 // Auth states for better UX
 export const AuthState = {
@@ -378,7 +379,6 @@ export const useModernGoogleAuth = (): ModernGoogleAuthContext => {
         );
       } else {
         // If no button element, create a manual trigger
-        console.log('Google Sign-In ready - waiting for user interaction');
       }
 
     } catch (error) {

@@ -28,12 +28,52 @@ const ProtectedAppContent: React.FC = () => {
   // Initialize Socket connection
   const { isConnected: socketConnected, connectionError } = useSocket();
   
+  // ✅ Check persistent session to prevent flash
+  const [isCheckingSession, setIsCheckingSession] = React.useState(true);
+  
+  React.useEffect(() => {
+    const checkSession = async () => {
+      try {
+        // Use SessionManager to check for valid session
+        const { SessionManager } = await import('@/utils/sessionManager');
+        const savedSession = SessionManager.getAuthSession();
+        
+        if (savedSession && savedSession.user) {
+          // Valid session exists, populate store if needed
+          if (!isConnected || !user) {
+            const { setIsConnected, setUser, setProfile } = useAppStore.getState();
+            setIsConnected(true);
+            setUser(savedSession.user);
+            setProfile(savedSession.profile || savedSession.user);
+          }
+        }
+      } catch (error) {
+        console.error('Session check error:', error);
+      }
+      setIsCheckingSession(false);
+    };
+    
+    checkSession();
+  }, [isConnected, user]);
+  
   // Check if current page should hide sidebars
   const isMessagesPage = location.pathname === '/messages';
   const isEditProfilePage = location.pathname.startsWith('/edit-profile');
   // Get chat context
   const { selectedConversationId } = useChatContext();
   const isInChat = isMessagesPage && !!selectedConversationId && isMobile;
+  
+  // Show loading while checking session to prevent flash
+  if (isCheckingSession) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
   
   if (!isConnected || !user) {
     return <ModernAuthConnect />;

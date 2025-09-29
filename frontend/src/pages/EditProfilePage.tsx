@@ -40,14 +40,12 @@ export default function EditProfilePage() {
         throw new Error('User not found');
       }
 
-      console.log('Saving profile data:', updatedData);
 
       // Get API base URL from environment
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
       
       // Call the actual API - correct endpoint from backend routes
       const apiUrl = `${API_BASE_URL}/api/users/profile/${currentUser.hashId}`;
-      console.log('API URL:', apiUrl);
       
       let response;
       try {

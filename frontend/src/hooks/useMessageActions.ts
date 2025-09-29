@@ -123,7 +123,6 @@ export const useMessageActions = (conversationId: string) => {
     try {
       await navigator.clipboard.writeText(text);
       // You could show a toast notification here
-      console.log('Text copied to clipboard');
     } catch (error) {
       console.error('Failed to copy text:', error);
       // Fallback for older browsers

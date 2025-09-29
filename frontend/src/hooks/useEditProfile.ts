@@ -84,7 +84,6 @@ export function useEditProfile({ isOpen, user, onSave, onClose }: UseEditProfile
 
     // ⚠️ QUAN TRỌNG: Chỉ sync khi KHÔNG đang upload
     if (isUploadingRef.current) {
-      console.log('🚫 Skipping globalUser sync - currently uploading');
       return;
     }
 
@@ -93,10 +92,6 @@ export function useEditProfile({ isOpen, user, onSave, onClose }: UseEditProfile
     const hasCoverChange = globalUser.coverImage !== resolvedUser.coverImage;
 
     if (hasAvatarChange || hasCoverChange) {
-      console.log('🔄 Syncing with globalUser changes:', {
-        avatar: hasAvatarChange ? globalUser.avatar : 'unchanged',
-        coverImage: hasCoverChange ? globalUser.coverImage : 'unchanged'
-      });
 
       setResolvedUser(prev => prev ? { ...prev, ...globalUser } : globalUser);
       
@@ -153,7 +148,6 @@ const handleImageUpload = async (
     isUploadingRef.current = true;
     setImageUploading(type === 'avatar' ? 'avatar' : 'cover');
 
-    console.log('📤 Starting image upload:', type);
 
     // ✅ Use unified validation
     const validationError = validateFile(file, type);
@@ -190,7 +184,6 @@ const handleImageUpload = async (
         imageUrl = `${imageUrl}?t=${Date.now()}`;
       }
       
-      console.log('✅ Upload successful, new URL with cache-busting:', imageUrl);
       
       // ✅ LƯU URL VỚI CACHE-BUSTING
       lastUploadedImages.current[type] = imageUrl;
@@ -214,7 +207,6 @@ const handleImageUpload = async (
           if (img.src && img.src.includes('cloudinary.com')) {
             const newSrc = imageUrl;
             img.src = newSrc;
-            console.log('🔄 Force reloaded image:', newSrc);
           }
         });
       }, 500);
@@ -223,7 +215,6 @@ const handleImageUpload = async (
       setTimeout(() => {
         notifyProfileUpdate();
       }, 1000);
-      console.log('🎉 Image upload completed successfully');
     } else {
       throw new Error(result?.message || 'Upload failed');
     }
@@ -242,7 +233,6 @@ const handleImageUpload = async (
 
     // Prevent multiple rapid submissions
     if (isLoading) {
-      console.log('⏳ Already submitting, ignoring duplicate request');
       return null;
     }
 

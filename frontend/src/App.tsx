@@ -3,6 +3,7 @@ import React, { useEffect, useRef } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useModernGoogleAuth, AuthState } from "./hooks/useModernGoogleAuth";
 import { useAppStore } from "@/store/useAppStore";
+import { initializeSessionExtension } from "@/utils/sessionManager";
 import TermsOfUse from "@/pages/TermsOfUse";
 import ProtectedApp from "@/components/ProtectedApp";
 import AuthErrorBoundary from "@/components/auth/AuthErrorBoundary";
@@ -18,6 +19,9 @@ const App: React.FC = () => {
     if (authState === AuthState.SUCCESS && isConnected && user && !initializationRef.current) {
       initializationRef.current = true;
       // Modern auth system: User authenticated and data loaded
+      
+      // ✅ Initialize session extension for 30-day persistent login
+      initializeSessionExtension();
       
       // Reset after component lifecycle
       return () => {

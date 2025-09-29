@@ -2,6 +2,34 @@
 import { create } from "zustand";
 import { api, userApi } from "@/services/api";
 
+// Check for persistent session on store initialization
+const checkInitialSession = () => {
+  try {
+    const sessionData = localStorage.getItem('auth_session');
+    if (sessionData) {
+      const session = JSON.parse(sessionData);
+      const now = Date.now();
+      
+      // Check if session is still valid
+      if (session.expiresAt && now < session.expiresAt) {
+        return {
+          isConnected: true,
+          user: session.user,
+          profile: session.profile || session.user
+        };
+      }
+    }
+  } catch (error) {
+    console.error('Failed to check initial session:', error);
+  }
+  
+  return {
+    isConnected: false,
+    user: null,
+    profile: null
+  };
+};
+
 export type Profile = {
   id: string;
   _id: string;

@@ -99,6 +99,8 @@ export const FeedContainer: React.FC<FeedContainerProps> = React.memo(({
         <div className="pb-20">
           {error ? (
             <ErrorState error={error} onRetry={onRefresh} />
+          ) : loading && posts.length === 0 ? (
+            <LoadingState />
           ) : posts.length === 0 ? (
             <EmptyState onCreatePost={handleCreatePost} />
           ) : useVirtualScrolling ? (
