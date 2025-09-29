@@ -1,21 +1,18 @@
 import React from 'react';
-import { Grid3X3, List, User, Plus, Play, Image as ImageIconLucide } from 'lucide-react';
+import { User, Plus, Play, Image as ImageIconLucide, Repeat2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { PostCard } from './PostCard';
 import { Post, Profile } from '@/store/useAppStore';
-import { GridPostCard } from "./GridPostCard";
 
 interface ProfileTabsProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
-  viewMode: string;
-  setViewMode: (mode: string) => void;
   posts: Post[];
   mediaPosts: Post[];
-  likedPosts: Post[];
+  repostPosts: Post[];
   postsLoading: boolean;
   isOwnProfile: boolean;
   user: Profile;
@@ -30,11 +27,9 @@ interface ProfileTabsProps {
 export const ProfileTabs: React.FC<ProfileTabsProps> = ({
   activeTab,
   setActiveTab,
-  viewMode,
-  setViewMode,
   posts,
   mediaPosts,
-  likedPosts,
+  repostPosts,
   postsLoading,
   isOwnProfile,
   user,
@@ -48,7 +43,7 @@ export const ProfileTabs: React.FC<ProfileTabsProps> = ({
   const filteredPosts = {
     posts,
     media: mediaPosts,
-    likes: likedPosts
+    reposts: repostPosts
   };
 
   const EmptyState = ({ type }: { type: string }) => {
@@ -69,12 +64,12 @@ export const ProfileTabs: React.FC<ProfileTabsProps> = ({
           : `@${user.username} hasn't shared any media yet.`,
         showButton: false
       },
-      likes: {
-        icon: User,
-        title: 'No liked posts',
+      reposts: {
+        icon: Repeat2,
+        title: 'No reposts yet',
         description: isOwnProfile
-          ? 'Like posts to see them here!'
-          : `@${user.username} hasn't liked any posts yet.`,
+          ? 'Repost interesting content to see it here!'
+          : `@${user.username} hasn't reposted anything yet.`,
         showButton: false
       }
     };
@@ -125,18 +120,17 @@ export const ProfileTabs: React.FC<ProfileTabsProps> = ({
   return (
     <div className="w-full max-w-none">
       <Tabs defaultValue="posts" value={activeTab} onValueChange={setActiveTab}>
-        {/* Sticky Navigation Header */}
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/50">
-          <div className="flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4 gap-3">
-            {/* Tab Navigation */}
-            <TabsList className="bg-muted/50 rounded-full p-1 h-auto flex-1 max-w-md">
+        {/* Sticky Tab Navigation - như Instagram/Twitter */}
+        <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b border-border/40">
+          <div className="px-3 sm:px-6 py-3 sm:py-4">
+            <TabsList className="bg-muted/50 rounded-full p-1 h-auto w-full max-w-md mx-auto">
               <TabsTrigger 
                 value="posts" 
-                className="rounded-full px-2 sm:px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm text-xs sm:text-sm flex-1 min-w-0"
+                className="rounded-full px-3 sm:px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm text-xs sm:text-sm flex-1 min-w-0 transition-all duration-200"
               >
-                <span className="flex items-center gap-1 min-w-0">
-                  <span className="truncate">Posts</span>
-                  <Badge variant="secondary" className="h-4 text-xs px-1 sm:px-2 flex-shrink-0">
+                <span className="flex items-center gap-1.5 min-w-0">
+                  <span className="truncate font-medium">Posts</span>
+                  <Badge variant="secondary" className="h-4 text-xs px-1.5 sm:px-2 flex-shrink-0 bg-muted-foreground/10">
                     {posts.length}
                   </Badge>
                 </span>
@@ -144,88 +138,51 @@ export const ProfileTabs: React.FC<ProfileTabsProps> = ({
               
               <TabsTrigger 
                 value="media" 
-                className="rounded-full px-2 sm:px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm text-xs sm:text-sm flex-1 min-w-0"
+                className="rounded-full px-3 sm:px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm text-xs sm:text-sm flex-1 min-w-0 transition-all duration-200"
               >
-                <span className="flex items-center gap-1 min-w-0">
-                  <span className="truncate">Media</span>
-                  <Badge variant="secondary" className="h-4 text-xs px-1 sm:px-2 flex-shrink-0">
+                <span className="flex items-center gap-1.5 min-w-0">
+                  <span className="truncate font-medium">Media</span>
+                  <Badge variant="secondary" className="h-4 text-xs px-1.5 sm:px-2 flex-shrink-0 bg-muted-foreground/10">
                     {mediaPosts.length}
                   </Badge>
                 </span>
               </TabsTrigger>
               
               <TabsTrigger 
-                value="likes" 
-                className="rounded-full px-2 sm:px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm text-xs sm:text-sm flex-1 min-w-0"
+                value="reposts" 
+                className="rounded-full px-3 sm:px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm text-xs sm:text-sm flex-1 min-w-0 transition-all duration-200"
               >
-                <span className="flex items-center gap-1 min-w-0">
-                  <span className="truncate">Likes</span>
-                  <Badge variant="secondary" className="h-4 text-xs px-1 sm:px-2 flex-shrink-0">
-                    {likedPosts.length}
+                <span className="flex items-center gap-1.5 min-w-0">
+                  <span className="truncate font-medium">Reposts</span>
+                  <Badge variant="secondary" className="h-4 text-xs px-1.5 sm:px-2 flex-shrink-0 bg-muted-foreground/10">
+                    {repostPosts.length}
                   </Badge>
                 </span>
               </TabsTrigger>
             </TabsList>
-
-            {/* View Mode Toggle - Only for Posts Tab */}
-            {activeTab === 'posts' && posts.length > 0 && (
-              <div className="flex items-center bg-muted/50 rounded-full p-1">
-                <Button
-                  onClick={() => setViewMode('list')}
-                  variant={viewMode === 'list' ? "default" : "ghost"}
-                  size="sm"
-                  className="rounded-full h-7 w-7 sm:h-8 sm:w-8 p-0"
-                >
-                  <List className="h-3 w-3 sm:h-4 sm:w-4" />
-                </Button>
-                <Button
-                  onClick={() => setViewMode('grid')}
-                  variant={viewMode === 'grid' ? "default" : "ghost"}
-                  size="sm"
-                  className="rounded-full h-7 w-7 sm:h-8 sm:w-8 p-0"
-                >
-                  <Grid3X3 className="h-3 w-3 sm:h-4 sm:w-4" />
-                </Button>
-              </div>
-            )}
           </div>
         </div>
 
-        {/* Tab Content */}
-        <div className="px-3 sm:px-6 py-4 sm:py-6">
+        {/* Natural Full Page Scroll - như Twitter timeline */}
+        <div className="px-3 sm:px-6">
           {/* Posts Tab */}
-          <TabsContent value="posts" className="mt-0 space-y-0">
+          <TabsContent value="posts" className="mt-0 space-y-0 py-4 sm:py-6">
             {filteredPosts.posts.length === 0 && !postsLoading ? (
               <EmptyState type="posts" />
             ) : (
               <>
-                <div className={
-                  viewMode === 'grid' 
-                    ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6' 
-                    : 'space-y-0'
-                }>
+                <div className="space-y-0">
                   {filteredPosts.posts.map((post) => (
-                    viewMode === 'grid' ? (
-                      <GridPostCard 
-                        key={post._id} 
-                        post={post} 
-                        isOwnProfile={isOwnProfile} 
-                        onLike={onLike} 
-                        onDelete={onDelete} 
-                      />
-                    ) : (
-                     // Sửa phần render PostCard
-<PostCard 
-  key={post._id} 
-  post={post} 
-  author={user} // Đảm bảo user có type Profile
-  isOwnProfile={isOwnProfile} 
-  onLike={onLike} 
-  onDelete={onDelete}
-  onComment={onComment}
-  onShare={onShare}
-/>
-                    )
+                    <PostCard 
+                      key={post._id} 
+                      post={post} 
+                      author={user}
+                      isOwnProfile={isOwnProfile} 
+                      onLike={onLike} 
+                      onDelete={onDelete}
+                      onComment={onComment}
+                      onShare={onShare}
+                    />
                   ))}
                 </div>
                 
@@ -237,7 +194,7 @@ export const ProfileTabs: React.FC<ProfileTabsProps> = ({
           </TabsContent>
 
           {/* Media Tab */}
-          <TabsContent value="media" className="mt-0">
+          <TabsContent value="media" className="mt-0 py-4 sm:py-6">
             {filteredPosts.media.length === 0 && !postsLoading ? (
               <EmptyState type="media" />
             ) : (
@@ -313,14 +270,14 @@ export const ProfileTabs: React.FC<ProfileTabsProps> = ({
             )}
           </TabsContent>
 
-          {/* Likes Tab */}
-          <TabsContent value="likes" className="mt-0">
-            {filteredPosts.likes.length === 0 && !postsLoading ? (
-              <EmptyState type="likes" />
+          {/* Reposts Tab */}
+          <TabsContent value="reposts" className="mt-0 py-4 sm:py-6">
+            {filteredPosts.reposts.length === 0 && !postsLoading ? (
+              <EmptyState type="reposts" />
             ) : (
               <>
                 <div className="space-y-0">
-                  {filteredPosts.likes.map((post) => (
+                  {filteredPosts.reposts.map((post) => (
                     <PostCard 
                       key={post._id} 
                       post={post} 
@@ -336,7 +293,7 @@ export const ProfileTabs: React.FC<ProfileTabsProps> = ({
                 
                 {postsLoading && renderLoadingSpinner()}
                 {hasMorePosts && !postsLoading && <div ref={loadMoreRef} className="h-2" />}
-                {!hasMorePosts && filteredPosts.likes.length > 0 && renderNoMorePosts()}
+                {!hasMorePosts && filteredPosts.reposts.length > 0 && renderNoMorePosts()}
               </>
             )}
           </TabsContent>

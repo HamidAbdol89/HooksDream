@@ -32,6 +32,9 @@ router.get('/:id/likes', optionalAuth, postController.getPostLikes);
 router.get('/trending', optionalAuth, postController.getTrendingPosts);
 router.get('/search', optionalAuth, postController.searchPosts);
 
+// Repost route
+router.post('/:id/repost', authMiddleware, postController.repostPost);
+
 // Like routes with Socket.IO
 router.post('/:id/like', authMiddleware, async (req, res, next) => {
     try {

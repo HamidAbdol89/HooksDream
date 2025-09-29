@@ -76,12 +76,33 @@ export interface Post {
   likeCount: number;
   commentCount: number;
   shareCount?: number;
+  repostCount?: number;
   isLiked?: boolean;
   isBookmarked?: boolean;
   images?: string[];
   video?: string;
   comments?: Comment[];
   viewCount: number;
+  // Repost fields
+  repost_of?: {
+    _id: string;
+    userId: {
+      _id: string;
+      username: string;
+      displayName: string;
+      avatar: string;
+      isVerified?: boolean;
+    };
+    content: string;
+    createdAt: string;
+    likeCount: number;
+    commentCount: number;
+    shareCount?: number;
+    repostCount?: number;
+    images?: string[];
+    video?: string;
+    isDeleted?: boolean;
+  };
 }
 
 

@@ -558,6 +558,13 @@ export const api = {
       
       return apiCall(`/api/posts/user/${userId}?${searchParams.toString()}`);
     },
+
+    repostPost: async (postId: string, content?: string) => {
+      return apiCall(`/api/posts/${postId}/repost`, {
+        method: 'POST',
+        body: JSON.stringify({ content: content || '' }),
+      });
+    },
   },
 
   // Comments API

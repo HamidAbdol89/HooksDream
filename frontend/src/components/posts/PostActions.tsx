@@ -1,6 +1,6 @@
 // src/components/posts/PostActions.tsx - Clean version with CommentSheet
 import React, { useState, useCallback, memo, useMemo } from 'react';
-import { Heart, MessageCircle, Repeat, Bookmark } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Bookmark } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useCommentCount } from '@/hooks/useCommentCount';
@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { Post } from '@/types/post';
 import { UserProfile } from '@/types/user';
 import { CommentSheet } from '@/components/comment/CommentSheet';
+import { RepostButton } from '@/components/ui/RepostButton';
 
 interface PostActionsProps {
   post: Post;
@@ -16,6 +17,7 @@ interface PostActionsProps {
   onShare?: () => void;
   onBookmark: () => void;
   currentUser?: UserProfile;
+  onRepostSuccess?: (repost: any) => void;
 }
 
 export const PostActions: React.FC<PostActionsProps> = memo(({
@@ -24,7 +26,8 @@ export const PostActions: React.FC<PostActionsProps> = memo(({
   onLike,
   onShare,
   onBookmark,
-  currentUser
+  currentUser,
+  onRepostSuccess
 }) => {
   const { t } = useTranslation("common");
   const [isLiking, setIsLiking] = useState(false);
@@ -95,20 +98,13 @@ export const PostActions: React.FC<PostActionsProps> = memo(({
           trigger={commentTrigger}
         />
         
-        {/* Share Button */}
-        <button 
-          onClick={onShare}
-          className="flex items-center space-x-1.5 sm:space-x-2 text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <Repeat className="w-5 h-5" />
-          {!isMobile && post.shareCount && post.shareCount > 0 && (
-            <span className="font-medium text-sm tabular-nums">
-              {formatCount(post.shareCount)}
-            </span>
-          )}
-        </button>
+        {/* Repost Button */}
+        <RepostButton 
+          post={post as any} 
+          onRepostSuccess={onRepostSuccess}
+          showCount={true}
+        />
       </div>
-
       {/* Bookmark Button */}
       <button 
         onClick={onBookmark}

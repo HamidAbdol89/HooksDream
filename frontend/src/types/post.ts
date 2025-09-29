@@ -15,12 +15,27 @@ export interface Post {
   likeCount: number;
   commentCount: number;
   shareCount?: number;
+  repostCount?: number;
   isLiked?: boolean;
   isBookmarked?: boolean;
   userId: User;
   images?: string[];
   video?: string;
   comments?: Comment[];
+  // Repost fields
+  repost_of?: {
+    _id: string;
+    userId: User;
+    content: string;
+    createdAt: string;
+    likeCount: number;
+    commentCount: number;
+    shareCount?: number;
+    repostCount?: number;
+    images?: string[];
+    video?: string;
+    isDeleted?: boolean;
+  };
 }
 
 export interface Comment {

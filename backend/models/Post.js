@@ -129,6 +129,17 @@ const PostSchema = new mongoose.Schema({
         maxlength: 500,
         trim: true
     },
+    // Repost functionality - trỏ tới post gốc
+    repost_of: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Post',
+        default: null
+    },
+    // Đếm số lượng repost
+    repostCount: {
+        type: Number,
+        default: 0
+    },
     // Privacy settings
     visibility: {
         type: String,
@@ -197,8 +208,8 @@ PostSchema.methods.incrementView = async function() {
 
 // Method để tính engagement score
 PostSchema.methods.calculateEngagementScore = function() {
-    // Công thức đơn giản: likes * 2 + comments * 3 + shares * 5
-    this.engagementScore = (this.likeCount * 2) + (this.commentCount * 3) + (this.shareCount * 5);
+    // Công thức đơn giản: likes * 2 + comments * 3 + shares * 5 + reposts * 4
+    this.engagementScore = (this.likeCount * 2) + (this.commentCount * 3) + (this.shareCount * 5) + (this.repostCount * 4);
     return this.engagementScore;
 };
 
@@ -291,6 +302,13 @@ PostSchema.statics.getPublicPosts = function(page = 1, limit = 10) {
     })
     .populate('userId', 'username displayName avatar')
     .populate('originalPost')
+    .populate({
+        path: 'repost_of',
+        populate: {
+            path: 'userId',
+            select: 'username displayName avatar isVerified'
+        }
+    })
     .sort({ createdAt: -1 })
     .limit(limit * 1)
     .skip((page - 1) * limit);

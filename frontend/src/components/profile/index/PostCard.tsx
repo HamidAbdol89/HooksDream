@@ -9,6 +9,7 @@ import {
   LinkIcon,
   Bookmark,
   BookmarkCheck,
+  Repeat2,
 } from 'lucide-react';
 import { useLinkPreview, useUrlExtraction } from '@/hooks/useLinkPreview';
 import { LinkPreviews } from '../../posts/LinkPreview';
@@ -30,6 +31,7 @@ interface PostCardProps {
   onDelete: (postId: string) => void;
   onComment: (postId: string) => void;
   onShare: (postId: string) => void;
+  onRepost?: (postId: string) => void;
 }
 
 export const PostCard: React.FC<PostCardProps> = ({
@@ -40,7 +42,8 @@ export const PostCard: React.FC<PostCardProps> = ({
   onSave,
   onDelete,
   onComment,
-  onShare
+  onShare,
+  onRepost
 }) => {
   const [isSaved, setIsSaved] = useState(false);
   const [imageLoading, setImageLoading] = useState(post.images?.map(() => true) || []);
@@ -178,36 +181,72 @@ export const PostCard: React.FC<PostCardProps> = ({
     );
   };
 
+  // Check if this is a repost
+  const isRepost = !!post.repost_of;
+  const originalPost = post.repost_of;
+  const displayPost = isRepost ? originalPost : post;
+  const displayAuthor = isRepost ? originalPost?.userId : author;
+
   return (
     <Card className="border-0 border-b border-border/40 rounded-none bg-transparent hover:bg-muted/20 transition-colors duration-200 group w-full max-w-none">
-      <CardHeader className="pb-3 px-3 sm:px-6">
+      {/* Repost indicator */}
+      {isRepost && (
+        <div className="px-3 sm:px-6 pt-3 pb-2">
+          <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+            <Repeat2 className="h-4 w-4 text-green-600" />
+            <Avatar className="h-5 w-5 ring-1 ring-border">
+              <AvatarImage 
+                src={author.avatar} 
+                alt={author.displayName} 
+              />
+              <AvatarFallback className="text-xs bg-muted">
+                {author.displayName?.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <span className="text-muted-foreground">
+              <span className="font-semibold text-foreground hover:underline cursor-pointer">{author.displayName}</span> đã repost
+            </span>
+          </div>
+          
+          {/* Repost comment inline */}
+          {post.content && (
+            <div className="mt-2 ml-7 text-sm">
+              <p className="text-foreground leading-relaxed whitespace-pre-wrap break-words">
+                {detectAndFormatLinks(post.content)}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      <CardHeader className={`pb-3 px-3 sm:px-6 ${isRepost ? 'pt-2' : ''}`}>
         <div className="flex justify-between items-start gap-3">
           <div className="flex items-start gap-3 flex-1 min-w-0">
-     <Avatar className="h-10 w-10 sm:h-11 sm:w-11 ring-2 ring-background shadow-sm flex-shrink-0">
-            <AvatarImage 
-              src={author?.avatar ?? "/default-avatar.jpg"} 
-              alt={author?.username ?? "Anonymous"} 
-            />
-            <AvatarFallback className="font-semibold bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
-              {(author?.username?.charAt(0).toUpperCase()) ?? "?"}
-            </AvatarFallback>
-          </Avatar>
+            <Avatar className="h-10 w-10 sm:h-11 sm:w-11 ring-2 ring-background shadow-sm flex-shrink-0">
+              <AvatarImage 
+                src={displayAuthor?.avatar ?? "/default-avatar.jpg"} 
+                alt={displayAuthor?.username ?? "Anonymous"} 
+              />
+              <AvatarFallback className="font-semibold bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
+                {(displayAuthor?.username?.charAt(0).toUpperCase()) ?? "?"}
+              </AvatarFallback>
+            </Avatar>
 
             
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1 mb-1">
                 <h3 className="font-semibold text-foreground truncate text-sm sm:text-base">
-                  {author.displayName}
+                  {displayAuthor?.displayName}
                 </h3>
-                {author.isVerified && (
+                {displayAuthor?.isVerified && (
                   <Verified className="h-3 w-3 sm:h-4 sm:w-4 text-primary fill-primary/20 flex-shrink-0" />
                 )}
               </div>
               
               <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-                <span className="truncate">@{author.username}</span>
+                <span className="truncate">@{displayAuthor?.username}</span>
                 <span className="text-muted-foreground/60">·</span>
-                <time className="flex-shrink-0">{formatTimeAgo(post.createdAt)}</time>
+                <time className="flex-shrink-0">{formatTimeAgo(displayPost?.createdAt || post.createdAt)}</time>
               </div>
             </div>
           </div>
@@ -245,56 +284,126 @@ export const PostCard: React.FC<PostCardProps> = ({
                   </>
                 )}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onShare(post._id)} className="cursor-pointer">
-                <Share2 className="mr-2 h-4 w-4" />
-                Share post
-              </DropdownMenuItem>
+              {!isOwnProfile && !(isRepost && originalPost?.userId?._id === author._id) && (
+                <DropdownMenuItem 
+                  onClick={() => onRepost && onRepost(isRepost ? originalPost?._id || post._id : post._id)} 
+                  className="cursor-pointer"
+                >
+                  <Repeat2 className="mr-2 h-4 w-4" />
+                  Repost
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </CardHeader>
 
       <CardContent className="pt-0 px-3 sm:px-6">
-        {post.content && (
-          <div className="mb-4">
-            <p className="text-foreground leading-relaxed whitespace-pre-wrap text-sm sm:text-base break-words">
-              {detectAndFormatLinks(post.content)}
-            </p>
-          </div>
-        )}
-
-        {/* Link Previews */}
-        {previews.length > 0 && (
-          <div className="mb-4">
-            <LinkPreviews previews={previews} maxPreviews={2} />
-          </div>
-        )}
-
-        {/* Loading indicator for link previews */}
-        {isLoading && post.content && hasUrls(post.content) && (
-          <div className="mb-4 p-3 border border-dashed border-border rounded-lg">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              Loading link preview...
+        {/* Original post content or deleted message */}
+        {isRepost ? (
+          originalPost?.isDeleted ? (
+            <div className="mb-4 mx-3 sm:mx-6">
+              <div className="p-4 border border-dashed border-border/60 rounded-xl bg-muted/20 text-center">
+                <p className="text-muted-foreground italic text-sm">
+                  Bài gốc đã bị gỡ
+                </p>
+              </div>
             </div>
-          </div>
-        )}
-
-        {renderMediaGrid()}
-
-        {post.video && (
-          <div className="mb-4 -mx-3 sm:mx-0">
-            <div className="relative rounded-none sm:rounded-xl overflow-hidden bg-black">
-              <video 
-                controls 
-                className="w-full max-h-80 sm:max-h-96 object-contain"
-                poster=""
-              >
-                <source src={post.video} type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
+          ) : (
+            <div className="mb-4 mx-3 sm:mx-6">
+              <div className="border border-border/60 rounded-xl bg-card/50 overflow-hidden shadow-sm">
+                {originalPost?.content && (
+                  <div className="p-4 pb-2">
+                    <p className="text-foreground leading-relaxed whitespace-pre-wrap text-sm sm:text-base break-words">
+                      {detectAndFormatLinks(originalPost.content)}
+                    </p>
+                  </div>
+                )}
+                
+                {/* Original post media */}
+                {originalPost?.images && originalPost.images.length > 0 && (
+                  <div className={originalPost?.content ? "px-4 pb-4" : "p-0"}>
+                    <div className={`
+                      rounded-xl overflow-hidden border bg-muted/30
+                      ${originalPost.images.length === 1 ? '' : 
+                        originalPost.images.length === 2 ? 'grid grid-cols-2 gap-0.5' :
+                        'grid grid-cols-2 grid-rows-2 gap-0.5'
+                      }
+                    `}>
+                      {originalPost.images.slice(0, 4).map((image: string, index: number) => (
+                        <div key={index} className="relative group bg-muted/50 overflow-hidden aspect-square">
+                          <img
+                            src={image}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {originalPost?.video && (
+                  <div className={originalPost?.content ? "px-4 pb-4" : "p-0"}>
+                    <div className="relative rounded-xl overflow-hidden bg-black">
+                      <video 
+                        controls 
+                        className="w-full max-h-60 object-contain"
+                        poster=""
+                      >
+                        <source src={originalPost.video} type="video/mp4" />
+                        Your browser does not support the video tag.
+                      </video>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )
+        ) : (
+          <>
+            {post.content && (
+              <div className="mb-4">
+                <p className="text-foreground leading-relaxed whitespace-pre-wrap text-sm sm:text-base break-words">
+                  {detectAndFormatLinks(post.content)}
+                </p>
+              </div>
+            )}
+
+            {/* Link Previews */}
+            {previews.length > 0 && (
+              <div className="mb-4">
+                <LinkPreviews previews={previews} maxPreviews={2} />
+              </div>
+            )}
+
+            {/* Loading indicator for link previews */}
+            {isLoading && post.content && hasUrls(post.content) && (
+              <div className="mb-4 p-3 border border-dashed border-border rounded-lg">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  Loading link preview...
+                </div>
+              </div>
+            )}
+
+            {renderMediaGrid()}
+
+            {post.video && (
+              <div className="mb-4 -mx-3 sm:mx-0">
+                <div className="relative rounded-none sm:rounded-xl overflow-hidden bg-black">
+                  <video 
+                    controls 
+                    className="w-full max-h-80 sm:max-h-96 object-contain"
+                    poster=""
+                  >
+                    <source src={post.video} type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </CardContent>
 
@@ -351,15 +460,16 @@ export const PostCard: React.FC<PostCardProps> = ({
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    onClick={() => onShare(post._id)}
+                    onClick={() => onRepost && onRepost(isRepost ? originalPost?._id || post._id : post._id)}
                     className="rounded-full px-2 sm:px-3 py-1.5 sm:py-2 h-auto text-muted-foreground hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-950/20 transition-all duration-200"
+                    disabled={isOwnProfile || (isRepost && originalPost?.userId?._id === author._id)}
                   >
-                    <Share2 className="mr-1 sm:mr-1.5 h-4 w-4" />
-                    <span className="font-medium text-xs sm:text-sm">{formatNumber(post.shareCount ?? 0)}</span>
+                    <Repeat2 className="mr-1 sm:mr-1.5 h-4 w-4" />
+                    <span className="font-medium text-xs sm:text-sm">{formatNumber((isRepost ? originalPost?.repostCount : post.repostCount) ?? 0)}</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Share</p>
+                  <p>Repost</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>

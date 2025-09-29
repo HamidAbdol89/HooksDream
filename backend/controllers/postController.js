@@ -27,6 +27,13 @@ exports.getPosts = async (req, res) => {
         const posts = await Post.find(query)
             .populate('userId', 'username displayName avatar isVerified')
             .populate('originalPost')
+            .populate({
+                path: 'repost_of',
+                populate: {
+                    path: 'userId',
+                    select: 'username displayName avatar isVerified'
+                }
+            })
             .sort(sortOption)
             .limit(limit * 1)
             .skip((page - 1) * limit)
@@ -138,7 +145,14 @@ exports.getPost = async (req, res) => {
             isDeleted: false
         })
         .populate('userId', 'username displayName avatar isVerified')
-        .populate('originalPost');
+        .populate('originalPost')
+        .populate({
+            path: 'repost_of',
+            populate: {
+                path: 'userId',
+                select: 'username displayName avatar isVerified'
+            }
+        });
         
         if (!post) {
             return res.status(404).json({
@@ -323,6 +337,13 @@ exports.getUserPosts = async (req, res) => {
         const posts = await Post.find(query)
             .populate('userId', 'username displayName avatar isVerified')
             .populate('originalPost')
+            .populate({
+                path: 'repost_of',
+                populate: {
+                    path: 'userId',
+                    select: 'username displayName avatar isVerified'
+                }
+            })
             .sort({ createdAt: -1 })
             .limit(limit * 1)
             .skip((page - 1) * limit)
@@ -638,6 +659,110 @@ exports.getMultipleLinkPreviews = async (req, res) => {
             success: false,
             message: 'Failed to fetch link previews',
             error: error.message
+        });
+    }
+};
+
+// Repost một post
+exports.repostPost = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { content } = req.body; // Optional comment khi repost
+        
+        // Kiểm tra post gốc có tồn tại không
+        const originalPost = await Post.findOne({
+            _id: id,
+            isDeleted: false
+        });
+        
+        if (!originalPost) {
+            return res.status(404).json({
+                success: false,
+                message: 'Post not found'
+            });
+        }
+        
+        // Không cho phép repost post private
+        if (originalPost.visibility === 'private') {
+            return res.status(403).json({
+                success: false,
+                message: 'Cannot repost private post'
+            });
+        }
+        
+        // Không cho phép repost chính post của mình
+        if (originalPost.userId === req.userId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Cannot repost your own post'
+            });
+        }
+        
+        // Kiểm tra đã repost chưa
+        const existingRepost = await Post.findOne({
+            userId: req.userId,
+            repost_of: id,
+            isDeleted: false
+        });
+        
+        if (existingRepost) {
+            return res.status(400).json({
+                success: false,
+                message: 'You have already reposted this post'
+            });
+        }
+        
+        // Tạo repost
+        const repost = new Post({
+            userId: req.userId,
+            content: content || '', // Optional comment
+            repost_of: id,
+            visibility: 'public'
+        });
+        
+        await repost.save();
+        await repost.populate('userId', 'username displayName avatar isVerified');
+        await repost.populate({
+            path: 'repost_of',
+            populate: {
+                path: 'userId',
+                select: 'username displayName avatar isVerified'
+            }
+        });
+        
+        // Cập nhật repost count của post gốc
+        originalPost.repostCount += 1;
+        await originalPost.save();
+        
+        // Cập nhật post count của user
+        await User.findByIdAndUpdate(req.userId, { $inc: { postCount: 1 } });
+        
+        // Emit real-time event
+        if (global.socketServer) {
+            const repostData = {
+                repost: repost.toObject(),
+                originalPostId: id,
+                userId: req.userId,
+                timestamp: new Date().toISOString()
+            };
+            
+            // Broadcast to global feed
+            global.socketServer.io.to('feed:global').emit('post:reposted', repostData);
+            
+            // Broadcast to user's followers
+            global.socketServer.io.to(`user:${req.userId}:posts`).emit('post:reposted', repostData);
+        }
+        
+        res.status(201).json({
+            success: true,
+            message: 'Post reposted successfully',
+            data: repost
+        });
+        
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
         });
     }
 };

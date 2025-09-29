@@ -26,7 +26,6 @@ export const ProfilePageContent: React.FC = () => {
   const refreshTimeoutRef = useRef<NodeJS.Timeout>();
   
   const [activeTab, setActiveTab] = useState('posts');
-  const [viewMode, setViewMode] = useState('list');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isFollowersModalOpen, setIsFollowersModalOpen] = useState(false);
   const [isFollowingModalOpen, setIsFollowingModalOpen] = useState(false);
@@ -39,7 +38,7 @@ export const ProfilePageContent: React.FC = () => {
     profile,
     posts,
     mediaPosts,
-    likedPosts,
+    repostPosts,
     loading,
     postsLoading,
     error,
@@ -215,11 +214,9 @@ const handleCloseEditModal = () => {
         <ProfileTabs
           activeTab={activeTab}
           setActiveTab={setActiveTab}
-          viewMode={viewMode}
-          setViewMode={setViewMode}
           posts={posts}
           mediaPosts={mediaPosts}
-          likedPosts={likedPosts}
+          repostPosts={repostPosts}
           postsLoading={postsLoading}
           isOwnProfile={isOwnProfile}
           user={profileData}

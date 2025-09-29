@@ -9,7 +9,7 @@ export const useProfile = (userId: string, currentUserId?: string) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [mediaPosts, setMediaPosts] = useState<Post[]>([]);
-  const [likedPosts, setLikedPosts] = useState<Post[]>([]);
+  const [repostPosts, setRepostPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [postsLoading, setPostsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -103,9 +103,9 @@ export const useProfile = (userId: string, currentUserId?: string) => {
           );
           setMediaPosts(mediaPostsFiltered);
           
-          // Filter liked posts
-          const likedPostsFiltered = newPosts.filter((post: Post) => post.isLiked);
-          setLikedPosts(likedPostsFiltered);
+          // Filter repost posts (posts that have repost_of field)
+          const repostPostsFiltered = newPosts.filter((post: Post) => post.repost_of);
+          setRepostPosts(repostPostsFiltered);
         } else {
           // Thêm posts mới vào cuối danh sách
           setPosts(prev => [...prev, ...newPosts]);
@@ -116,9 +116,9 @@ export const useProfile = (userId: string, currentUserId?: string) => {
           );
           setMediaPosts(prev => [...prev, ...mediaPostsFiltered]);
           
-          // Thêm liked posts mới
-          const likedPostsFiltered = newPosts.filter((post: Post) => post.isLiked);
-          setLikedPosts(prev => [...prev, ...likedPostsFiltered]);
+          // Thêm repost posts mới
+          const repostPostsFiltered = newPosts.filter((post: Post) => post.repost_of);
+          setRepostPosts(prev => [...prev, ...repostPostsFiltered]);
         }
         
         setCurrentPage(page);
@@ -235,7 +235,7 @@ export const useProfile = (userId: string, currentUserId?: string) => {
 
         setPosts(updatePostInArray);
         setMediaPosts(updatePostInArray);
-        setLikedPosts(updatePostInArray);
+        setRepostPosts(updatePostInArray);
       }
     } catch (err) {
       throw err;
@@ -253,7 +253,7 @@ export const useProfile = (userId: string, currentUserId?: string) => {
 
         setPosts(removePostFromArray);
         setMediaPosts(removePostFromArray);
-        setLikedPosts(removePostFromArray);
+        setRepostPosts(removePostFromArray);
 
         // Update post count
         if (user && profile) {
@@ -379,7 +379,7 @@ export const useProfile = (userId: string, currentUserId?: string) => {
     profile, // ✅ Thêm profile để tương thích với useAppStore
     posts,
     mediaPosts,
-    likedPosts,
+    repostPosts,
     loading,
     postsLoading,
     error,
