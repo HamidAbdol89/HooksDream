@@ -11,7 +11,18 @@ class SocketServer {
                 methods: ["GET", "POST"],
                 credentials: true
             },
-            transports: ['websocket', 'polling']
+            transports: ['websocket', 'polling'],
+            // Fly.io optimizations
+            pingTimeout: 60000,
+            pingInterval: 25000,
+            upgradeTimeout: 30000,
+            maxHttpBufferSize: 1e6, // 1MB
+            allowEIO3: true,
+            // Connection state recovery for better reliability
+            connectionStateRecovery: {
+                maxDisconnectionDuration: 2 * 60 * 1000, // 2 minutes
+                skipMiddlewares: true,
+            }
         });
 
         this.connectedUsers = new Map(); // userId -> socketId

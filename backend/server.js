@@ -36,12 +36,25 @@ mongoose.connect(process.env.MONGODB_URI)
     process.exit(1);
   });
 
-// Route kiểm tra hệ thống
+// Enhanced health check for Fly.io
 app.get('/api/health', (req, res) => {
-  res.json({
+  const health = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
     db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-    cloudinary: cloudinary.config().cloud_name ? 'configured' : 'not configured'
-  });
+    cloudinary: cloudinary.config().cloud_name ? 'configured' : 'not configured',
+    socketConnections: global.socketServer ? global.socketServer.getConnectedUsersCount() : 0,
+    region: process.env.FLY_REGION || 'unknown'
+  };
+  
+  // Return 503 if critical services are down
+  if (health.db !== 'connected') {
+    return res.status(503).json({ ...health, status: 'error' });
+  }
+  
+  res.json(health);
 });
 
 // Import routes
