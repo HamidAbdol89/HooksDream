@@ -174,9 +174,12 @@ process.on('SIGTERM', () => {
   console.log('🛑 SIGTERM received, shutting down gracefully');
   server.close(() => {
     console.log('✅ Server closed');
-    mongoose.connection.close(false, () => {
+    mongoose.connection.close().then(() => {
       console.log('✅ Database connection closed');
       process.exit(0);
+    }).catch((err) => {
+      console.error('❌ Error closing database:', err);
+      process.exit(1);
     });
   });
 });
@@ -185,9 +188,12 @@ process.on('SIGINT', () => {
   console.log('🛑 SIGINT received, shutting down gracefully');
   server.close(() => {
     console.log('✅ Server closed');
-    mongoose.connection.close(false, () => {
+    mongoose.connection.close().then(() => {
       console.log('✅ Database connection closed');
       process.exit(0);
+    }).catch((err) => {
+      console.error('❌ Error closing database:', err);
+      process.exit(1);
     });
   });
 });
