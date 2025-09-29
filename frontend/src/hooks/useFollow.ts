@@ -21,7 +21,7 @@ export const useFollow = ({
   // Socket.IO for real-time updates
   const { onFollowUpdate, emitFollow } = useFollowSocket();
 
-  // Check follow status on mount
+  // Check follow status on mount - ONLY if no initial value provided
   useEffect(() => {
     const checkFollowStatus = async () => {
       try {
@@ -34,10 +34,11 @@ export const useFollow = ({
       }
     };
 
-    if (userId) {
+    // ✅ Only check if we don't have initial value
+    if (userId && initialIsFollowing === false && initialFollowerCount === 0) {
       checkFollowStatus();
     }
-  }, [userId]);
+  }, [userId, initialIsFollowing, initialFollowerCount]);
 
   // Listen for real-time follow updates
   useEffect(() => {
@@ -54,6 +55,10 @@ export const useFollow = ({
   const handleToggleFollow = useCallback(async () => {
     if (isLoading) return;
 
+    // ✅ Store original values for rollback
+    const originalIsFollowing = isFollowing;
+    const originalFollowerCount = followerCount;
+
     // Optimistic update
     const newIsFollowing = !isFollowing;
     const newFollowerCount = newIsFollowing ? followerCount + 1 : Math.max(0, followerCount - 1);
@@ -62,27 +67,26 @@ export const useFollow = ({
     setFollowerCount(newFollowerCount);
     setIsLoading(true);
 
-    // Emit to Socket.IO for real-time updates
-    emitFollow(userId, newIsFollowing, newFollowerCount);
-
     try {
       const response = await api.follow.toggleFollow(userId);
       
       if (response.success) {
-        // Update with server response
+        // ✅ Update with server response (more accurate)
         setIsFollowing(response.data.isFollowing);
         setFollowerCount(response.data.followerCount);
         
-        // Success - no toast needed
+        // ✅ Emit Socket AFTER successful API call
+        emitFollow(userId, response.data.isFollowing, response.data.followerCount);
+        
       } else {
         throw new Error(response.message || 'Follow action failed');
       }
     } catch (error) {
-      // Revert optimistic update on error
-      setIsFollowing(!newIsFollowing);
-      setFollowerCount(followerCount);
+      // ✅ Revert to original values on error
+      setIsFollowing(originalIsFollowing);
+      setFollowerCount(originalFollowerCount);
       
-      // Error - silent fail
+      console.error('Follow error:', error);
     } finally {
       setIsLoading(false);
     }

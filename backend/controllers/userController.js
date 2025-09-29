@@ -40,7 +40,11 @@ exports.getCurrentUserProfile = async (req, res) => {
 exports.getProfile = async (req, res) => {
     try {
         const { userId } = req.params;
-        const currentUserId = req.headers.authorization?.replace('Bearer ', '');
+        
+        // ✅ SỬA: Sử dụng optionalAuth middleware để có req.userId
+        const currentUserId = req.userId; // Từ optionalAuth middleware
+        
+        console.log(`🔍 getProfile: userId=${userId}, currentUserId=${currentUserId}`);
         
         const user = await User.findById(userId)
             .select('-__v')
@@ -54,12 +58,14 @@ exports.getProfile = async (req, res) => {
         
         // Check if current user is following this user
         let isFollowing = false;
-        if (currentUserId) {
+        if (currentUserId && currentUserId !== userId) {
+            const Follow = require('../models/Follow'); // ✅ Import Follow model
             const follow = await Follow.findOne({
                 follower: currentUserId,
                 following: userId
             });
             isFollowing = !!follow;
+            console.log(`👥 Follow check: ${currentUserId} -> ${userId} = ${isFollowing}`);
         }
         
         // Thêm isFollowing vào response
@@ -69,9 +75,12 @@ exports.getProfile = async (req, res) => {
             isOwnProfile: currentUserId === userId
         };
         
+        console.log(`✅ Profile response: isFollowing=${isFollowing}, isOwnProfile=${userProfile.isOwnProfile}`);
+        
         res.json(createResponse(true, 'User profile retrieved successfully', userProfile));
         
     } catch (error) {
+        console.error('❌ getProfile error:', error);
         res.status(500).json(
             createResponse(false, 'Internal server error', null, null, 500)
         );

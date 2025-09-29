@@ -681,11 +681,28 @@ export const api = {
 
   // Follow API
   follow: {
-    // Toggle follow/unfollow (backend handles both)
+    // ✅ OPTIMIZED: Direct API call without queue for follow actions
     toggleFollow: async (userId: string) => {
-      return apiCall(`/api/users/${userId}/follow`, {
+      const url = `${API_BASE_URL}/api/users/${userId}/follow`;
+      const headers = getAuthHeaders();
+      
+      const response = await fetch(url, {
         method: 'POST',
+        headers,
       });
+      
+      if (!response.ok) {
+        let errorMessage;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || `HTTP error! status: ${response.status}`;
+        } catch {
+          errorMessage = `HTTP error! status: ${response.status} - ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      return await response.json();
     },
 
     // Legacy methods for backward compatibility
@@ -701,11 +718,21 @@ export const api = {
       });
     },
 
-    // Check follow status
+    // ✅ OPTIMIZED: Direct API call for status check
     checkFollowStatus: async (userId: string) => {
-      return apiCall(`/api/users/${userId}/follow/status`, {
+      const url = `${API_BASE_URL}/api/users/${userId}/follow/status`;
+      const headers = getAuthHeaders();
+      
+      const response = await fetch(url, {
         method: 'GET',
+        headers,
       });
+      
+      if (!response.ok) {
+        throw new Error(`Status check failed: ${response.status}`);
+      }
+
+      return await response.json();
     },
 
     getFollowers: async (userId: string, params: { page?: number; limit?: number } = {}) => {

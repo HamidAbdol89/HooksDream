@@ -35,7 +35,7 @@ const upload = multer({
 // Routes
 // Note: Login is now handled by /api/auth/google/login
 router.get('/profile/me', authMiddleware, userController.getCurrentUserProfile);
-router.get('/profile/:userId', userController.getProfile);
+router.get('/profile/:userId', optionalAuth, userController.getProfile); // ✅ THÊM optionalAuth
 router.put('/profile/:hashId', updateLimiter, upload.fields([
     { name: 'avatar', maxCount: 1 },
     { name: 'coverImage', maxCount: 1 }

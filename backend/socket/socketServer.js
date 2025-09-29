@@ -209,14 +209,25 @@ class SocketServer {
 
             // Handle follow/unfollow events
             socket.on('user:follow', (data) => {
-                // Broadcast follow event to target user and followers
-                socket.to(`user:${data.targetUserId}`).emit('user:follow:update', {
+                // ✅ Broadcast to ALL users, not just target user
+                const followData = {
                     followerId: socket.userId,
                     targetUserId: data.targetUserId,
+                    followingId: data.targetUserId, // ✅ Add for compatibility
                     isFollowing: data.isFollowing,
                     followerCount: data.followerCount,
+                    type: data.isFollowing ? 'follow' : 'unfollow',
                     timestamp: new Date().toISOString()
-                });
+                };
+
+                // Broadcast to target user
+                socket.to(`user:${data.targetUserId}`).emit('user:follow:update', followData);
+                
+                // ✅ Broadcast to ALL connected users for real-time updates
+                socket.broadcast.emit('user:follow:update', followData);
+                
+                // ✅ Also emit to current user for consistency
+                socket.emit('user:follow:update', followData);
             });
 
             // Handle typing indicators for comments
