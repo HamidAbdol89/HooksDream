@@ -2,16 +2,31 @@ const webpush = require('web-push');
 
 class PushNotificationService {
   constructor() {
-    // Configure web-push with VAPID keys
-    webpush.setVapidDetails(
-      process.env.VAPID_SUBJECT || 'mailto:admin@hooksdream.com',
-      process.env.VAPID_PUBLIC_KEY,
-      process.env.VAPID_PRIVATE_KEY
-    );
+    // Configure web-push with VAPID keys only if they exist and are valid
+    if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+      try {
+        webpush.setVapidDetails(
+          process.env.VAPID_SUBJECT || 'mailto:admin@hooksdream.com',
+          process.env.VAPID_PUBLIC_KEY,
+          process.env.VAPID_PRIVATE_KEY
+        );
+        console.log('✅ Push notifications configured');
+      } catch (error) {
+        console.warn('⚠️  Push notifications disabled - Invalid VAPID keys:', error.message);
+        this.disabled = true;
+      }
+    } else {
+      console.warn('⚠️  Push notifications disabled - VAPID keys not found');
+      this.disabled = true;
+    }
   }
 
   // Send notification to a single subscription
   async sendNotification(subscription, payload, options = {}) {
+    if (this.disabled) {
+      return { success: false, error: 'Push notifications disabled' };
+    }
+
     try {
       const defaultOptions = {
         TTL: 24 * 60 * 60, // 24 hours
