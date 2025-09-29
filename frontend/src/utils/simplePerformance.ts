@@ -30,10 +30,13 @@ class SimplePerformanceMonitor {
   }
 
   private logMetric(name: string, value: number, unit: string = 'ms') {
-    const rating = this.getRating(name, value);
-    const color = rating === 'good' ? '🟢' : rating === 'needs-improvement' ? '🟡' : '🔴';
-    
-    console.log(`${color} ${name}: ${value.toFixed(2)}${unit} (${rating})`);
+    // Disabled in production for performance
+    if (process.env.NODE_ENV === 'development') {
+      const rating = this.getRating(name, value);
+      const color = rating === 'good' ? '🟢' : rating === 'needs-improvement' ? '🟡' : '🔴';
+      
+      console.log(`${color} ${name}: ${value.toFixed(2)}${unit} (${rating})`);
+    }
   }
 
   private getRating(metricName: string, value: number): 'good' | 'needs-improvement' | 'poor' {
@@ -84,7 +87,7 @@ class SimplePerformanceMonitor {
       performance.measure(name, `${name}-start`, `${name}-end`);
       
       const measure = performance.getEntriesByName(name, 'measure')[0];
-      if (measure) {
+      if (measure && process.env.NODE_ENV === 'development') {
         console.log(`⏱️ ${name}: ${measure.duration.toFixed(2)}ms`);
       }
     }
@@ -95,7 +98,7 @@ class SimplePerformanceMonitor {
     this.metrics.renderTime = renderTime;
     this.notifyListeners();
     
-    if (renderTime > 16) { // More than one frame (60fps)
+    if (renderTime > 16 && process.env.NODE_ENV === 'development') { // More than one frame (60fps)
       console.warn(`⚠️ Slow render: ${componentName} took ${renderTime.toFixed(2)}ms`);
     }
     
@@ -104,11 +107,13 @@ class SimplePerformanceMonitor {
 
   // Track API call performance
   public trackAPICall(endpoint: string, duration: number, success: boolean) {
-    const status = success ? '✅' : '❌';
-    console.log(`${status} API ${endpoint}: ${duration.toFixed(2)}ms`);
-    
-    if (duration > 1000) {
-      console.warn(`⚠️ Slow API call: ${endpoint} took ${duration.toFixed(2)}ms`);
+    if (process.env.NODE_ENV === 'development') {
+      const status = success ? '✅' : '❌';
+      console.log(`${status} API ${endpoint}: ${duration.toFixed(2)}ms`);
+      
+      if (duration > 1000) {
+        console.warn(`⚠️ Slow API call: ${endpoint} took ${duration.toFixed(2)}ms`);
+      }
     }
   }
 
@@ -123,10 +128,12 @@ class SimplePerformanceMonitor {
       this.metrics.memoryUsage = usedMB;
       this.notifyListeners();
       
-      console.log(`🧠 Memory: ${usedMB}MB / ${totalMB}MB (limit: ${limitMB}MB)`);
-      
-      if (usedMB > limitMB * 0.8) {
-        console.warn('⚠️ High memory usage detected');
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🧠 Memory: ${usedMB}MB / ${totalMB}MB (limit: ${limitMB}MB)`);
+        
+        if (usedMB > limitMB * 0.8) {
+          console.warn('⚠️ High memory usage detected');
+        }
       }
     }
   }

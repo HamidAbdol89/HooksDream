@@ -1,326 +1,88 @@
-// src/pages/Feed.tsx - OPTIMIZED FOR MOBILE
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+// src/pages/Feed.tsx - CACHED VERSION with React Query + Scroll Restoration
+import React, { useCallback, useEffect } from 'react';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import { useSocial } from '@/hooks/useSocial';
-import { api, userApi } from '@/services/api';
 import { FeedContainer } from '@/components/feed/Feed';
-import { Post } from '@/types/post';
+import { useFeedQuery, useFeedActions } from '@/hooks/useFeedQuery';
+import { useFeedScrollRestoration } from '@/hooks/useScrollRestoration';
 import { useTranslation } from 'react-i18next';
+import { Post } from '@/types/post';
 
 export const Feed: React.FC = () => {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const { isConnected, profile } = useGoogleAuth();
-  const { useCurrentProfile, prefetchProfile, toggleFollow, isFollowLoading } = useSocial();
+  const { useCurrentProfile, toggleFollow, isFollowLoading } = useSocial();
   const { data: currentProfileData, isLoading: isCurrentProfileLoading } = useCurrentProfile();
   const currentUserProfile = currentProfileData?.data;
-  const [currentPage, setCurrentPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const { t } = useTranslation('common');
-  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 🔥 Optimized load posts - Bỏ API call cho mỗi post
-  const loadPosts = async (resetData = false) => {
-    try {
-      setError(null);
-      if (resetData) {
-        setLoading(true);
-        setCurrentPage(1);
-        setHasMore(true);
-      }
-      
-      // 🔥 Set timeout để tránh loading vô tận trên mobile
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
-      }
-      
-      loadingTimeoutRef.current = setTimeout(() => {
-        if (loading) {
-          console.warn('⚠️ Loading timeout - force stop loading');
-          setLoading(false);
-          setIsRefreshing(false);
-          setIsLoadingMore(false);
-        }
-      }, 15000); // 15s timeout
-      
-      const response = await api.post.getPosts({ 
-        page: resetData ? 1 : currentPage, 
-        limit: 10, 
-        sort: 'latest' 
-      });
-      
-      if (response.success) {
-        const newPosts = response.data;
-        
-        // 🔥 Chỉ prefetch, không await - Tránh blocking
-        newPosts.forEach((post: Post) => {
-          if (post.userId?._id) {
-            prefetchProfile(post.userId._id);
-          }
-        });
+  // ✅ Use cached feed query instead of manual state management
+  const {
+    posts,
+    isLoading,
+    isLoadingMore,
+    isError,
+    error,
+    hasMore,
+    loadMore,
+    likePost,
+    deletePost,
+    refresh,
+    isLiking,
+    isDeleting
+  } = useFeedQuery();
 
-        // 🔥 BỎ phần fetch follow status cho từng post - quá nặng cho mobile
-        // Thay vào đó, sẽ lazy load khi user scroll đến
-        
-        if (resetData) {
-          setPosts(newPosts);
-        } else {
-          setPosts(prevPosts => {
-            const existingIds = new Set(prevPosts.map(p => p._id));
-            const uniqueNewPosts = newPosts.filter((post: Post) => !existingIds.has(post._id));
-            return [...prevPosts, ...uniqueNewPosts];
-          });
-        }
-        
-        setHasMore(newPosts.length === 10);
-        
-        if (!resetData) {
-          setCurrentPage(prev => prev + 1);
-        }
-      } else {
-        setError(response.message || t('feed.error.loading'));
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('feed.error.loading'));
-      console.error('Load posts error:', err);
-    } finally {
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
-      }
-      setLoading(false);
-      setIsRefreshing(false);
-      setIsLoadingMore(false);
-    }
-  };
+  const { addNewPost } = useFeedActions();
 
+  // ✅ Scroll restoration for better UX
+  const { restoreFeedScroll, hasScrollPosition } = useFeedScrollRestoration();
 
-  // 🔥 Optimized load more with throttling
-  const loadMorePosts = useCallback(async () => {
-    if (isLoadingMore || !hasMore || loading) return;
-    
-    console.log('🔄 Loading more posts, page:', currentPage);
-    setIsLoadingMore(true);
-    
-    try {
-      const response = await api.post.getPosts({ 
-        page: currentPage, 
-        limit: 10, 
-        sort: 'latest' 
-      });
-      
-      if (response.success) {
-        const newPosts = response.data;
-        
-        // 🔥 Background prefetch - không blocking
-        newPosts.forEach((post: Post) => {
-          if (post.userId?._id) {
-            prefetchProfile(post.userId._id);
-          }
-        });
-        
-        setPosts(prevPosts => {
-          const existingIds = new Set(prevPosts.map(p => p._id));
-          const uniqueNewPosts = newPosts.filter((post: Post) => !existingIds.has(post._id));
-          return [...prevPosts, ...uniqueNewPosts];
-        });
-        
-        setHasMore(newPosts.length === 10);
-        setCurrentPage(prev => prev + 1);
-        // 🔍 DEBUG: Log posts data structure (commented for performance)
-        // console.log('📊 Posts data:', newPosts);
-        // console.log('📊 First post structure:', newPosts[0]);
-        // if (newPosts[0]?.images) {
-        //   console.log('📊 First post images:', newPosts[0].images);
-        // }
-      }
-    } catch (err) {
-      console.error('❌ Load more error:', err);
-      setHasMore(false);
-    } finally {
-    }
-  }, [currentPage, hasMore, isLoadingMore, loading, prefetchProfile]);
-
-  // 🔥 Chỉ load một lần khi mount
+  // ✅ Restore scroll position when data is loaded
   useEffect(() => {
-    let mounted = true;
-    
-    const initializeFeed = async () => {
-      if (!mounted) return;
+    if (!isLoading && posts.length > 0) {
+      // Small delay to ensure DOM is rendered
+      const timeoutId = setTimeout(() => {
+        restoreFeedScroll(true);
+      }, 50);
       
-      try {
-        // Load posts trước - quan trọng nhất
-        await loadPosts(true);
-      } catch (err) {
-        console.error('Initialize feed error:', err);
-        if (mounted) {
-          setLoading(false);
-          setError('Failed to load feed');
-        }
-      }
-    };
-
-    initializeFeed();
-    
-    return () => {
-      mounted = false;
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
-      }
-    };
-  }, []); // 🔥 Empty dependency array - chỉ chạy một lần
-
-  // 🔥 Enhanced like handler with optimistic updates
-  const handleLike = async (postId: string) => {
-    if (!isConnected) return;
-    
-    // Optimistic update
-    setPosts(prevPosts => 
-      prevPosts.map(post => 
-        post._id === postId 
-          ? { 
-              ...post, 
-              isLiked: !post.isLiked,
-              likeCount: post.isLiked ? post.likeCount - 1 : post.likeCount + 1
-            }
-          : post
-      )
-    );
-    
-    try {
-      const response = await api.post.toggleLike(postId);
-      
-      if (response.success) {
-        // Update with real data
-        setPosts(prevPosts => 
-          prevPosts.map(post => 
-            post._id === postId 
-              ? { 
-                  ...post, 
-                  isLiked: response.data.isLiked,
-                  likeCount: response.data.likeCount 
-                }
-              : post
-          )
-        );
-      } else {
-        // Revert optimistic update on error
-        setPosts(prevPosts => 
-          prevPosts.map(post => 
-            post._id === postId 
-              ? { 
-                  ...post, 
-                  isLiked: !post.isLiked,
-                  likeCount: post.isLiked ? post.likeCount + 1 : post.likeCount - 1
-                }
-              : post
-          )
-        );
-      }
-    } catch (err) {
-      console.error('Like error:', err);
-      // Revert optimistic update on error
-      setPosts(prevPosts => 
-        prevPosts.map(post => 
-          post._id === postId 
-            ? { 
-                ...post, 
-                isLiked: !post.isLiked,
-                likeCount: post.isLiked ? post.likeCount + 1 : post.likeCount - 1
-              }
-            : post
-        )
-      );
+      return () => clearTimeout(timeoutId);
     }
-  };
+  }, [isLoading, posts.length, restoreFeedScroll]);
 
-  // 🔥 Enhanced follow handler with optimistic updates
-  const handleFollowUser = async (userId: string, currentStatus: boolean) => {
+  // ✅ Enhanced follow handler with optimistic updates
+  const handleFollowUser = useCallback(async (userId: string, currentStatus: boolean) => {
     if (!isConnected || isFollowLoading) return;
-    
-    // Optimistic update
-    setPosts(prevPosts => 
-      prevPosts.map(post => 
-        post.userId._id === userId 
-          ? { 
-              ...post, 
-              userId: {
-                ...post.userId,
-                isFollowing: !currentStatus
-              }
-            }
-          : post
-      )
-    );
-    
     
     try {
       await toggleFollow(userId, currentStatus);
     } catch (err) {
       console.error('Follow error:', err);
-      
-      // Revert optimistic update on error
-      setPosts(prevPosts => 
-        prevPosts.map(post => 
-          post.userId._id === userId 
-            ? { 
-                ...post, 
-                userId: {
-                  ...post.userId,
-                  isFollowing: currentStatus
-                }
-              }
-            : post
-        )
-      );
-      
     }
-  };
+  }, [isConnected, isFollowLoading, toggleFollow]);
 
-  const handlePostCreated = useCallback((newPost: any) => {
-    console.log('🔄 New post created:', newPost);
-    setPosts(prevPosts => [newPost, ...prevPosts]);
-  }, []);
-
-  // 🔥 Throttled refresh
-  const handleRefresh = useCallback(async () => {
-    if (isRefreshing) return;
-    
-    setIsRefreshing(true);
-    try {
-      await loadPosts(true);
-    } catch (err) {
-      console.error('Refresh error:', err);
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [isRefreshing]);
-
-  const currentUserHashId = localStorage.getItem('user_hash_id') || undefined;
+  const handlePostCreated = useCallback((newPost: Post) => {
+    addNewPost(newPost);
+  }, [addNewPost]);
 
   const handlePostUpdate = useCallback((updatedPost: Post) => {
-    setPosts(prev => prev.map(p => 
-      p._id === updatedPost._id 
-        ? { ...p, ...updatedPost }
-        : p
-    ));
-  }, []);
+    // This will be handled by React Query cache invalidation
+    refresh();
+  }, [refresh]);
+
+  const currentUserHashId = localStorage.getItem('user_hash_id') || undefined;
 
   return (
     <FeedContainer
       currentUserHashId={currentUserHashId} 
       posts={posts}
-      loading={loading || isCurrentProfileLoading}
-      error={error}
-      isRefreshing={isRefreshing}
+      loading={isLoading || isCurrentProfileLoading}
+      error={isError ? (error?.message || 'Failed to load feed') : null}
+      isRefreshing={false} // React Query handles this internally
       hasMore={hasMore}
       isLoadingMore={isLoadingMore}
       currentUserProfile={currentUserProfile}
-      onRefresh={handleRefresh}
-      onLoadMore={loadMorePosts}
-      onLike={handleLike}
+      onRefresh={refresh}
+      onLoadMore={loadMore}
+      onLike={likePost}
       onFollow={handleFollowUser}
       onPostCreated={handlePostCreated}
       onPostUpdate={handlePostUpdate}

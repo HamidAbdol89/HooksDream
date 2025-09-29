@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { UserCard } from './UserCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -96,33 +96,27 @@ export const FollowerListModal: React.FC<FollowerListModalProps> = ({
     },
   });
 
-  // Helper function to get consistent user ID
   const getUserId = (user: any): string => {
     return user._id || user.id || '';
   };
 
   // Kết hợp dữ liệu để có trạng thái isFollowing chính xác
   const usersWithStatus = React.useMemo(() => {
-    console.log('📊 Processing users data:', { usersData, currentUserFollowing, currentUserId });
-    
     if (!usersData || !Array.isArray(usersData)) {
-      console.log('❌ No users data or not array');
       return [];
     }
 
-    // Get following IDs with better error handling
-    const currentUserFollowingIds = currentUserFollowing && Array.isArray(currentUserFollowing) 
-      ? currentUserFollowing.map((user: any) => getUserId(user)).filter(Boolean)
-      : [];
+    // Get following IDs with better error handling - use Set for O(1) lookup
+    const currentUserFollowingIds = new Set(
+      currentUserFollowing && Array.isArray(currentUserFollowing) 
+        ? currentUserFollowing.map((user: any) => getUserId(user)).filter(Boolean)
+        : []
+    );
     
-    console.log('👥 Current user following IDs:', currentUserFollowingIds);
-
     const processedUsers = usersData.map((user: any) => {
       const userId = getUserId(user);
-      const isFollowing = currentUserFollowingIds.includes(userId);
+      const isFollowing = currentUserFollowingIds.has(userId);
       const isOwnProfile = userId === currentUserId;
-      
-      console.log(`👤 Processing user: ${user.username || user.name} (${userId}) - Following: ${isFollowing}, Own: ${isOwnProfile}`);
       
       return {
         ...user,
@@ -138,7 +132,6 @@ export const FollowerListModal: React.FC<FollowerListModalProps> = ({
       };
     });
 
-    console.log('✅ Processed users:', processedUsers);
     return processedUsers;
   }, [usersData, currentUserFollowing, currentUserId]);
 
@@ -212,11 +205,9 @@ export const FollowerListModal: React.FC<FollowerListModalProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md md:max-w-lg w-[92vw] md:w-full mx-auto rounded-2xl md:rounded-lg">
-        <DialogHeader className="pb-2 md:pb-4">
-          <DialogTitle className="text-center text-base md:text-xl font-medium">
-            {type === 'followers' ? 'Followers' : 'Following'}
-          </DialogTitle>
-        </DialogHeader>
+        <DialogTitle className="text-center text-base md:text-xl font-medium pb-2 md:pb-4">
+          {type === 'followers' ? 'Followers' : 'Following'}
+        </DialogTitle>
         
         {/* Mobile: chiều cao nhỏ hơn, desktop giữ nguyên */}
         <div className="max-h-[70vh] md:max-h-96 overflow-y-auto">

@@ -5,11 +5,13 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAppStore } from '@/store/useAppStore';
-import { useEditProfile } from '@/hooks/useEditProfile';
-import { ActiveTab, PROFILE_API } from '@/types/profile';
+import { useSuccessToast } from '@/components/ui/SuccessToast';
+import { ProfileFormData, ProfileFormErrors, ActiveTab, VALIDATION_RULES } from '@/types/profile';
+import { validateProfile } from '@/utils/profileValidation';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import { MobileEditLayout } from '@/components/profile/edit/MobileEditLayout';
 import { PageTransition } from '@/components/ui/PageTransition';
-import { useSuccessToast } from '@/components/ui/SuccessToast';
+import { useEditProfile } from '@/hooks/useEditProfile';
 
 // Import form components
 import { BasicInfoForm } from '@/components/profile/edit/forms/BasicInfoForm';
@@ -23,23 +25,13 @@ export default function EditProfilePage() {
   const { user: currentUser, updateUser } = useAppStore();
   const [activeTab, setActiveTab] = useState<ActiveTab>('basic');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const isMobile = useIsMobile(); // ✅ Use centralized hook
   const { showSuccess } = useSuccessToast();
 
   // Check if user can edit this profile
   const canEdit = !address || address === currentUser?.hashId || address === currentUser?.username || address === 'me';
 
-  // ✅ Detect mobile device
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  // Mobile detection handled by useIsMobile hook
 
   // Real API save function
   const handleSave = async (updatedData: any) => {

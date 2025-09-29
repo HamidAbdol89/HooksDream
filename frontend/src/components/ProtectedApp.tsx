@@ -1,5 +1,5 @@
 // ProtectedApp.tsx
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { useAppStore } from "@/store/useAppStore";
 import ModernAuthConnect from "@/components/auth/ModernAuthConnect";
@@ -18,24 +18,15 @@ import { UnfollowConfirmProvider } from "@/contexts/UnfollowConfirmContext";
 import { ChatProvider, useChatContext } from "@/contexts/ChatContext";
 import { useSocket } from "@/hooks/useSocket";
 import { ToastProvider } from "@/components/ui/SuccessToast";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 const ProtectedAppContent: React.FC = () => {
   const { isConnected, user } = useAppStore();
   const location = useLocation();
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const isMobile = useIsMobile(); // ✅ Use centralized hook
   
   // Initialize Socket connection
   const { isConnected: socketConnected, connectionError } = useSocket();
-  
-  // Track mobile breakpoint
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
   
   // Check if current page should hide sidebars
   const isMessagesPage = location.pathname === '/messages';

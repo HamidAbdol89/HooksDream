@@ -49,12 +49,15 @@ export const useFeedQuery = () => {
     },
     initialPageParam: 1,
     
-    // 🚀 CACHING STRATEGY for Feed
+    // 🚀 ENHANCED CACHING STRATEGY for Feed + Scroll Restoration
     staleTime: 2 * 60 * 1000,    // 2 minutes - Fresh content but not too aggressive
     gcTime: 10 * 60 * 1000,      // 10 minutes - Keep in cache longer
     refetchOnWindowFocus: true,   // Refresh when user comes back
-    refetchOnMount: true,         // Always fresh on mount
+    refetchOnMount: 'always',     // Always check for fresh data but show cached first
     refetchInterval: false,       // No auto-refresh (user-controlled)
+    
+    // ✅ Enhanced for scroll restoration
+    notifyOnChangeProps: ['data', 'error'], // Only re-render when data/error changes
   });
 
   // Flatten posts from all pages

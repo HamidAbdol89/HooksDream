@@ -17,7 +17,7 @@ const App: React.FC = () => {
   useEffect(() => {
     if (authState === AuthState.SUCCESS && isConnected && user && !initializationRef.current) {
       initializationRef.current = true;
-      console.log(' Modern auth system: User authenticated and data loaded');
+      // Modern auth system: User authenticated and data loaded
       
       // Reset after component lifecycle
       return () => {

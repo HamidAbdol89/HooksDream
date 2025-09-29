@@ -18,6 +18,11 @@ export const ProfilePageContent: React.FC = () => {
   
   // ✅ Hook Web3Auth để có refreshUserData
   const { isConnected } = useGoogleAuth();
+
+  // ✅ Scroll to top khi navigate đến profile page
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [userId]); // Dependency array với userId để scroll khi chuyển giữa các profile khác nhau
   
   const possibleCurrentUserId = currentUser?._id || currentUser?.id;
   
@@ -85,11 +90,6 @@ const handleEditProfile = async () => {
   setIsEditingProfile(true);
   console.log('Edit profile started - Web3Auth sync disabled');
 };
-  const handleFollow = () => {
-    if (user?._id) {
-      toggleFollow();
-    }
-  };
 
   const handleLikePost = (postId: string) => {
     togglePostLike(postId);
@@ -205,7 +205,6 @@ const handleCloseEditModal = () => {
           user={profileData}
           isOwnProfile={isOwnProfile}
           onEditProfile={handleEditProfile}
-          onFollow={handleFollow}
           onOpenFollowers={handleOpenFollowers}
           onOpenFollowing={handleOpenFollowing}
         />

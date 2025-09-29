@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar';
 interface ProfileAvatarProps {
   avatar?: string;
   displayName: string;
+  className?: string;
 }
 
 export const ProfileAvatar: React.FC<ProfileAvatarProps> = ({

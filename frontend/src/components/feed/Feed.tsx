@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { CreatePostModal } from '../posts/CreatePostModal';
 import { FeedHeader } from './FeedHeader';
 import { PostList } from './PostList';
+import { VirtualPostList } from './VirtualPostList';
 import { LoadingState } from './LoadingState';
 import { ErrorState } from './ErrorState';
 import { EmptyState } from './EmptyState';
@@ -30,6 +31,8 @@ interface FeedContainerProps {
   isConnected: boolean;
   currentUserHashId?: string;
   currentUser?: UserProfile;
+  // ✅ Performance option
+  useVirtualScrolling?: boolean;
 }
 
 export const FeedContainer: React.FC<FeedContainerProps> = React.memo(({
@@ -46,7 +49,8 @@ export const FeedContainer: React.FC<FeedContainerProps> = React.memo(({
   onFollow,
   onPostCreated,
   onPostUpdate,
-  currentUserHashId
+  currentUserHashId,
+  useVirtualScrolling = false // ❌ Temporarily disable virtual scrolling for debugging
 }) => {
   const { t } = useTranslation('common');
   const { profile } = useGoogleAuth();
@@ -97,6 +101,21 @@ export const FeedContainer: React.FC<FeedContainerProps> = React.memo(({
             <ErrorState error={error} onRetry={onRefresh} />
           ) : posts.length === 0 ? (
             <EmptyState onCreatePost={handleCreatePost} />
+          ) : useVirtualScrolling ? (
+            <VirtualPostList
+              posts={posts}
+              hasMore={hasMore}
+              isLoadingMore={isLoadingMore}
+              isRefreshing={isRefreshing}
+              onLoadMore={onLoadMore}
+              onRefresh={onRefresh}
+              onLike={onLike}
+              onFollow={onFollow}
+              onPostUpdate={onPostUpdate}
+              isFollowLoading={isFollowLoading}
+              currentUserHashId={currentUserHashId}
+              currentUser={currentUserProfile}
+            />
           ) : (
             <PostList
               posts={posts}

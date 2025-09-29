@@ -33,7 +33,10 @@ interface PostCardProps {
   isFollowLoading?: boolean;
   currentUserHashId?: string; 
   currentUser?: UserProfile;
-  onPostUpdate?: (updatedPost: Post) => void; // THÊM PROP MỚI
+  onPostUpdate?: (updatedPost: Post) => void;
+  // ✅ Performance props for virtual scrolling
+  isVisible?: boolean;
+  priority?: 'high' | 'normal' | 'low';
 }
 
 export const PostCard: React.FC<PostCardProps> = memo(({ 
@@ -46,7 +49,10 @@ export const PostCard: React.FC<PostCardProps> = memo(({
   isFollowLoading = false,
   currentUserHashId,
   currentUser,
-  onPostUpdate // NHẬN PROP MỚI
+  onPostUpdate,
+  // ✅ Performance props
+  isVisible = true,
+  priority = 'normal'
 }) => {
   const {
     isExpanded,
