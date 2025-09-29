@@ -14,13 +14,17 @@ cloudinary.config();
 
 // Middleware
 app.use(cors({
-origin: [
-  'http://localhost:3000',
-  'http://localhost:5173',
-  'https://hooksdream.vercel.app',
-],
-
-  credentials: true
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'https://hooksdream.vercel.app',
+    'https://hooksdream.netlify.app',
+    /^https:\/\/.*\.vercel\.app$/,
+    /^https:\/\/.*\.netlify\.app$/
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Tăng giới hạn kích thước request cho upload file lớn
@@ -91,5 +95,40 @@ global.socketServer = socketServer;
 
 // Khởi động server
 const PORT = process.env.PORT || 8080;
-server.listen(PORT, () => {
+const HOST = process.env.HOST || '0.0.0.0';
+
+server.listen(PORT, HOST, () => {
+  console.log(`🚀 Server running on ${HOST}:${PORT}`);
+  console.log(`📡 Socket.IO ready for connections`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🗄️  Database: ${mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'}`);
+});
+
+// Error handling
+server.on('error', (error) => {
+  console.error('❌ Server error:', error);
+  process.exit(1);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('🛑 SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    console.log('✅ Server closed');
+    mongoose.connection.close(false, () => {
+      console.log('✅ Database connection closed');
+      process.exit(0);
+    });
   });
+});
+
+process.on('SIGINT', () => {
+  console.log('🛑 SIGINT received, shutting down gracefully');
+  server.close(() => {
+    console.log('✅ Server closed');
+    mongoose.connection.close(false, () => {
+      console.log('✅ Database connection closed');
+      process.exit(0);
+    });
+  });
+});
