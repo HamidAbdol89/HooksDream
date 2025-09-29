@@ -77,7 +77,11 @@ const checkRateLimit = (endpoint: string): boolean => {
 
 // Auth headers helper
 const getAuthHeaders = (): HeadersInit => {
-  const token = localStorage.getItem('user_hash_id') || localStorage.getItem('auth_token');
+  // Priority: JWT token first, then fallbacks
+  const token = localStorage.getItem('auth_token') || 
+                localStorage.getItem('user_hash_id') || 
+                localStorage.getItem('token');
+  
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
   };

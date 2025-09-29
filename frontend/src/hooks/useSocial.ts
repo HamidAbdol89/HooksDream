@@ -107,10 +107,13 @@ export const socialQueryKeys = {
 
 // Helper functions
 const fetchWithAuth = async <T>(url: string, options: RequestInit = {}): Promise<ApiResponse<T>> => {
-  const token = localStorage.getItem('user_hash_id') || 
+  // Priority: JWT token first, then fallbacks
+  const token = localStorage.getItem('auth_token') ||
+                localStorage.getItem('user_hash_id') || 
                 localStorage.getItem('hashId') || 
                 localStorage.getItem('token') || 
                 localStorage.getItem('userId') ||
+                sessionStorage.getItem('auth_token') ||
                 sessionStorage.getItem('user_hash_id') ||
                 sessionStorage.getItem('hashId') ||
                 sessionStorage.getItem('token');

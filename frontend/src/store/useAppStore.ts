@@ -12,11 +12,15 @@ const checkInitialSession = () => {
       
       // Check if session is still valid
       if (session.expiresAt && now < session.expiresAt) {
-        return {
-          isConnected: true,
-          user: session.user,
-          profile: session.profile || session.user
-        };
+        // Ensure we have a valid JWT token
+        const jwtToken = localStorage.getItem('auth_token');
+        if (jwtToken) {
+          return {
+            isConnected: true,
+            user: session.user,
+            profile: session.profile || session.user
+          };
+        }
       }
     }
   } catch (error) {
@@ -260,13 +264,16 @@ export type AppState = {
 };
 
 // Store
-export const useAppStore = create<AppState>((set, get) => ({
-  // Connection
-  isConnected: false,
-  setIsConnected: (connected) => set({ isConnected: connected }),
+export const useAppStore = create<AppState>((set, get) => {
+  const initialSession = checkInitialSession();
+  
+  return {
+    // Connection - Initialize with session check
+    isConnected: initialSession.isConnected,
+    setIsConnected: (connected) => set({ isConnected: connected }),
 
-  // Profile
-  profile: null,
+    // Profile - Initialize with session data
+    profile: initialSession.profile,
   setProfile: (profile) => {
     set({ profile });
     // 🔥 NOTIFY LISTENERS KHI PROFILE THAY ĐỔI
@@ -322,8 +329,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  // User data (SỬ DỤNG CHO TẤT CẢ COMPONENTS)
-  user: null,
+    // User data (SỬ DỤNG CHO TẤT CẢ COMPONENTS) - Initialize with session data
+    user: initialSession.user,
   setUser: (user) => {
     set({ user });
     // 🔥 NOTIFY LISTENERS KHI USER THAY ĐỔI
@@ -365,10 +372,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     });
   },
 
-  // UI
-  showCreatePost: false,
-  toggleCreatePost: () => set((state) => ({ showCreatePost: !state.showCreatePost })),
-
-}));
+    // UI
+    showCreatePost: false,
+    toggleCreatePost: () => set((state) => ({ showCreatePost: !state.showCreatePost })),
+  };
+});
 
 
