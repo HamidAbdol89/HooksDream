@@ -7,12 +7,22 @@ class SocketServer {
     constructor(server) {
         this.io = new Server(server, {
             cors: {
-                origin: process.env.FRONTEND_URL || "http://localhost:5173",
+                origin: [
+                    process.env.FRONTEND_URL || "http://localhost:5173",
+                    "http://localhost:3000",
+                    "http://localhost:5173",
+                    "https://hooksdream.vercel.app",
+                    "https://hooksdream.netlify.app",
+                    "https://just-solace-production.up.railway.app",
+                    /^https:\/\/.*\.vercel\.app$/,
+                    /^https:\/\/.*\.netlify\.app$/,
+                    /^https:\/\/.*\.railway\.app$/
+                ],
                 methods: ["GET", "POST"],
                 credentials: true
             },
             transports: ['websocket', 'polling'],
-            // Fly.io optimizations
+            // Railway optimizations
             pingTimeout: 60000,
             pingInterval: 25000,
             upgradeTimeout: 30000,

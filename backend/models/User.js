@@ -139,11 +139,10 @@ phone: {
     timestamps: true
 });
 
-// Indexes
-UserSchema.index({ email: 1 });
-UserSchema.index({ username: 1 });
-UserSchema.index({ googleId: 1 });
+// Indexes - Only add indexes that are not already unique in schema
 UserSchema.index({ createdAt: -1 });
+UserSchema.index({ isOnline: 1 });
+UserSchema.index({ lastSeen: -1 });
 
 // Virtuals
 UserSchema.virtual('profileUrl').get(function() {

@@ -241,7 +241,7 @@ export default defineConfig({
     // Thêm headers để tránh CORS issues
     proxy: {
       '/api': {
-        target: 'https://hooksdream.fly.dev', 
+        target: 'https://just-solace-production.up.railway.app', 
         changeOrigin: true,
         secure: true,
       }

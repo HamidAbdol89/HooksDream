@@ -19,8 +19,10 @@ app.use(cors({
     'http://localhost:5173',
     'https://hooksdream.vercel.app',
     'https://hooksdream.netlify.app',
+    'https://just-solace-production.up.railway.app',
     /^https:\/\/.*\.vercel\.app$/,
-    /^https:\/\/.*\.netlify\.app$/
+    /^https:\/\/.*\.netlify\.app$/,
+    /^https:\/\/.*\.railway\.app$/
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -34,13 +36,14 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Kết nối MongoDB
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
-    // Database connected successfully
+    console.log('✅ MongoDB connected successfully');
   })
   .catch(err => {
+    console.error('❌ MongoDB connection failed:', err.message);
     process.exit(1);
   });
 
-// Enhanced health check for Fly.io
+// Enhanced health check for Railway
 app.get('/api/health', (req, res) => {
   const health = {
     status: 'ok',
@@ -50,7 +53,8 @@ app.get('/api/health', (req, res) => {
     db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
     cloudinary: cloudinary.config().cloud_name ? 'configured' : 'not configured',
     socketConnections: global.socketServer ? global.socketServer.getConnectedUsersCount() : 0,
-    region: process.env.FLY_REGION || 'unknown'
+    platform: 'railway',
+    region: process.env.RAILWAY_REGION || process.env.FLY_REGION || 'unknown'
   };
   
   // Return 503 if critical services are down

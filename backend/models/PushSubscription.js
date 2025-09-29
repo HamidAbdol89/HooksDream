@@ -37,9 +37,8 @@ const pushSubscriptionSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for efficient queries
+// Index for efficient queries - endpoint already unique, so skip duplicate
 pushSubscriptionSchema.index({ userId: 1, isActive: 1 });
-pushSubscriptionSchema.index({ endpoint: 1 });
 
 // Clean up expired subscriptions
 pushSubscriptionSchema.index({ 

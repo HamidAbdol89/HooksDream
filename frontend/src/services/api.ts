@@ -2,7 +2,7 @@ const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
   (import.meta.env.MODE === 'development'
     ? 'http://localhost:5000'
-    : 'https://hooksdream.fly.dev');
+    : 'https://just-solace-production.up.railway.app');
 
 const IMAGE_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
 const VIDEO_MIME_TYPES = ['video/mp4', 'video/webm', 'video/ogg', 'video/avi'];
