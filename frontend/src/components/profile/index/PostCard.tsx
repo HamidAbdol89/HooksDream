@@ -50,7 +50,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   
   // Link preview functionality
   const { hasUrls } = useUrlExtraction();
-  const { previews, fetchMultiplePreviews, isLoading } = useLinkPreview();
+  const { previews, fetchMultiplePreviews } = useLinkPreview();
 
   // Auto-fetch link previews when component mounts
   useEffect(() => {
@@ -377,15 +377,6 @@ export const PostCard: React.FC<PostCardProps> = ({
               </div>
             )}
 
-            {/* Loading indicator for link previews */}
-            {isLoading && post.content && hasUrls(post.content) && (
-              <div className="mb-4 p-3 border border-dashed border-border rounded-lg">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  Loading link preview...
-                </div>
-              </div>
-            )}
 
             {renderMediaGrid()}
 

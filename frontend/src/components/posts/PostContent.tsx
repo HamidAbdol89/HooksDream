@@ -20,7 +20,7 @@ export const PostContent: React.FC<PostContentProps> = memo(({
 }) => {
   const isMobile = useIsMobile();
   const { hasUrls } = useUrlExtraction();
-  const { previews, fetchMultiplePreviews, isLoading } = useLinkPreview();
+  const { previews, fetchMultiplePreviews } = useLinkPreview();
 
   if (!content) return null;
 
@@ -72,15 +72,6 @@ export const PostContent: React.FC<PostContentProps> = memo(({
         </div>
       )}
 
-      {/* Loading indicator for link previews */}
-      {showLinkPreviews && isLoading && hasUrls(content) && (
-        <div className="mt-3 p-3 border border-dashed border-border rounded-lg">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-            Loading link preview...
-          </div>
-        </div>
-      )}
     </div>
   );
 });
