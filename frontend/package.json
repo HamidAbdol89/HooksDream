@@ -59,6 +59,7 @@
     "framer-motion": "^12.23.22",
     "google-auth-library": "^9.14.1",
     "i18next": "^25.3.6",
+    "idb": "^8.0.3",
     "input-otp": "^1.4.2",
     "lodash-es": "^4.17.21",
     "lottie-react": "^2.4.1",

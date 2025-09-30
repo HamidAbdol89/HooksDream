@@ -25,7 +25,7 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["src"],
+  "include": ["src", "src/types/pwa.d.ts"],
   "exclude": [
     "node_modules/**/*",
     "node_modules/workbox-*/**/*",

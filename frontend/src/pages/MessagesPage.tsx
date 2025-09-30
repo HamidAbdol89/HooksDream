@@ -16,6 +16,7 @@ import { MobileHeader } from '@/components/chat/mobile';
 import { ConversationsList, FollowingUsersList } from '@/components/chat/desktop';
 import { ConversationItem } from '@/components/chat/shared/ConversationItem';
 import { useChatSocket, useChatNotifications, useSocket } from '@/hooks/useSocket';
+import { useChatPushNotifications } from '@/hooks/useChatPushNotifications';
 
 // Types
 interface User {
@@ -45,6 +46,9 @@ const MessagesPage: React.FC = () => {
   const chatSocket = useChatSocket();
   const { onGlobalNewMessage } = useChatNotifications();
   const { on, off } = useSocket();
+  
+  // Initialize push notifications for chat
+  const { requestNotificationPermission, clearUnreadBadge, updateUnreadBadge } = useChatPushNotifications(actualUserId);
   
   // Professional Real-time Optimization
   React.useEffect(() => {

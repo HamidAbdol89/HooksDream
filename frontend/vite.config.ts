@@ -103,12 +103,19 @@ export default defineConfig({
         display: 'standalone',
         orientation: 'portrait-primary',
         scope: '/',
-        start_url: '/?utm_source=pwa',
-        categories: ['social', 'entertainment', 'lifestyle', 'photo'],
+        start_url: '/?utm_source=pwa&standalone=true',
+        categories: ['social', 'entertainment', 'lifestyle', 'photo', 'communication'],
         lang: 'vi',
         dir: 'ltr',
-        // Advanced PWA features
-        display_override: ['window-controls-overlay', 'standalone', 'minimal-ui'],
+        // Advanced display modes
+        display_override: ['window-controls-overlay', 'standalone', 'minimal-ui', 'browser'],
+        // Launch handler for better startup
+        launch_handler: {
+          client_mode: ['navigate-existing', 'auto']
+        },
+        // Handle system theme
+        prefer_related_applications: false,
+        // Edge side panel for desktop
         edge_side_panel: {
           preferred_width: 400
         },

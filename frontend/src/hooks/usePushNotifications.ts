@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { pushService, PushSubscriptionData } from '@/services/pushService';
 
 interface NotificationPermission {
   granted: boolean;

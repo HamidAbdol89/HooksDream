@@ -167,20 +167,64 @@ async function syncPendingPosts() {
   }
 }
 
-// Push notification handler
+// Enhanced Push notification handler for chat
 self.addEventListener('push', (event) => {
-  const options = {
-    body: event.data ? event.data.text() : 'New notification',
-    icon: '/icon-192x192.png',
-    badge: '/badge-72x72.png',
+  let notificationData = {};
+  
+  try {
+    notificationData = event.data ? event.data.json() : {};
+  } catch (error) {
+    console.error('Failed to parse push data:', error);
+    notificationData = { title: 'HooksDream', body: 'New notification' };
+  }
+
+  const {
+    title = 'HooksDream',
+    body = 'New notification',
+    icon = '/web-app-manifest-192x192.png',
+    badge = '/badge-72x72.png',
+    tag,
+    data = {},
+    type = 'general'
+  } = notificationData;
+
+  let options = {
+    body,
+    icon,
+    badge,
     vibrate: [100, 50, 100],
     data: {
+      ...data,
       dateOfArrival: Date.now(),
-      primaryKey: 1
+      type
     },
-    actions: [
+    requireInteraction: false,
+    silent: false
+  };
+
+  // Add tag for grouping if provided
+  if (tag) {
+    options.tag = tag;
+  }
+
+  // Chat-specific notification actions
+  if (type === 'chat-message') {
+    options.actions = [
       {
-        action: 'explore',
+        action: 'reply',
+        title: 'Reply',
+        icon: '/icon-reply.png'
+      },
+      {
+        action: 'view',
+        title: 'View',
+        icon: '/icon-view.png'
+      }
+    ];
+  } else {
+    options.actions = [
+      {
+        action: 'view',
         title: 'View',
         icon: '/icon-view.png'
       },
@@ -189,23 +233,60 @@ self.addEventListener('push', (event) => {
         title: 'Close',
         icon: '/icon-close.png'
       }
-    ]
-  };
+    ];
+  }
 
   event.waitUntil(
-    self.registration.showNotification('HooksDream', options)
+    self.registration.showNotification(title, options)
   );
 });
 
-// Notification click handler
+// Enhanced Notification click handler
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
-  if (event.action === 'explore') {
-    event.waitUntil(
-      clients.openWindow('/')
-    );
+  const { data } = event.notification;
+  const { type, conversationId, messageId } = data || {};
+
+  let url = '/';
+
+  // Handle different notification types
+  if (type === 'chat-message') {
+    if (event.action === 'reply') {
+      url = `/messages?conversation=${conversationId}&reply=true`;
+    } else if (event.action === 'view' || !event.action) {
+      url = `/messages?conversation=${conversationId}`;
+    }
+  } else if (event.action === 'view' || !event.action) {
+    url = '/';
   }
+
+  // Don't open new window if action is 'close'
+  if (event.action === 'close') {
+    return;
+  }
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // Check if there's already a window open
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          client.focus();
+          client.postMessage({
+            type: 'NOTIFICATION_CLICK',
+            url,
+            data
+          });
+          return;
+        }
+      }
+      
+      // Open new window if no existing window found
+      if (clients.openWindow) {
+        return clients.openWindow(url);
+      }
+    })
+  );
 });
 
 // Helper functions for IndexedDB

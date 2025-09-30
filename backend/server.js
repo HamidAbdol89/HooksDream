@@ -98,6 +98,22 @@ app.get('/api/cors-test', (req, res) => {
   });
 });
 
+// JWT debug endpoint
+app.get('/api/jwt-debug', (req, res) => {
+  const authHeader = req.header('Authorization');
+  const hasJwtSecret = !!process.env.JWT_SECRET;
+  const jwtSecretLength = process.env.JWT_SECRET ? process.env.JWT_SECRET.length : 0;
+  
+  res.json({
+    success: true,
+    hasAuthHeader: !!authHeader,
+    authHeaderPreview: authHeader ? authHeader.substring(0, 20) + '...' : null,
+    hasJwtSecret,
+    jwtSecretLength,
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Enhanced health check for Railway
 app.get('/api/health', (req, res) => {
   const health = {

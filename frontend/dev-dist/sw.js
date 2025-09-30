@@ -67,7 +67,7 @@ if (!self.define) {
     });
   };
 }
-define(['./workbox-8bbf5390'], (function (workbox) { 'use strict';
+define(['./workbox-b2584ec6'], (function (workbox) { 'use strict';
 
   self.skipWaiting();
   workbox.clientsClaim();
@@ -82,26 +82,48 @@ define(['./workbox-8bbf5390'], (function (workbox) { 'use strict';
     "revision": "3ca0b8505b4bec776b69afdba2768812"
   }, {
     "url": "index.html",
-    "revision": "0.e9fo27avumo"
+    "revision": "0.gnif6dq5bfo"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("index.html"), {
     allowlist: [/^\/$/]
   }));
-  workbox.registerRoute(/^https:\/\/fonts\.(?:gstatic)\.com\/.*/i, new workbox.CacheFirst({
-    "cacheName": "google-fonts-webfonts",
+  workbox.registerRoute(/^https:\/\/fonts\.(?:gstatic|googleapis)\.com\/.*/i, new workbox.CacheFirst({
+    "cacheName": "google-fonts",
     plugins: [new workbox.ExpirationPlugin({
-      maxEntries: 4,
+      maxEntries: 10,
       maxAgeSeconds: 31536000
     })]
   }), 'GET');
-  workbox.registerRoute(/^https:\/\/.*\.(?:json)$/, new workbox.NetworkFirst({
+  workbox.registerRoute(/^https:\/\/hooksdream\.fly\.dev\/api\/.*/i, new workbox.NetworkFirst({
     "cacheName": "api-cache",
+    "networkTimeoutSeconds": 5,
     plugins: [new workbox.ExpirationPlugin({
-      maxEntries: 100,
-      maxAgeSeconds: 300
+      maxEntries: 200,
+      maxAgeSeconds: 600
     }), new workbox.CacheableResponsePlugin({
       statuses: [0, 200]
+    })]
+  }), 'GET');
+  workbox.registerRoute(/\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i, new workbox.CacheFirst({
+    "cacheName": "images-cache",
+    plugins: [new workbox.ExpirationPlugin({
+      maxEntries: 500,
+      maxAgeSeconds: 2592000
+    })]
+  }), 'GET');
+  workbox.registerRoute(/^https:\/\/res\.cloudinary\.com\/.*/i, new workbox.CacheFirst({
+    "cacheName": "cloudinary-images",
+    plugins: [new workbox.ExpirationPlugin({
+      maxEntries: 300,
+      maxAgeSeconds: 604800
+    })]
+  }), 'GET');
+  workbox.registerRoute(/\.(?:js|css|woff2?)$/i, new workbox.StaleWhileRevalidate({
+    "cacheName": "static-assets",
+    plugins: [new workbox.ExpirationPlugin({
+      maxEntries: 100,
+      maxAgeSeconds: 86400
     })]
   }), 'GET');
 

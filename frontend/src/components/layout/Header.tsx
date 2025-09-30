@@ -9,6 +9,7 @@ import { SettingsModal } from './setting/SettingsModal';
 import { useNavItems } from './NavItems';
 import { useNavigate } from 'react-router-dom';
 import { useSocial } from '../../hooks/useSocial';
+import { PWAStatus } from '@/components/pwa/PWAStatus';
 
 interface UserType {
   id?: string;
