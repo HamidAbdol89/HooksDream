@@ -75,12 +75,10 @@ const checkRateLimit = (endpoint: string): boolean => {
   return true;
 };
 
-// Auth headers helper
+// Auth headers helper - Standardized to use auth_token
 const getAuthHeaders = (): HeadersInit => {
-  // Priority: JWT token first, then fallbacks
-  const token = localStorage.getItem('auth_token') || 
-                localStorage.getItem('user_hash_id') || 
-                localStorage.getItem('token');
+  // Use modern auth system token only
+  const token = localStorage.getItem('auth_token');
   
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -281,7 +279,7 @@ export const chatApi = {
     const formData = new FormData();
     formData.append('image', file);
 
-    const token = localStorage.getItem('user_hash_id') || localStorage.getItem('auth_token');
+    const token = localStorage.getItem('auth_token');
     
     const response = await fetch(`${API_BASE_URL}/api/posts/upload-image`, {
       method: 'POST',

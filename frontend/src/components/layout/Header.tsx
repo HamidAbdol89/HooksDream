@@ -183,12 +183,12 @@ export const Header: React.FC<HeaderProps> = ({ isInChat = false }) => {
                 >
                   {item.icon}
                   <span className="text-sm text-foreground">{item.label}</span>
-                  {item.badge && item.badge > 0 && (
+                  {item.badge && Number(item.badge) > 0 && (
                     <Badge 
                       variant="destructive" 
                       className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full"
                     >
-                      {item.badge > 99 ? '99+' : item.badge}
+                      {Number(item.badge) > 99 ? '99+' : item.badge}
                     </Badge>
                   )}
                 </button>
@@ -275,9 +275,17 @@ export const Header: React.FC<HeaderProps> = ({ isInChat = false }) => {
               <button
                 key={index}
                 onClick={item.onClick}
-                className="flex-1 p-2 hover:bg-accent rounded-md transition-colors flex flex-col items-center"
+                className="flex-1 p-2 hover:bg-accent rounded-md transition-colors flex flex-col items-center relative"
               >
                 {item.icon}
+                {item.badge && Number(item.badge) > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full"
+                  >
+                    {Number(item.badge) > 99 ? '99+' : item.badge}
+                  </Badge>
+                )}
               </button>
             ))}
             {/* Nút user avatar */}

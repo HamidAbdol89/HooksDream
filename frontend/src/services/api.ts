@@ -98,9 +98,9 @@ const retryRequest = async <T>(
   throw lastError!;
 };
 
-// Auth headers helper
+// Auth headers helper - Standardized to use auth_token
 const getAuthHeaders = (): HeadersInit => {
-  const token = localStorage.getItem('auth_token') || localStorage.getItem('user_hash_id');
+  const token = localStorage.getItem('auth_token');
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
   };
@@ -112,9 +112,9 @@ const getAuthHeaders = (): HeadersInit => {
   return headers;
 };
 
-// FormData auth headers helper
+// FormData auth headers helper - Standardized to use auth_token
 const getAuthHeadersForFormData = (): HeadersInit => {
-  const token = localStorage.getItem('auth_token') || localStorage.getItem('user_hash_id');
+  const token = localStorage.getItem('auth_token');
   const headers: HeadersInit = {};
   
   if (token) {

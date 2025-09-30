@@ -41,7 +41,7 @@ export const useUnreadCount = (currentUserId?: string) => {
     const messagesCount = calculateUnreadMessages();
     setUnreadCount(prev => ({
       ...prev,
-      messages: messagesCount
+      messages: Math.max(0, Number(messagesCount) || 0) // Ensure positive number
     }));
   }, [calculateUnreadMessages]);
 

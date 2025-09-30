@@ -22,6 +22,9 @@ if (missingEnvVars.length > 0) {
 const app = express();
 const server = http.createServer(app);
 
+// Trust proxy for Railway deployment (fixes rate limiting issues)
+app.set('trust proxy', 1);
+
 // Cloudinary Config - Tự động đọc từ CLOUDINARY_URL trong .env
 cloudinary.config();
 

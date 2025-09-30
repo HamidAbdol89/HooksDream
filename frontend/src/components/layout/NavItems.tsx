@@ -33,13 +33,13 @@ export const useNavItems = () => {
       icon: <Bell className="w-5 h-5" />,
       label: t('nav.notifications'),
       onClick: () => console.log('Navigate to Notifications'),
-      badge: unreadCount.notifications
+      badge: unreadCount.notifications > 0 ? unreadCount.notifications : undefined
     },
     {
       icon: <MessageSquare className="w-5 h-5" />,
       label: t('nav.messages'),
       onClick: () => navigate('/messages'),
-      badge: unreadCount.messages
+      badge: unreadCount.messages > 0 ? unreadCount.messages : undefined
     },
     {
       icon: <Users className="w-5 h-5" />,

@@ -105,18 +105,10 @@ export const socialQueryKeys = {
   popularUsers: () => [...socialQueryKeys.all, 'popular-users'] as const,
 };
 
-// Helper functions
+// Helper functions - Standardized to use auth_token
 const fetchWithAuth = async <T>(url: string, options: RequestInit = {}): Promise<ApiResponse<T>> => {
-  // Priority: JWT token first, then fallbacks
-  const token = localStorage.getItem('auth_token') ||
-                localStorage.getItem('user_hash_id') || 
-                localStorage.getItem('hashId') || 
-                localStorage.getItem('token') || 
-                localStorage.getItem('userId') ||
-                sessionStorage.getItem('auth_token') ||
-                sessionStorage.getItem('user_hash_id') ||
-                sessionStorage.getItem('hashId') ||
-                sessionStorage.getItem('token');
+  // Use modern auth system token only
+  const token = localStorage.getItem('auth_token');
   
   if (!token) {
     throw new Error('No authentication token found');
@@ -520,10 +512,7 @@ export const useSocial = () => {
       const formData = new FormData();
       formData.append('avatar', file);
       
-      const token = localStorage.getItem('user_hash_id') || 
-                    localStorage.getItem('hashId') || 
-                    localStorage.getItem('token') || 
-                    sessionStorage.getItem('user_hash_id');
+      const token = localStorage.getItem('auth_token');
       
       const response = await fetch(`${API_BASE_URL}/api/users/profile/${currentUserId}`, {
         method: 'PUT',
