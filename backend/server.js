@@ -84,6 +84,9 @@ mongoose.connect(MONGODB_URI)
   .then(() => {
     console.log('✅ MongoDB connected successfully');
     console.log(`📊 Database: ${mongoose.connection.name}`);
+    
+    // ⚡ Start server ONLY after DB connection
+    startServer();
   })
   .catch(err => {
     console.error('❌ MongoDB connection failed:', err.message);
@@ -175,12 +178,15 @@ global.socketServer = socketServer;
 const PORT = process.env.PORT || 8080;
 const HOST = process.env.HOST || '0.0.0.0';
 
-server.listen(PORT, HOST, () => {
-  console.log(`🚀 Server running on ${HOST}:${PORT}`);
-  console.log(`📡 Socket.IO ready for connections`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🗄️  Database: ${mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'}`);
-});
+// ⚡ Start server function - called after DB connection
+function startServer() {
+  server.listen(PORT, HOST, () => {
+    console.log(`🚀 Server running on ${HOST}:${PORT}`);
+    console.log(`📡 Socket.IO ready for connections`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🗄️  Database: Connected ✅`); // ⚡ Always connected when this runs
+  });
+}
 
 // Error handling
 server.on('error', (error) => {

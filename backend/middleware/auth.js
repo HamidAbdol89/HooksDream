@@ -8,7 +8,6 @@ const authMiddleware = async (req, res, next) => {
         const authHeader = req.header('Authorization');
         
         if (!authHeader) {
-            console.log('❌ Auth failed: No authorization header');
             return res.status(401).json({
                 success: false,
                 message: 'No authorization header provided'
@@ -19,7 +18,6 @@ const authMiddleware = async (req, res, next) => {
         const token = googleAuthService.extractTokenFromHeader(authHeader);
             
         if (!token) {
-            console.log('❌ Auth failed: No token in header');
             return res.status(401).json({
                 success: false,
                 message: 'No token provided'
@@ -32,7 +30,6 @@ const authMiddleware = async (req, res, next) => {
         const user = await User.findById(userId);
         
         if (!user) {
-            console.log('❌ Auth failed: User not found for ID:', userId);
             return res.status(401).json({
                 success: false,
                 message: 'User not found'
@@ -46,7 +43,6 @@ const authMiddleware = async (req, res, next) => {
         next();
         
     } catch (error) {
-        console.log('❌ Auth failed: Token verification error:', error.message);
         res.status(401).json({
             success: false,
             message: 'Invalid or expired token',

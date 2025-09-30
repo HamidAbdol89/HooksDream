@@ -14,7 +14,6 @@ class GoogleAuthService {
         this.jwtSecret = process.env.JWT_SECRET;
         this.jwtExpiry = process.env.JWT_EXPIRY || '7d';
         
-        console.log('✅ JWT Service initialized with secret length:', this.jwtSecret.length);
     }
 
     /**

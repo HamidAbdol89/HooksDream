@@ -15,7 +15,6 @@ import { Post } from '@/types/post';
 import { UserProfile } from '@/types/user';
 import { api } from '@/services/api';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
-import { performanceMonitor } from '@/utils/simplePerformance';
 import { useNavigate } from 'react-router-dom';
 import { formatTimeAgo } from '@/utils/formatters';
 import { FollowButton } from '@/components/ui/FollowButton';
@@ -89,8 +88,6 @@ export const PostCard: React.FC<PostCardProps> = memo(({
   }, [post.likeCount]);
 
   const handleCommentCreated = useCallback(() => {
-    const interactionStart = performance.now();
-    
     // Optimistic update: Tăng comment count ngay lập tức
     if (onPostUpdate) {
       onPostUpdate({
@@ -99,19 +96,11 @@ export const PostCard: React.FC<PostCardProps> = memo(({
       });
     }
     
-    // Track interaction performance
-    const interactionTime = performance.now() - interactionStart;
-    performanceMonitor.trackInteraction('comment-created', interactionTime);
-    
     // Đồng bộ với server sau (không cần chờ) - sử dụng startTransition
     startTransition(() => {
       setTimeout(async () => {
         try {
-          const apiStart = performance.now();
           const response = await api.post.getPost(post._id);
-          const apiDuration = performance.now() - apiStart;
-          
-          performanceMonitor.trackAPICall(`getPost/${post._id}`, apiDuration, response.success);
           
           if (response.success && response.data) {
             onPostUpdate?.(response.data);

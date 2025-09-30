@@ -10,7 +10,6 @@ class PushNotificationService {
           process.env.VAPID_PUBLIC_KEY,
           process.env.VAPID_PRIVATE_KEY
         );
-        console.log('✅ Push notifications configured');
       } catch (error) {
         console.warn('⚠️  Push notifications disabled - Invalid VAPID keys:', error.message);
         this.disabled = true;

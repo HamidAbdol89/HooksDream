@@ -27,6 +27,8 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MiB
         skipWaiting: true,
         clientsClaim: true,
+        mode: 'production', // ⚡ Disable workbox logs
+        disableDevLogs: true, // ⚡ Disable dev logs
         runtimeCaching: [
           // Google Fonts
           {
@@ -218,11 +220,7 @@ export default defineConfig({
             sizes: '128x128',
             type: 'image/png'
           },
-          {
-            src: '/icon-144x144.png',
-            sizes: '144x144',
-            type: 'image/png'
-          }
+         
         ]
       },
       // Thêm cấu hình devOptions để test PWA trên dev mode

@@ -34,7 +34,6 @@ const deleteImageFromCloudinary = async (imageUrl) => {
     // Remove file extension
     const publicId = publicIdWithExtension.replace(/\.[^/.]+$/, '');
 
-    console.log(`🗑️ Deleting Cloudinary image: ${publicId}`);
     
     const result = await cloudinary.uploader.destroy(publicId, {
       resource_type: 'image',
@@ -42,10 +41,8 @@ const deleteImageFromCloudinary = async (imageUrl) => {
     });
 
     if (result.result === 'ok') {
-      console.log(`✅ Successfully deleted: ${publicId}`);
       return { result: 'success', publicId, message: 'Image deleted successfully' };
     } else {
-      console.log(`⚠️ Delete result: ${result.result} for ${publicId}`);
       return { result: result.result, publicId, message: `Delete result: ${result.result}` };
     }
 

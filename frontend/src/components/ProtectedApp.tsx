@@ -75,7 +75,7 @@ const ProtectedAppContent: React.FC = () => {
         {/* Hide header when in individual chat or edit profile */}
         {!isEditProfilePage && <Header isInChat={isInChat} />}
         
-        <main className={`w-full ${isMessagesPage || isInChat || isEditProfilePage ? 'px-0 py-0' : 'px-0 py-6 lg:px-8'}`}>
+        <main className={`w-full ${isMessagesPage || isInChat || isEditProfilePage ? 'px-0 py-0' : 'px-0 py-6'}`}>
           {isEditProfilePage ? (
             // Full width layout for Edit Profile page
             <div className="w-full">
@@ -93,17 +93,16 @@ const ProtectedAppContent: React.FC = () => {
             <div className={`w-full ${isInChat && isMobile ? 'h-screen' : 'h-[calc(100vh-64px)]'}`}>
               <TooltipProvider>
                 <Routes>
-                  <Route path="/messages" element={<MessagesPage />} />
                   <Route path="/messages/*" element={<MessagesPage />} />
                 </Routes>
               </TooltipProvider>
             </div>
           ) : (
             // Standard layout with sidebars for other pages
-            <div className="grid grid-cols-12 gap-6 max-w-7xl mx-auto">
+            <div className="w-full lg:grid lg:grid-cols-12 lg:gap-6 lg:px-8">
               {/* Left Sidebar - Hidden when in chat */}
               {!isInChat && (
-                <aside className="hidden lg:block col-span-3">
+                <aside className="hidden lg:block lg:col-span-3">
                   <div className="sticky top-16 h-[calc(100vh-64px)] overflow-y-auto">
                     <SidebarLeft />
                   </div>
@@ -111,7 +110,7 @@ const ProtectedAppContent: React.FC = () => {
               )}
 
               {/* Main Content */}
-              <section className={`col-span-12 ${!isInChat ? 'lg:col-span-6' : 'lg:col-span-9'}`}>
+              <section className={`w-full ${!isInChat ? 'lg:col-span-6' : 'lg:col-span-9'}`}>
                 <TooltipProvider>
                   <Routes>
                     <Route path="/profile/:userId" element={<ProfilePage />} />
@@ -126,7 +125,7 @@ const ProtectedAppContent: React.FC = () => {
               </section>
 
               {/* Right Sidebar */}
-              <aside className="hidden lg:block col-span-3">
+              <aside className="hidden lg:block lg:col-span-3">
                 <div className="sticky top-16 h-[calc(100vh-64px)] overflow-y-auto">
                   <SidebarRight />
                 </div>

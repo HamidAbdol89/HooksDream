@@ -44,7 +44,6 @@ exports.getProfile = async (req, res) => {
         // ✅ SỬA: Sử dụng optionalAuth middleware để có req.userId
         const currentUserId = req.userId; // Từ optionalAuth middleware
         
-        console.log(`🔍 getProfile: userId=${userId}, currentUserId=${currentUserId}`);
         
         const user = await User.findById(userId)
             .select('-__v')
@@ -65,7 +64,6 @@ exports.getProfile = async (req, res) => {
                 following: userId
             });
             isFollowing = !!follow;
-            console.log(`👥 Follow check: ${currentUserId} -> ${userId} = ${isFollowing}`);
         }
         
         // Thêm isFollowing vào response
@@ -75,7 +73,6 @@ exports.getProfile = async (req, res) => {
             isOwnProfile: currentUserId === userId
         };
         
-        console.log(`✅ Profile response: isFollowing=${isFollowing}, isOwnProfile=${userProfile.isOwnProfile}`);
         
         res.json(createResponse(true, 'User profile retrieved successfully', userProfile));
         
@@ -152,18 +149,14 @@ exports.updateProfile = async (req, res) => {
                 if (req.files.avatar[0].size === 0 || req.files.avatar[0].originalname === 'empty') {
                     // Delete old avatar if exists
                     if (user.avatar && user.avatar.includes('cloudinary.com')) {
-                        console.log(`🗑️ Removing avatar: ${user.avatar}`);
                         const deleteResult = await deleteImageFromCloudinary(user.avatar);
-                        console.log(`Delete result:`, deleteResult);
                     }
                     user.avatar = '';
                     user.hasCustomAvatar = false;
                 } else {
                     // Delete old avatar if exists
                     if (user.avatar && user.avatar.includes('cloudinary.com')) {
-                        console.log(`🗑️ Deleting old avatar: ${user.avatar}`);
                         const deleteResult = await deleteImageFromCloudinary(user.avatar);
-                        console.log(`Delete result:`, deleteResult);
                     }
 
                     const optimizedAvatar = await optimizeImage(req.files.avatar[0].buffer, 'avatar');
@@ -203,17 +196,13 @@ exports.updateProfile = async (req, res) => {
                 if (req.files.coverImage[0].size === 0 || req.files.coverImage[0].originalname === 'empty') {
                     // Delete old cover image if exists
                     if (user.coverImage && user.coverImage.includes('cloudinary.com')) {
-                        console.log(`🗑️ Removing cover image: ${user.coverImage}`);
                         const deleteResult = await deleteImageFromCloudinary(user.coverImage);
-                        console.log(`Delete result:`, deleteResult);
                     }
                     user.coverImage = '';
                 } else {
                     // Delete old cover image if exists
                     if (user.coverImage && user.coverImage.includes('cloudinary.com')) {
-                        console.log(`🗑️ Deleting old cover image: ${user.coverImage}`);
                         const deleteResult = await deleteImageFromCloudinary(user.coverImage);
-                        console.log(`Delete result:`, deleteResult);
                     }
 
                     const optimizedCover = await optimizeImage(req.files.coverImage[0].buffer, 'cover');

@@ -3,6 +3,15 @@ import { api, userApi } from '@/services/api';
 import { User, Profile, Post, convertUserToProfile, mergeUserWithCloudinaryPriority, NewPostInput, useAppStore } from '@/store/useAppStore';
 
 
+// ✅ Simple cache để tránh load lại data không cần thiết
+const profileCache = new Map<string, { user: User; posts: Post[]; timestamp: number }>();
+const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes
+
+// ✅ Expose cache globally for debugging and manual clearing
+if (typeof window !== 'undefined') {
+  (window as any).profileCache = profileCache;
+}
+
 export const useProfile = (userId: string, currentUserId?: string) => {
   const { updateUser } = useAppStore();
   const [user, setUser] = useState<User | null>(null);
@@ -367,10 +376,61 @@ export const useProfile = (userId: string, currentUserId?: string) => {
     }
   };
 
+  // ✅ Smart loading với cache và parallel requests
   useEffect(() => {
     if (userId) {
-      loadProfile();
-      loadPosts(1, 10); // Luôn bắt đầu từ trang 1
+      // Check cache first
+      const cached = profileCache.get(userId);
+      const now = Date.now();
+      
+      if (cached && (now - cached.timestamp) < CACHE_DURATION) {
+        // Use cached data - instant loading!
+        console.log('🚀 Using cached profile data for:', userId);
+        const userData = mergeUserWithCloudinaryPriority(cached.user);
+        const profileData = convertUserToProfile(userData);
+        
+        setUser(userData);
+        setProfile(profileData);
+        setPosts(cached.posts);
+        
+        // Filter cached posts
+        const mediaPostsFiltered = cached.posts.filter((post: Post) => 
+          (post.images && post.images.length > 0) || post.video
+        );
+        setMediaPosts(mediaPostsFiltered);
+        
+        const repostPostsFiltered = cached.posts.filter((post: Post) => post.repost_of);
+        setRepostPosts(repostPostsFiltered);
+        
+        setLoading(false);
+        setError(null);
+        
+        // Update global state if own profile
+        if (isOwnProfile) {
+          updateUser(userData);
+        }
+        
+        return;
+      }
+      
+      // No cache or expired - load fresh data in parallel
+      console.log('📡 Loading fresh profile data for:', userId);
+      Promise.all([
+        loadProfile(),
+        loadPosts(1, 10)
+      ]).then(([profileResult, postsResult]) => {
+        // Cache the results for next time
+        if (user && posts.length > 0) {
+          profileCache.set(userId, {
+            user,
+            posts,
+            timestamp: Date.now()
+          });
+          console.log('💾 Cached profile data for:', userId);
+        }
+      }).catch(err => {
+        console.error('Error loading profile data:', err);
+      });
     }
   }, [userId]);
 

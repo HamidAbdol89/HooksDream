@@ -21,6 +21,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar';
 import { useAppStore } from '@/store/useAppStore';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Post, Profile } from '@/store/useAppStore';
+import { HoverPrefetch } from '@/components/prefetch/SmartPrefetch';
 
 interface PostCardProps {
   post: Post;
@@ -222,15 +223,17 @@ export const PostCard: React.FC<PostCardProps> = ({
       <CardHeader className={`pb-3 px-3 sm:px-6 ${isRepost ? 'pt-2' : ''}`}>
         <div className="flex justify-between items-start gap-3">
           <div className="flex items-start gap-3 flex-1 min-w-0">
-            <Avatar className="h-10 w-10 sm:h-11 sm:w-11 ring-2 ring-background shadow-sm flex-shrink-0">
-              <AvatarImage 
-                src={displayAuthor?.avatar ?? "/default-avatar.jpg"} 
-                alt={displayAuthor?.username ?? "Anonymous"} 
-              />
-              <AvatarFallback className="font-semibold bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
-                {(displayAuthor?.username?.charAt(0).toUpperCase()) ?? "?"}
-              </AvatarFallback>
-            </Avatar>
+            <HoverPrefetch userId={displayAuthor?._id || ''}>
+              <Avatar className="h-10 w-10 sm:h-11 sm:w-11 ring-2 ring-background shadow-sm flex-shrink-0">
+                <AvatarImage 
+                  src={displayAuthor?.avatar ?? "/default-avatar.jpg"} 
+                  alt={displayAuthor?.username ?? "Anonymous"} 
+                />
+                <AvatarFallback className="font-semibold bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
+                  {(displayAuthor?.username?.charAt(0).toUpperCase()) ?? "?"}
+                </AvatarFallback>
+              </Avatar>
+            </HoverPrefetch>
 
             
             <div className="flex-1 min-w-0">
@@ -244,7 +247,11 @@ export const PostCard: React.FC<PostCardProps> = ({
               </div>
               
               <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-                <span className="truncate">@{displayAuthor?.username}</span>
+                <HoverPrefetch userId={displayAuthor?._id || ''}>
+                  <span className="truncate cursor-pointer hover:text-foreground transition-colors">
+                    @{displayAuthor?.username}
+                  </span>
+                </HoverPrefetch>
                 <span className="text-muted-foreground/60">·</span>
                 <time className="flex-shrink-0">{formatTimeAgo(displayPost?.createdAt || post.createdAt)}</time>
               </div>

@@ -1,6 +1,6 @@
-// ProfilePageContent.tsx - Cập nhật để tích hợp với useWeb3Auth
+// ProfilePageContent.tsx - React Query Version ⚡
 import React, { useRef, useState, useEffect } from 'react';
-import { useProfile } from '@/hooks/useProfile';
+import { useProfileWithPosts, useUpdateProfileMutation, usePrefetchProfile } from '@/hooks/useProfileQuery';
 import { setGlobalEditingState } from '@/hooks/useGoogleAuth';
 import { useParams } from 'react-router-dom';
 import { useAppStore } from '@/store/useAppStore';
@@ -37,7 +37,7 @@ export const ProfilePageContent: React.FC = () => {
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const hasMorePosts = true;
 
-  // useProfile hook
+  // ⚡ React Query hooks - instant loading với aggressive caching
   const {
     user,
     profile,
@@ -48,13 +48,12 @@ export const ProfilePageContent: React.FC = () => {
     postsLoading,
     error,
     isOwnProfile,
-    updateProfile,
-    toggleFollow,
-    togglePostLike,
-    deletePost,
-    loadProfile,
-    refresh
-  } = useProfile(userId || '', possibleCurrentUserId);
+    refetch
+  } = useProfileWithPosts(userId || '', possibleCurrentUserId);
+
+  // ⚡ Mutations với optimistic updates
+  const updateProfileMutation = useUpdateProfileMutation(userId || '');
+  const prefetchProfile = usePrefetchProfile();
 
   // ✅ Cleanup timeout khi component unmount
   useEffect(() => {
@@ -77,62 +76,35 @@ export const ProfilePageContent: React.FC = () => {
 const handleEditProfile = async () => {
   setGlobalEditingState(true);
   
-  // Clear any React Query cache that might interfere
-  if (typeof window !== 'undefined' && (window as any).queryClient) {
-    console.log('🧹 Clearing React Query cache...');
-    (window as any).queryClient.clear();
-  }
-  
-  // Force refresh profile data before opening edit modal
-  console.log('🔄 Refreshing profile data before edit...');
-  await refresh();
+  // ✅ Không cần refresh - data đã fresh từ cache hoặc recent load
+  console.log('✏️ Opening edit profile modal...');
   
   setIsEditingProfile(true);
   console.log('Edit profile started - Web3Auth sync disabled');
 };
 
   const handleLikePost = (postId: string) => {
-    togglePostLike(postId);
+    // TODO: Implement like mutation với React Query
+    console.log("Like post:", postId);
   };
 
   const handleDeletePost = (postId: string) => {
-    deletePost(postId);
+    // TODO: Implement delete mutation với React Query
+    console.log("Delete post:", postId);
   };
 
-  // ✅ QUAN TRỌNG: Modified handleSaveProfile với refreshUserData
+  // ⚡ React Query optimized handleSaveProfile với optimistic updates
   const handleSaveProfile = async (updatedData: any) => {
     try {
-      console.log('💾 Saving profile (Web3Auth sync temporarily disabled):', updatedData);
+      console.log('💾 Saving profile with React Query:', updatedData);
       
-      // 1. Update profile qua useProfile hook (sẽ call API)
-      await updateProfile(updatedData);
+      // 1. ⚡ Optimistic update với React Query mutation
+      await updateProfileMutation.mutateAsync(updatedData);
       
-      console.log('✅ Profile updated via useProfile hook');
+      console.log('✅ Profile updated successfully with optimistic UI');
       
-      // 2. ✅ Schedule delayed Web3Auth refresh để tránh conflict
-      if (refreshTimeoutRef.current) {
-        clearTimeout(refreshTimeoutRef.current);
-      }
-      
-      refreshTimeoutRef.current = setTimeout(async () => {
-        try {
-          console.log('🔄 Refreshing Web3Auth data after profile edit...');
-          
-          // Reset editing flag trước khi refresh
-          isEditingRef.current = false;
-          
-        
-          console.log('✅ Web3Auth data refreshed successfully');
-          
-          // Optional: Refresh profile data để đảm bảo consistency
-          await refresh();
-          
-        } catch (error) {
-          console.error('❌ Failed to refresh Web3Auth data:', error);
-        }
-      }, 2000); // Delay 2s để đảm bảo server đã update xong
-      
-      // 3. Đóng modal
+      // 2. Reset editing flag và đóng modal
+      isEditingRef.current = false;
       setIsEditingProfile(false);
       
     } catch (error) {
@@ -176,7 +148,7 @@ const handleCloseEditModal = () => {
   }
 
   if (error) {
-    return <ProfileError error={error} onRetry={refresh} />;
+    return <ProfileError error={error} onRetry={refetch} />;
   }
 
   if (!user) {

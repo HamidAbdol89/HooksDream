@@ -7,6 +7,7 @@ import { useFeedQuery, useFeedActions } from '@/hooks/useFeedQuery';
 import { useFeedScrollRestoration } from '@/hooks/useScrollRestoration';
 import { useTranslation } from 'react-i18next';
 import { Post } from '@/types/post';
+import { SmartPrefetch } from '@/components/prefetch/SmartPrefetch';
 
 export const Feed: React.FC = () => {
   const { isConnected, profile } = useGoogleAuth();
@@ -71,23 +72,32 @@ export const Feed: React.FC = () => {
   const currentUserHashId = localStorage.getItem('user_hash_id') || undefined;
 
   return (
-    <FeedContainer
-      currentUserHashId={currentUserHashId} 
-      posts={posts}
-      loading={isLoading || isCurrentProfileLoading}
-      error={isError ? (error?.message || 'Failed to load feed') : null}
-      isRefreshing={false} // React Query handles this internally
-      hasMore={hasMore}
-      isLoadingMore={isLoadingMore}
-      currentUserProfile={currentUserProfile}
-      onRefresh={refresh}
-      onLoadMore={loadMore}
-      onLike={likePost}
-      onFollow={handleFollowUser}
-      onPostCreated={handlePostCreated}
-      onPostUpdate={handlePostUpdate}
-      profile={profile}
-      isConnected={isConnected}
-    />
+    <>
+      <FeedContainer
+        currentUserHashId={currentUserHashId} 
+        posts={posts}
+        loading={isLoading || isCurrentProfileLoading}
+        error={isError ? (error?.message || 'Failed to load feed') : null}
+        isRefreshing={false} // React Query handles this internally
+        hasMore={hasMore}
+        isLoadingMore={isLoadingMore}
+        currentUserProfile={currentUserProfile}
+        onRefresh={refresh}
+        onLoadMore={loadMore}
+        onLike={likePost}
+        onFollow={handleFollowUser}
+        onPostCreated={handlePostCreated}
+        onPostUpdate={handlePostUpdate}
+        profile={profile}
+        isConnected={isConnected}
+      />
+      
+      {/* ⚡ Smart Prefetch - Background load profiles from feed posts */}
+      <SmartPrefetch 
+        posts={posts} 
+        enablePopularUsers={true}
+        debug={process.env.NODE_ENV === 'development'}
+      />
+    </>
   );
 };

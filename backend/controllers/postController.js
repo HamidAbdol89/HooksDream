@@ -58,15 +58,19 @@ exports.getPosts = async (req, res) => {
         }
         
         const total = await Post.countDocuments(query);
+        const currentPage = parseInt(page);
+        const totalPages = Math.ceil(total / limit);
         
         res.json({
             success: true,
             data: posts, // ✅ GIỜ ĐÃ CÓ commentCount
             pagination: {
-                page: parseInt(page),
+                page: currentPage,
                 limit: parseInt(limit),
                 total,
-                pages: Math.ceil(total / limit)
+                pages: totalPages,
+                hasNext: currentPage < totalPages, // ⚡ THÊM hasNext cho frontend
+                hasPrev: currentPage > 1
             }
         });
         
@@ -575,15 +579,19 @@ exports.searchPosts = async (req, res) => {
         }
         
         const total = await Post.countDocuments(query);
+        const currentPage = parseInt(page);
+        const totalPages = Math.ceil(total / limit);
         
         res.json({
             success: true,
             data: posts,
             pagination: {
-                page: parseInt(page),
+                page: currentPage,
                 limit: parseInt(limit),
                 total,
-                pages: Math.ceil(total / limit)
+                pages: totalPages,
+                hasNext: currentPage < totalPages, // ⚡ THÊM hasNext
+                hasPrev: currentPage > 1
             },
             searchQuery: q || hashtag
         });
@@ -591,7 +599,6 @@ exports.searchPosts = async (req, res) => {
     } catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Internal server error'
         });
     }
 };
