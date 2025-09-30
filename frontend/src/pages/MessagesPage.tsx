@@ -50,6 +50,13 @@ const MessagesPage: React.FC = () => {
   // Initialize push notifications for chat
   const { requestNotificationPermission, clearUnreadBadge, updateUnreadBadge } = useChatPushNotifications(actualUserId);
   
+  // Request notification permission when user enters messages page
+  React.useEffect(() => {
+    if (actualUserId) {
+      requestNotificationPermission().catch(console.error);
+    }
+  }, [actualUserId, requestNotificationPermission]);
+  
   // Professional Real-time Optimization
   React.useEffect(() => {
     if (!chatSocket) return;
@@ -141,6 +148,9 @@ const MessagesPage: React.FC = () => {
     };
   }, [chatSocket, queryClient, on, off, actualUserId, selectedConversationId]);
 
+  // API setup
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+
   // Auto-clear badge khi mở conversation
   React.useEffect(() => {
     if (selectedConversationId) {
@@ -157,11 +167,29 @@ const MessagesPage: React.FC = () => {
           )
         };
       });
+
+      // Call API to mark conversation as read
+      const markConversationAsRead = async () => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/chat/conversations/${selectedConversationId}/read`, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            // API call successful - badge already cleared optimistically
+          }
+        } catch (error) {
+          console.error('Failed to mark conversation as read:', error);
+        }
+      };
+
+      markConversationAsRead();
     }
-  }, [selectedConversationId, queryClient]);
-  
-  // API setup
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+  }, [selectedConversationId, queryClient, API_BASE_URL, token]);
   
   // Get conversations list
   const { data: conversationsData, isLoading, error } = useConversations({ limit: 20 });

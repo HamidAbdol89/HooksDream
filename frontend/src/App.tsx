@@ -46,9 +46,9 @@ const App: React.FC = () => {
         await pwaManager.setupPushNotifications();
       }
       
-      console.log('PWA features initialized:', capabilities);
+      // PWA initialized
     } catch (error) {
-      console.error('Failed to initialize PWA features:', error);
+      // PWA initialization failed
     }
   };
 

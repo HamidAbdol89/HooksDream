@@ -30,6 +30,17 @@ const conversationSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  // Unread count per participant
+  unreadCount: [{
+    user: {
+      type: String,
+      ref: 'User'
+    },
+    count: {
+      type: Number,
+      default: 0
+    }
+  }],
   // Metadata cho conversation
   metadata: {
     createdBy: {
@@ -76,6 +87,30 @@ conversationSchema.methods.isParticipant = function(userId) {
 conversationSchema.methods.getOtherParticipant = function(userId) {
   if (this.type !== 'direct') return null;
   return this.participants.find(p => p.toString() !== userId.toString());
+};
+
+// Method để increment unread count cho user
+conversationSchema.methods.incrementUnreadCount = function(userId) {
+  const userUnread = this.unreadCount.find(u => u.user.toString() === userId.toString());
+  if (userUnread) {
+    userUnread.count += 1;
+  } else {
+    this.unreadCount.push({ user: userId, count: 1 });
+  }
+};
+
+// Method để clear unread count cho user
+conversationSchema.methods.clearUnreadCount = function(userId) {
+  const userUnread = this.unreadCount.find(u => u.user.toString() === userId.toString());
+  if (userUnread) {
+    userUnread.count = 0;
+  }
+};
+
+// Method để get unread count cho user
+conversationSchema.methods.getUnreadCount = function(userId) {
+  const userUnread = this.unreadCount.find(u => u.user.toString() === userId.toString());
+  return userUnread ? userUnread.count : 0;
 };
 
 // Static method để find conversation between users

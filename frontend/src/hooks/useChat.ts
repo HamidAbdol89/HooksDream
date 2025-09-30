@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { chatApi, Conversation, Message, ApiResponse } from '@/services/chatApi';
-import { useChatSocket } from '@/hooks/useSocket';
+import { useChatSocket, useSocket } from '@/hooks/useSocket';
 import { useAppStore } from '@/store/useAppStore';
 
 // Query keys
@@ -18,6 +18,44 @@ export const useChat = () => {
   const queryClient = useQueryClient();
   const { user: currentUser } = useAppStore();
   const currentUserId = currentUser?._id || currentUser?.id;
+  const { socket } = useSocket();
+
+  // Setup real-time message listeners
+  useEffect(() => {
+    if (!socket || !currentUserId) return;
+
+    const handleNewMessage = (data: { conversationId: string; message: any }) => {
+      const { conversationId, message } = data;
+      
+      // Add new message to messages query
+      queryClient.setQueryData<ApiResponse<Message[]>>(
+        chatQueryKeys.messages(conversationId),
+        (oldData) => {
+          if (!oldData || !oldData.data) return oldData;
+          return {
+            ...oldData,
+            data: [...oldData.data, message]
+          };
+        }
+      );
+      
+      // Update conversations list
+      queryClient.invalidateQueries({ queryKey: chatQueryKeys.conversations() });
+    };
+
+    const handleConversationUpdated = (data: { conversationId: string; lastMessage: any }) => {
+      // Update conversations list when last message changes
+      queryClient.invalidateQueries({ queryKey: chatQueryKeys.conversations() });
+    };
+
+    socket.on('message:new', handleNewMessage);
+    socket.on('conversation:updated', handleConversationUpdated);
+
+    return () => {
+      socket.off('message:new', handleNewMessage);
+      socket.off('conversation:updated', handleConversationUpdated);
+    };
+  }, [socket, currentUserId, queryClient]);
 
   // Professional Conversations Query với advanced caching
   const useConversations = (params: { page?: number; limit?: number } = {}) => {

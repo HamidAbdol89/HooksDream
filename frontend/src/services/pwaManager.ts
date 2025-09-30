@@ -154,24 +154,25 @@ class PWAManager {
         await this.sendSubscriptionToBackend(subscription);
         return true;
       }
+      // Silent fail if subscription is null (not supported/denied)
       return false;
     } catch (error) {
-      console.error('Failed to setup push notifications:', error);
+      // Silent fail for push service errors
       return false;
     }
   }
 
   // Send push subscription to backend
   private async sendSubscriptionToBackend(subscription: any): Promise<void> {
-    const userHashId = localStorage.getItem('user_hash_id');
-    if (!userHashId) return;
+    const token = localStorage.getItem('google_auth_token');
+    if (!token) return;
 
     try {
       await fetch('/api/notifications/subscribe', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${userHashId}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(subscription)
       });

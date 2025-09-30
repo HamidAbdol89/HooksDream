@@ -2,16 +2,21 @@
 import { Home, Search, Bell, MessageSquare, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { useUnreadCount } from '@/hooks/useUnreadCount';
+import { useAppStore } from '@/store/useAppStore';
 
 interface NavItem {
   icon: React.ReactNode;
   label: string;
   onClick: () => void;
+  badge?: number;
 }
 
 export const useNavItems = () => {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
+  const { user } = useAppStore();
+  const { unreadCount } = useUnreadCount(user?.hashId);
 
   const navItems: NavItem[] = [
     {
@@ -27,12 +32,14 @@ export const useNavItems = () => {
     {
       icon: <Bell className="w-5 h-5" />,
       label: t('nav.notifications'),
-      onClick: () => console.log('Navigate to Notifications')
+      onClick: () => console.log('Navigate to Notifications'),
+      badge: unreadCount.notifications
     },
     {
       icon: <MessageSquare className="w-5 h-5" />,
       label: t('nav.messages'),
-      onClick: () => navigate('/messages')
+      onClick: () => navigate('/messages'),
+      badge: unreadCount.messages
     },
     {
       icon: <Users className="w-5 h-5" />,

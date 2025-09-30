@@ -56,7 +56,7 @@ export const useUsernameValidation = (username: string, currentUsername?: string
         // Try to check with users API (search for existing username)
         const response = await fetch(`${API_BASE_URL}/api/users?search=${encodeURIComponent(debouncedUsername)}`, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('user_hash_id')}`
+            'Authorization': `Bearer ${localStorage.getItem('google_auth_token')}`
           }
         });
 

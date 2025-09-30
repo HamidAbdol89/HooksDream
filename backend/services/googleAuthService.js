@@ -7,14 +7,14 @@ class GoogleAuthService {
         
         // Validate JWT_SECRET
         if (!process.env.JWT_SECRET) {
-            console.error('❌ JWT_SECRET environment variable is not set!');
+            // JWT_SECRET environment variable is not set
             throw new Error('JWT_SECRET is required');
         }
         
         this.jwtSecret = process.env.JWT_SECRET;
         this.jwtExpiry = process.env.JWT_EXPIRY || '7d';
         
-        console.log('✅ JWT Service initialized with secret length:', this.jwtSecret.length);
+        // JWT Service initialized
     }
 
     /**

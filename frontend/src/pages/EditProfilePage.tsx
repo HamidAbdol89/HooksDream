@@ -53,7 +53,7 @@ export default function EditProfilePage() {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('user_hash_id')}`
+            'Authorization': `Bearer ${localStorage.getItem('google_auth_token')}`
           },
           body: JSON.stringify(updatedData)
         });

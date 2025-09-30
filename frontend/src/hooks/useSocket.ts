@@ -178,6 +178,7 @@ interface SocketEvents {
 export const useSocket = () => {
   const { token, isConnected: isAuthConnected } = useGoogleAuth();
   const socketRef = useRef<Socket | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const eventListenersRef = useRef<Map<string, Function[]>>(new Map());
@@ -194,55 +195,54 @@ export const useSocket = () => {
         ? 'http://localhost:5000' 
         : 'https://just-solace-production.up.railway.app');
 
-    socketRef.current = io(SOCKET_URL, {
+    const newSocket = io(SOCKET_URL, {
       auth: {
         token: token
       },
       transports: ['websocket', 'polling'],
       timeout: 20000,
       forceNew: true,
-      // Fly.io optimizations
       upgrade: true,
       rememberUpgrade: false,
-      // Force reconnection to new server
       autoConnect: true,
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000
     });
-
-    const socket = socketRef.current;
+    
+    socketRef.current = newSocket;
+    setSocket(newSocket);
 
     // Connection event handlers
-    socket.on('connect', () => {
+    newSocket.on('connect', () => {
       setIsConnected(true);
       setConnectionError(null);
     });
 
-    socket.on('disconnect', (reason) => {
+    newSocket.on('disconnect', (reason) => {
       setIsConnected(false);
       
       if (reason === 'io server disconnect') {
         // Server disconnected, try to reconnect
-        socket.connect();
+        newSocket.connect();
       }
     });
 
-    socket.on('connect_error', (error) => {
+    newSocket.on('connect_error', (error) => {
       setConnectionError(error.message);
-      setIsConnected(false);
     });
 
-    socket.on('error', (error) => {
-      setConnectionError(error.message);
+    newSocket.on('error', (error) => {
+      setConnectionError(error.message || 'Socket error occurred');
     });
 
     // Cleanup on unmount
     return () => {
-      if (socket) {
-        socket.disconnect();
+      if (newSocket) {
+        newSocket.disconnect();
       }
       setIsConnected(false);
+      setSocket(null);
     };
   }, [isAuthConnected, token]);
 
@@ -265,7 +265,7 @@ export const useSocket = () => {
     event: K,
     callback: SocketEvents[K]
   ) => {
-    if (!socketRef.current) return;
+    if (!socket) return;
 
     // Store the callback for cleanup
     if (!eventListenersRef.current.has(event)) {
@@ -273,9 +273,9 @@ export const useSocket = () => {
     }
     eventListenersRef.current.get(event)!.push(callback as Function);
 
-    socketRef.current.on(event, callback as any);
+    socket.on(event, callback as any);
     
-  }, []);
+  }, [socket]);
 
   // Remove event listener
   const off = useCallback(<K extends keyof SocketEvents>(
@@ -299,8 +299,6 @@ export const useSocket = () => {
       socketRef.current.off(event);
       eventListenersRef.current.delete(event);
     }
-    
-    
   }, []);
 
   // Emit events
@@ -323,7 +321,7 @@ export const useSocket = () => {
   }, []);
 
   return {
-    socket: socketRef.current,
+    socket,
     isConnected,
     connectionError,
     joinPost,

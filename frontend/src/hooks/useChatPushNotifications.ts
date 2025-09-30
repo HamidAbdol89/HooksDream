@@ -7,10 +7,14 @@ import { indexedDBService } from '@/services/indexedDB';
 
 interface ChatMessage {
   _id: string;
-  senderId: string;
-  content: string;
+  sender: string; // Backend uses 'sender', not 'senderId'
+  content: {
+    text?: string;
+    image?: string;
+    file?: any;
+  };
   type: 'text' | 'image' | 'video' | 'audio' | 'file';
-  conversationId: string;
+  conversation: string; // Backend uses 'conversation', not 'conversationId'
   createdAt: string;
   senderInfo?: {
     username: string;
@@ -23,9 +27,13 @@ export const useChatPushNotifications = (currentUserId?: string) => {
   const { socket } = useSocket();
 
   // Handle incoming messages for push notifications
-  const handleNewMessage = useCallback(async (message: ChatMessage) => {
+  const handleNewMessage = useCallback(async (data: { conversationId: string; message: ChatMessage }) => {
+    const { message } = data;
+    
     // Don't show notification for own messages
-    if (message.senderId === currentUserId) return;
+    if (message.sender === currentUserId) {
+      return;
+    }
 
     // Check if user is currently viewing this conversation
     const isCurrentlyViewing = window.location.pathname.includes('/messages') && 
@@ -47,7 +55,23 @@ export const useChatPushNotifications = (currentUserId?: string) => {
   const showMessageNotification = async (message: ChatMessage) => {
     try {
       // Check if push notifications are supported and permitted
-      if (!pushService.isSupported() || pushService.getPermissionStatus() !== 'granted') {
+      if (!pushService.isSupported()) {
+        // Fallback: Show browser notification if possible
+        if ('Notification' in window && Notification.permission === 'granted') {
+          const { senderInfo } = message;
+          const senderName = senderInfo?.displayName || senderInfo?.username || 'Someone';
+          const notificationBody = message.content.text || 'Sent a message';
+          
+          new Notification(`💬 ${senderName}`, {
+            body: notificationBody,
+            icon: senderInfo?.avatar || '/default-avatar.jpg',
+            tag: `chat-${message.conversation}`
+          });
+        }
+        return;
+      }
+      
+      if (pushService.getPermissionStatus() !== 'granted') {
         return;
       }
 
@@ -60,7 +84,7 @@ export const useChatPushNotifications = (currentUserId?: string) => {
       // Format notification based on message type
       switch (message.type) {
         case 'text':
-          notificationBody = message.content;
+          notificationBody = message.content.text || 'Sent a message';
           break;
         case 'image':
           notificationBody = '📷 Sent a photo';
@@ -86,11 +110,11 @@ export const useChatPushNotifications = (currentUserId?: string) => {
           body: notificationBody,
           icon: notificationIcon,
           badge: '/badge-72x72.png',
-          tag: `chat-${message.conversationId}`, // Group notifications by conversation
+          tag: `chat-${message.conversation}`, // Group notifications by conversation
           data: {
-            conversationId: message.conversationId,
+            conversationId: message.conversation,
             messageId: message._id,
-            senderId: message.senderId,
+            senderId: message.sender,
             type: 'chat-message'
           },
           vibrate: [100, 50, 100],
@@ -101,7 +125,7 @@ export const useChatPushNotifications = (currentUserId?: string) => {
         });
       }
     } catch (error) {
-      console.error('Failed to show message notification:', error);
+      // Silent fail - don't spam console
     }
   };
 
@@ -115,7 +139,7 @@ export const useChatPushNotifications = (currentUserId?: string) => {
       // Update app badge
       await badgingService.setMessagesBadge(unreadCount);
     } catch (error) {
-      console.error('Failed to update unread badge:', error);
+      // Silent fail
     }
   };
 
@@ -124,16 +148,16 @@ export const useChatPushNotifications = (currentUserId?: string) => {
     try {
       await indexedDBService.cacheMessages([{
         _id: message._id,
-        conversationId: message.conversationId,
-        senderId: message.senderId,
-        content: message.content,
+        conversationId: message.conversation,
+        senderId: message.sender,
+        content: message.content.text || '',
         type: message.type,
         createdAt: message.createdAt,
         status: 'delivered',
         lastUpdated: Date.now()
       }]);
     } catch (error) {
-      console.error('Failed to cache message:', error);
+      // Silent fail
     }
   };
 
@@ -141,11 +165,11 @@ export const useChatPushNotifications = (currentUserId?: string) => {
   useEffect(() => {
     if (!socket || !currentUserId) return;
 
-    // Listen for new messages
-    socket.on('new-message', handleNewMessage);
+    // Listen for new messages (FIXED: correct event name)
+    socket.on('message:new', handleNewMessage);
     
-    // Listen for message status updates
-    socket.on('message-status-updated', async (data: { messageId: string; status: string }) => {
+    // Listen for message status updates (FIXED: correct event name)
+    socket.on('chat:message:status', async (data: { messageId: string; status: string }) => {
       // Update badge when messages are read
       if (data.status === 'read') {
         await updateUnreadBadge();
@@ -154,8 +178,8 @@ export const useChatPushNotifications = (currentUserId?: string) => {
 
     // Cleanup listeners
     return () => {
-      socket.off('new-message', handleNewMessage);
-      socket.off('message-status-updated');
+      socket.off('message:new', handleNewMessage);
+      socket.off('chat:message:status');
     };
   }, [socket, currentUserId, handleNewMessage]);
 
@@ -167,10 +191,40 @@ export const useChatPushNotifications = (currentUserId?: string) => {
   // Request push notification permission
   const requestNotificationPermission = useCallback(async () => {
     try {
+      // Check if supported
+      if (!pushService.isSupported()) {
+        // Try to request basic notification permission for fallback
+        if ('Notification' in window) {
+          const permission = await Notification.requestPermission();
+          return permission === 'granted';
+        }
+        return false;
+      }
+      
+      // Check current permission
+      const currentPermission = pushService.getPermissionStatus();
+      
+      if (currentPermission === 'denied') {
+        return false;
+      }
+      
+      if (currentPermission === 'granted') {
+        return true;
+      }
+      
       const subscription = await pushService.subscribe();
       return !!subscription;
     } catch (error) {
-      console.error('Failed to setup push notifications:', error);
+      // Fallback: Try basic notification permission
+      if ('Notification' in window) {
+        try {
+          const permission = await Notification.requestPermission();
+          return permission === 'granted';
+        } catch (fallbackError) {
+          // Silent fail
+        }
+      }
+      
       return false;
     }
   }, []);

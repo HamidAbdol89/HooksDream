@@ -10,13 +10,13 @@ class PushNotificationService {
           process.env.VAPID_PUBLIC_KEY,
           process.env.VAPID_PRIVATE_KEY
         );
-        console.log('✅ Push notifications configured');
+        // Push notifications configured
       } catch (error) {
-        console.warn('⚠️  Push notifications disabled - Invalid VAPID keys:', error.message);
+        // Push notifications disabled - Invalid VAPID keys
         this.disabled = true;
       }
     } else {
-      console.warn('⚠️  Push notifications disabled - VAPID keys not found');
+      // Push notifications disabled - VAPID keys not found
       this.disabled = true;
     }
   }

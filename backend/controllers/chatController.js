@@ -65,7 +65,6 @@ exports.sendMessage = async (req, res) => {
         }
       });
     }
-    
     // Add message status to response
     const messageWithStatus = {
       ...message.toObject(),
@@ -76,7 +75,20 @@ exports.sendMessage = async (req, res) => {
       }
     };
     
-    // Emit socket event to conversation participants
+    // Update conversation with last message and activity
+    conversation.lastMessage = message._id;
+    conversation.lastActivity = new Date();
+    
+    // Increment unread count for all participants except sender
+    conversation.participants.forEach(participantId => {
+      if (participantId.toString() !== currentUserId) {
+        conversation.incrementUnreadCount(participantId.toString());
+      }
+    });
+    
+    await conversation.save();
+    
+    // Emit real-time events
     if (global.socketServer) {
       conversation.participants.forEach(participantId => {
         if (participantId.toString() !== currentUserId) {
@@ -89,10 +101,12 @@ exports.sendMessage = async (req, res) => {
       
       // Also emit to all participants for conversations list updates
       conversation.participants.forEach(participantId => {
+        const unreadCount = conversation.getUnreadCount(participantId.toString());
         global.socketServer.emitToUser(participantId.toString(), 'conversation:updated', {
           conversationId,
           lastMessage: message.toObject(),
-          lastActivity: new Date()
+          lastActivity: new Date(),
+          unreadCount: unreadCount
         });
       });
     }
@@ -215,6 +229,10 @@ exports.getConversations = async (req, res) => {
     const formattedConversations = conversations.map(conv => {
       const otherParticipant = conv.participants.find(p => p._id.toString() !== currentUserId);
       
+      // Calculate unread count for current user
+      const userUnread = conv.unreadCount?.find(u => u.user.toString() === currentUserId);
+      const unreadCount = userUnread ? userUnread.count : 0;
+      
       return {
         _id: conv._id,
         type: conv.type,
@@ -223,7 +241,7 @@ exports.getConversations = async (req, res) => {
         participants: conv.participants,
         lastMessage: conv.lastMessage,
         lastActivity: conv.lastActivity,
-        unreadCount: 0 // TODO: Calculate unread count
+        unreadCount: unreadCount
       };
     });
     
@@ -231,6 +249,37 @@ exports.getConversations = async (req, res) => {
     
   } catch (error) {
     console.error('Get conversations error:', error);
+    res.status(500).json(createResponse(false, 'Internal server error', null, null, 500));
+  }
+};
+
+// Mark conversation as read
+exports.markConversationAsRead = async (req, res) => {
+  try {
+    const currentUserId = req.userId;
+    const { conversationId } = req.params;
+    
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation || !conversation.isParticipant(currentUserId)) {
+      return res.status(404).json(createResponse(false, 'Conversation not found', null, null, 404));
+    }
+    
+    // Clear unread count for current user
+    conversation.clearUnreadCount(currentUserId);
+    await conversation.save();
+    
+    // Emit socket event
+    if (global.socketServer) {
+      global.socketServer.emitToUser(currentUserId, 'conversation:read', {
+        conversationId,
+        unreadCount: 0
+      });
+    }
+    
+    res.json(createResponse(true, 'Conversation marked as read', { unreadCount: 0 }));
+    
+  } catch (error) {
+    console.error('Mark conversation as read error:', error);
     res.status(500).json(createResponse(false, 'Internal server error', null, null, 500));
   }
 };
@@ -553,7 +602,19 @@ exports.markAsRead = async (req, res) => {
       }
     );
     
-    res.json(createResponse(true, 'Messages marked as read'));
+    // Clear unread count for current user
+    conversation.clearUnreadCount(currentUserId);
+    await conversation.save();
+    
+    // Emit socket event
+    if (global.socketServer) {
+      global.socketServer.emitToUser(currentUserId, 'conversation:read', {
+        conversationId,
+        unreadCount: 0
+      });
+    }
+    
+    res.json(createResponse(true, 'Messages marked as read', { unreadCount: 0 }));
     
   } catch (error) {
     console.error('Mark as read error:', error);

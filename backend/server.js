@@ -5,17 +5,11 @@ const cloudinary = require('cloudinary').v2;
 const http = require('http');
 const SocketServer = require('./socket/socketServer');
 require('dotenv').config();
-
 // Validate critical environment variables
 const requiredEnvVars = ['MONGODB_URI', 'JWT_SECRET'];
 const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
 
 if (missingEnvVars.length > 0) {
-  console.error('❌ Missing required environment variables:');
-  missingEnvVars.forEach(envVar => {
-    console.error(`   - ${envVar}`);
-  });
-  console.error('🔧 Please set these variables in Railway environment settings');
   process.exit(1);
 }
 
@@ -55,7 +49,7 @@ app.use(cors({
       return callback(null, true);
     }
     
-    console.log('❌ CORS blocked origin:', origin);
+    // CORS blocked
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
@@ -71,20 +65,14 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  console.error('❌ MONGODB_URI environment variable is not set!');
-  console.error('🔧 Please set MONGODB_URI in Railway environment variables');
   process.exit(1);
 }
 
-console.log('🔗 Connecting to MongoDB...');
 mongoose.connect(MONGODB_URI)
   .then(() => {
-    console.log('✅ MongoDB connected successfully');
-    console.log(`📊 Database: ${mongoose.connection.name}`);
+    // Connected
   })
   .catch(err => {
-    console.error('❌ MongoDB connection failed:', err.message);
-    console.error('🔧 Check your MONGODB_URI in Railway environment variables');
     process.exit(1);
   });
 
@@ -173,42 +161,30 @@ const PORT = process.env.PORT || 8080;
 const HOST = process.env.HOST || '0.0.0.0';
 
 server.listen(PORT, HOST, () => {
-  console.log(`🚀 Server running on ${HOST}:${PORT}`);
-  console.log(`📡 Socket.IO ready for connections`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🗄️  Database: ${mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'}`);
+  // Server started
 });
 
 // Error handling
 server.on('error', (error) => {
-  console.error('❌ Server error:', error);
   process.exit(1);
 });
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('🛑 SIGTERM received, shutting down gracefully');
   server.close(() => {
-    console.log('✅ Server closed');
     mongoose.connection.close().then(() => {
-      console.log('✅ Database connection closed');
       process.exit(0);
     }).catch((err) => {
-      console.error('❌ Error closing database:', err);
       process.exit(1);
     });
   });
 });
 
 process.on('SIGINT', () => {
-  console.log('🛑 SIGINT received, shutting down gracefully');
   server.close(() => {
-    console.log('✅ Server closed');
     mongoose.connection.close().then(() => {
-      console.log('✅ Database connection closed');
       process.exit(0);
     }).catch((err) => {
-      console.error('❌ Error closing database:', err);
       process.exit(1);
     });
   });

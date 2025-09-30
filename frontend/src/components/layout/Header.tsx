@@ -10,6 +10,7 @@ import { useNavItems } from './NavItems';
 import { useNavigate } from 'react-router-dom';
 import { useSocial } from '../../hooks/useSocial';
 import { PWAStatus } from '@/components/pwa/PWAStatus';
+import { Badge } from '@/components/ui/badge';
 
 interface UserType {
   id?: string;
@@ -178,10 +179,18 @@ export const Header: React.FC<HeaderProps> = ({ isInChat = false }) => {
                 <button
                   key={index}
                   onClick={item.onClick}
-                  className="p-2 hover:bg-accent rounded-lg transition-colors flex items-center space-x-2"
+                  className="p-2 hover:bg-accent rounded-lg transition-colors flex items-center space-x-2 relative"
                 >
                   {item.icon}
                   <span className="text-sm text-foreground">{item.label}</span>
+                  {item.badge && item.badge > 0 && (
+                    <Badge 
+                      variant="destructive" 
+                      className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full"
+                    >
+                      {item.badge > 99 ? '99+' : item.badge}
+                    </Badge>
+                  )}
                 </button>
               ))}
             </div>

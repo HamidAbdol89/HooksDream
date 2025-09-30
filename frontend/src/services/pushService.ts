@@ -23,11 +23,28 @@ export interface NotificationPayload {
 }
 
 class PushService {
-  private readonly VAPID_PUBLIC_KEY = 'BKxJxvQx8mHGvQx7pQx8mHGvQx7pQx8mHGvQx7pQx8mHGvQx7pQx8mHGvQx7p'; // Replace with your VAPID public key
+  private readonly VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || 'BBR4PKr7qVZpqe6maqtQGrVsz4IqHPfBDbl1ONbWdb72yukkIJyGd0fAsY0pfy6T-6xETO5Lv3Lz1xbjIPn4Pg8';
   
   // Check if push notifications are supported
   isSupported(): boolean {
-    return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+    const hasAPIs = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+    const isSecureContext = window.isSecureContext || window.location.hostname === 'localhost';
+    
+    if (!hasAPIs) {
+      return false;
+    }
+    
+    if (!isSecureContext) {
+      return false;
+    }
+
+    // Additional check for development
+    if (import.meta.env.MODE === 'development' && window.location.hostname === 'localhost') {
+      // Push notifications might not work in localhost development
+      return false;
+    }
+    
+    return true;
   }
 
   // Get current permission status
@@ -48,27 +65,43 @@ class PushService {
   // Subscribe to push notifications
   async subscribe(): Promise<PushSubscriptionData | null> {
     if (!this.isSupported()) {
-      throw new Error('Push notifications are not supported');
+      return null;
     }
 
-    const permission = await this.requestPermission();
-    if (permission !== 'granted') {
-      throw new Error('Permission denied for notifications');
-    }
-
-    const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: this.urlBase64ToUint8Array(this.VAPID_PUBLIC_KEY)
-    });
-
-    return {
-      endpoint: subscription.endpoint,
-      keys: {
-        p256dh: this.arrayBufferToBase64(subscription.getKey('p256dh')!),
-        auth: this.arrayBufferToBase64(subscription.getKey('auth')!)
+    try {
+      const permission = await this.requestPermission();
+      if (permission !== 'granted') {
+        return null;
       }
-    };
+
+      // Check if service worker is available
+      if (!('serviceWorker' in navigator)) {
+        return null;
+      }
+
+      const registration = await navigator.serviceWorker.ready;
+      
+      // Check if push manager is available
+      if (!registration.pushManager) {
+        return null;
+      }
+
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: this.urlBase64ToUint8Array(this.VAPID_PUBLIC_KEY)
+      });
+
+      return {
+        endpoint: subscription.endpoint,
+        keys: {
+          p256dh: this.arrayBufferToBase64(subscription.getKey('p256dh')!),
+          auth: this.arrayBufferToBase64(subscription.getKey('auth')!)
+        }
+      };
+    } catch (error) {
+      // Silent fail for push service errors
+      return null;
+    }
   }
 
   // Get existing subscription

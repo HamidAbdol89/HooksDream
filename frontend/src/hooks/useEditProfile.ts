@@ -163,7 +163,7 @@ const handleImageUpload = async (
     const response = await fetch(url, {
       method: 'PUT',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('user_hash_id')}`,
+        'Authorization': `Bearer ${localStorage.getItem('google_auth_token')}`,
       },
       body: formData,
     });
