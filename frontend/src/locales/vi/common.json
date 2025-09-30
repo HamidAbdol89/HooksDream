@@ -1,12 +1,21 @@
 {
-  "welcome_lens_social": "Chào mừng đến với HooksDream",
-  "login_to_start": "Đăng nhập với Web3Auth để bắt đầu chia sẻ và khám phá nội dung tuyệt vời",
-  "waiting_for_login": "Đang chờ đăng nhập...",
-  "connected_with_web3auth": "✅ Đã kết nối với Web3Auth",
-  "login_with_web3auth": "Đăng nhập với Web3Auth",
-  "secure_wallet_connection": "Bảo mật kết nối ví của bạn với Web3Auth",
-  "agree_terms_prefix": "Bằng việc kết nối, bạn đồng ý với",
-  "terms_of_service": "Điều khoản dịch vụ",
+  "auth": {
+    "welcome": "HooksDream",
+    "welcomeBack": "Chào mừng trở lại",
+    "tagline": "Kết nối với bạn bè và chia sẻ khoảnh khắc",
+    "youreAllSet": "Bạn đã sẵn sàng!",
+    "takingToFeed": "Đang chuyển đến trang chủ...",
+    "welcomeToHooksDream": "Chào mừng đến với HooksDream",
+    "agreeToTerms": "Tôi đồng ý với",
+    "termsOfService": "Điều khoản dịch vụ",
+    "pleaseAgreeTerms": "Vui lòng đồng ý với điều khoản để tiếp tục",
+    "continueWithGoogle": "Tiếp tục với Google",
+    "signingIn": "Đang đăng nhập...",
+    "signInFailed": "Đăng nhập thất bại. Vui lòng thử lại.",
+    "tryAgain": "Thử lại",
+    "signedInSuccessfully": "Đăng nhập thành công!",
+    "secureAuth": "Xác thực an toàn với Google"
+  },
 
   "header": {
     "searchPlaceholder": "Tìm kiếm bài viết, hồ sơ...",

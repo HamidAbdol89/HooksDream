@@ -1,12 +1,21 @@
 {
-  "welcome_lens_social": "Welcome to HooksDream",
-  "login_to_start": "Login with Web3Auth to start sharing and discovering amazing content",
-  "waiting_for_login": "Waiting for login...",
-  "connected_with_web3auth": "✅ Connected with Web3Auth",
-  "login_with_web3auth": "Login with Web3Auth",
-  "secure_wallet_connection": "Secure your wallet connection with Web3Auth",
-  "agree_terms_prefix": "By connecting, you agree to the",
-  "terms_of_service": "Terms of Service",
+  "auth": {
+    "welcome": "HooksDream",
+    "welcomeBack": "Welcome back",
+    "tagline": "Connect with friends and share moments",
+    "youreAllSet": "You're all set!",
+    "takingToFeed": "Taking you to your feed...",
+    "welcomeToHooksDream": "Welcome to HooksDream",
+    "agreeToTerms": "I agree to the",
+    "termsOfService": "Terms of Service",
+    "pleaseAgreeTerms": "Please agree to the terms to continue",
+    "continueWithGoogle": "Continue with Google",
+    "signingIn": "Signing in...",
+    "signInFailed": "Sign-in failed. Please try again.",
+    "tryAgain": "Try Again",
+    "signedInSuccessfully": "Signed in successfully!",
+    "secureAuth": "Secure authentication with Google"
+  },
 
   "header": {
     "searchPlaceholder": "Search posts, profiles...",
