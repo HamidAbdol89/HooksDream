@@ -1,0 +1,156 @@
+// src/components/layout/MobileHeader.tsx
+import React, { useState, useMemo, useCallback } from 'react';
+import { Search, Bell, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/Button';
+import { useAppStore } from '@/store/useAppStore';
+import { useSocial } from '@/hooks/useSocial';
+import { useUnreadCount } from '@/hooks/useUnreadCount';
+import { UserProfileSheet } from './UserProfileSheet';
+import { SettingsModal } from './setting/SettingsModal';
+
+interface MobileHeaderProps {
+  className?: string;
+}
+
+export const MobileHeader: React.FC<MobileHeaderProps> = ({ className = '' }) => {
+  const { t } = useTranslation('common');
+  const navigate = useNavigate();
+  const { profile, user, isConnected } = useAppStore();
+  const { useCurrentProfile } = useSocial();
+  const { unreadCount } = useUnreadCount(user?.hashId);
+
+  // Profile data
+  const { data: profileData, isLoading: isProfileLoading } = useCurrentProfile();
+  const currentUserProfile = profileData?.data;
+
+  // User display data
+  const displayData = useMemo(() => {
+    const fallbackData = {
+      username: user?.name || profile?.username || 'User',
+      avatar: profile?.avatar || '',
+      displayName: profile?.displayName || user?.name || 'User'
+    };
+
+    if (!isConnected || isProfileLoading) {
+      return fallbackData;
+    }
+
+    return {
+      username: currentUserProfile?.username || fallbackData.username,
+      avatar: currentUserProfile?.avatar || fallbackData.avatar,
+      displayName: currentUserProfile?.displayName || fallbackData.displayName
+    };
+  }, [isConnected, isProfileLoading, currentUserProfile, user, profile]);
+
+  const { username, avatar, displayName } = displayData;
+
+  // Avatar fallback
+  const avatarFallback = useMemo(() => 
+    (displayName || username || 'U').charAt(0).toUpperCase(),
+    [displayName, username]
+  );
+
+  // State management
+  const [isUserSheetOpen, setIsUserSheetOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [currentSettingsView, setCurrentSettingsView] = useState<'main' | 'language' | 'theme'>('main');
+
+  // Callbacks
+  const openSettings = useCallback((view: 'main' | 'language' | 'theme' = 'main') => {
+    setIsSettingsOpen(true);
+    setCurrentSettingsView(view);
+    setIsUserSheetOpen(false);
+  }, []);
+
+  const closeSettings = useCallback(() => setIsSettingsOpen(false), []);
+
+  const handleSearchClick = useCallback(() => {
+    navigate('/search');
+  }, [navigate]);
+
+  const handleNotificationsClick = useCallback(() => {
+    navigate('/notifications');
+  }, [navigate]);
+
+  const handleAvatarClick = useCallback(() => {
+    setIsUserSheetOpen(true);
+  }, []);
+
+  return (
+    <>
+      {/* Mobile Header - Only visible on mobile */}
+      <div className={`md:hidden sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b ${className}`}>
+        <div className="flex items-center justify-between px-4 py-3">
+          {/* Left side - Logo */}
+          <div className="flex items-center space-x-2">
+            <img 
+              src="/logo.png" 
+              alt="HooksDream" 
+              className="w-8 h-8 rounded-lg"
+            />
+            <span className="font-bold text-lg">HooksDream</span>
+          </div>
+
+          {/* Right side - Icons */}
+          <div className="flex items-center space-x-3">
+            {/* Search */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSearchClick}
+              className="p-2"
+            >
+              <Search className="w-5 h-5" />
+            </Button>
+
+            {/* User Avatar */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleAvatarClick}
+              className="p-1"
+            >
+              <Avatar className="w-8 h-8">
+                {isProfileLoading ? (
+                  <AvatarFallback className="animate-pulse bg-muted text-xs">
+                    {avatarFallback}
+                  </AvatarFallback>
+                ) : (
+                  <>
+                    <AvatarImage 
+                      src={avatar} 
+                      alt={displayName}
+                      className="object-cover"
+                    />
+                    <AvatarFallback className="text-xs">
+                      {avatarFallback}
+                    </AvatarFallback>
+                  </>
+                )}
+              </Avatar>
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* User Profile Sheet */}
+      <UserProfileSheet
+        isOpen={isUserSheetOpen}
+        onClose={() => setIsUserSheetOpen(false)}
+        onOpenSettings={openSettings}
+      />
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={closeSettings}
+        currentView={currentSettingsView}
+        onChangeView={setCurrentSettingsView}
+      />
+    </>
+  );
+};

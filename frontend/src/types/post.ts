@@ -36,6 +36,8 @@ export interface Post {
     video?: string;
     isDeleted?: boolean;
   };
+  // Flag để mark khi original post bị xóa
+  originalPostDeleted?: boolean;
 }
 
 export interface Comment {

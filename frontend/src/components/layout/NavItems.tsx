@@ -1,5 +1,5 @@
 // src/components/layout/NavItems.tsx
-import { Home, Search, Bell, MessageSquare, Users } from 'lucide-react';
+import { Home, Users, Bell, MessageSquare, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
@@ -10,6 +10,7 @@ interface NavItem {
   label: string;
   onClick: () => void;
   badge?: number;
+  isCenter?: boolean; // For center create post button
 }
 
 export const useNavItems = () => {
@@ -25,9 +26,15 @@ export const useNavItems = () => {
       onClick: () => navigate('/feed')
     },
     {
-      icon: <Search className="w-5 h-5" />,
-      label: t('nav.search'),
-      onClick: () => navigate('/search')
+      icon: <Users className="w-5 h-5" />,
+      label: t('nav.friends'),
+      onClick: () => navigate('/friend')
+    },
+    {
+      icon: <Plus className="w-6 h-6" />,
+      label: t('nav.create'),
+      onClick: () => navigate('/post'),
+      isCenter: true
     },
     {
       icon: <Bell className="w-5 h-5" />,
@@ -40,11 +47,6 @@ export const useNavItems = () => {
       label: t('nav.messages'),
       onClick: () => navigate('/messages'),
       badge: unreadCount.messages > 0 ? unreadCount.messages : undefined
-    },
-    {
-      icon: <Users className="w-5 h-5" />,
-      label: t('nav.friends'),
-      onClick: () => navigate('/friend')
     }
   ];
 

@@ -3,13 +3,13 @@ import React from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
-interface EmptyStateProps {
-  onCreatePost: () => void;
-}
+interface EmptyStateProps {}
 
-export const EmptyState: React.FC<EmptyStateProps> = ({ onCreatePost }) => {
+export const EmptyState: React.FC<EmptyStateProps> = () => {
   const { t } = useTranslation('common');
+  const navigate = useNavigate();
 
   return (
     <div className="text-center p-12 text-foreground">
@@ -25,7 +25,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ onCreatePost }) => {
         </p>
       </div>
       <Button 
-        onClick={onCreatePost}
+        onClick={() => navigate('/post')}
         className="mt-8 h-12 px-8 rounded-2xl font-semibold"
       >
         <Plus className="w-5 h-5 mr-2" />

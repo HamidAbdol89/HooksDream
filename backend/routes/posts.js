@@ -14,8 +14,13 @@ router.post('/upload-images', authMiddleware, uploadController.uploadImages);
 router.post('/upload-image', authMiddleware, uploadController.uploadImage); // Single image upload
 router.post('/upload-video', authMiddleware, uploadController.uploadVideo);
 
-// Post routes
+// Post routes - SPECIFIC ROUTES FIRST, THEN DYNAMIC ROUTES
 router.get('/', optionalAuth, postController.getPosts);
+router.get('/archived', authMiddleware, postController.getArchivedPosts); // MOVED UP
+router.get('/trending', optionalAuth, postController.getTrendingPosts); // MOVED UP
+router.get('/search', optionalAuth, postController.searchPosts); // MOVED UP
+router.get('/user/:userId', optionalAuth, postController.getUserPosts); // MOVED UP
+
 router.post('/', authMiddleware, async (req, res, next) => {
     try {
         // Call original createPost controller
@@ -24,13 +29,14 @@ router.post('/', authMiddleware, async (req, res, next) => {
         next(error);
     }
 });
+
+// Dynamic routes with :id parameter - MUST BE AFTER SPECIFIC ROUTES
 router.get('/:id', optionalAuth, postController.getPost);
 router.put('/:id', authMiddleware, postController.updatePost);
 router.delete('/:id', authMiddleware, postController.deletePost);
-router.get('/user/:userId', optionalAuth, postController.getUserPosts);
+router.patch('/:id/archive', authMiddleware, postController.archivePost);
+router.patch('/:id/restore', authMiddleware, postController.restorePost);
 router.get('/:id/likes', optionalAuth, postController.getPostLikes);
-router.get('/trending', optionalAuth, postController.getTrendingPosts);
-router.get('/search', optionalAuth, postController.searchPosts);
 
 // Repost route
 router.post('/:id/repost', authMiddleware, postController.repostPost);

@@ -4,6 +4,8 @@ import { Routes, Route, useLocation } from "react-router-dom";
 import { useAppStore } from "@/store/useAppStore";
 import ModernAuthConnect from "@/components/auth/ModernAuthConnect";
 import { Header } from "@/components/layout/Header";
+import { BottomNav } from "@/components/layout/BottomNav";
+import { MobileHeader } from "@/components/layout/MobileHeader";
 import SidebarLeft from "@/components/layout/SidebarLeft";
 import { SidebarRight } from "@/components/layout/SidebarRight";
 import { Feed } from "../pages/FeedPage";
@@ -15,6 +17,7 @@ import FriendPage from "@/pages/FriendPage";
 import MessagesPage from "@/pages/MessagesPage";
 import EditProfilePage from "@/pages/EditProfilePage";
 import NotificationsPage from "@/pages/NotificationsPage";
+import { CreatePostPage } from "@/pages/CreatePostPage";
 import { UnfollowConfirmProvider } from "@/contexts/UnfollowConfirmContext";
 import { ChatProvider, useChatContext } from "@/contexts/ChatContext";
 import { useSocket } from "@/hooks/useSocket";
@@ -58,13 +61,10 @@ const ProtectedAppContent: React.FC = () => {
   }, [isConnected, user]);
   
   // Check if current page should hide sidebars
-  const isMessagesPage = location.pathname === '/messages';
-  const isEditProfilePage = location.pathname.startsWith('/edit-profile');
-  // Get chat context
-  const { selectedConversationId } = useChatContext();
-  const isInChat = isMessagesPage && !!selectedConversationId && isMobile;
-  
-
+  const isEditProfilePage = location.pathname === '/edit-profile' || location.pathname.startsWith('/edit-profile/');
+  const isCreatePostPage = location.pathname === '/post';
+  const isMessagesPage = location.pathname.startsWith('/messages');
+  const isInChat = isMessagesPage && location.pathname !== '/messages';
   
   if (!isConnected || !user) {
     return <ModernAuthConnect />;
@@ -73,10 +73,16 @@ const ProtectedAppContent: React.FC = () => {
   return (
     <UnfollowConfirmProvider>
       <div className="min-h-screen bg-background text-foreground transition-colors duration-200">
-        {/* Hide header when in individual chat or edit profile */}
-        {!isEditProfilePage && <Header isInChat={isInChat} />}
+        {/* Desktop Header */}
+        {!isEditProfilePage && !isCreatePostPage && <Header isInChat={isInChat} />}
         
-        <main className={`w-full ${isMessagesPage || isInChat || isEditProfilePage ? 'px-0 py-0' : 'px-0 py-6'}`}>
+        {/* Mobile Header */}
+        {!isEditProfilePage && !isCreatePostPage && <MobileHeader />}
+        
+        {/* Mobile Bottom Navigation */}
+        {!isEditProfilePage && !isCreatePostPage && <BottomNav isInChat={isInChat} />}
+        
+        <main className={`w-full ${isMessagesPage || isInChat || isEditProfilePage || isCreatePostPage ? 'px-0 py-0' : 'px-0 py-6'}`}>
           {isEditProfilePage ? (
             // Full width layout for Edit Profile page
             <div className="w-full">
@@ -88,6 +94,15 @@ const ProtectedAppContent: React.FC = () => {
                   </Routes>
                 </TooltipProvider>
               </ToastProvider>
+            </div>
+          ) : isCreatePostPage ? (
+            // Full width layout for Create Post page
+            <div className="w-full">
+              <TooltipProvider>
+                <Routes>
+                  <Route path="/post" element={<CreatePostPage />} />
+                </Routes>
+              </TooltipProvider>
             </div>
           ) : isMessagesPage || isInChat ? (
             // Full width layout for Messages page and individual chats

@@ -547,6 +547,26 @@ export const api = {
       });
     },
 
+    archivePost: async (postId: string) => {
+      return apiCall(`/api/posts/${postId}/archive`, {
+        method: 'PATCH',
+      });
+    },
+
+    restorePost: async (postId: string) => {
+      return apiCall(`/api/posts/${postId}/restore`, {
+        method: 'PATCH',
+      });
+    },
+
+    getArchivedPosts: async (params: { page?: number; limit?: number } = {}) => {
+      const searchParams = new URLSearchParams();
+      if (params.page) searchParams.append('page', params.page.toString());
+      if (params.limit) searchParams.append('limit', params.limit.toString());
+      
+      return apiCall(`/api/posts/archived?${searchParams.toString()}`);
+    },
+
     getPost: async (postId: string) => {
       return apiCall(`/api/posts/${postId}`);
     },

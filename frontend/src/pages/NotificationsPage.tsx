@@ -374,6 +374,7 @@ const NotificationsPage: React.FC = () => {
       case 'comment':
       case 'newPost':
       case 'post_from_following':
+      case 'repost':
         // Check metadata for postId and commentId
         const postId = notification.metadata?.postId || notification.entityId;
         const commentId = notification.metadata?.commentId;

@@ -15,17 +15,83 @@
     "signedInSuccessfully": "Đăng nhập thành công!",
     "secureAuth": "Xác thực an toàn với Google"
   },
+  "search": {
+    "placeholder": "Tìm kiếm người dùng...",
+    "noResults": "Không tìm thấy người dùng nào",
+    "loading": "Đang tìm kiếm..."
+  },
 
+  "post": {
+    "edit": "Chỉnh sửa bài viết",
+    "delete": "Xóa bài viết",
+    "report": "Báo cáo bài viết",
+    "archive": "Lưu trữ bài viết",
+    "bookmark": "Lưu bài viết",
+    "unbookmark": "Bỏ lưu",
+    "alreadyArchived": "Bài viết đã được lưu trữ trước đó.",
+    "confirmArchive": "Lưu Trữ Bài Viết",
+    "confirmArchiveDesc": "Lưu trữ bài viết này? Bạn có thể khôi phục trong vòng 30 ngày.",
+    "confirmDelete": "Xóa Bài Viết",
+    "confirmDeleteDesc": "Bạn có chắc chắn muốn xóa bài viết này? Hành động này không thể hoàn tác.",
+    "confirmReport": "Báo Cáo Bài Viết",
+    "confirmReportDesc": "Báo cáo bài viết này vì nội dung không phù hợp? Đội ngũ của chúng tôi sẽ xem xét.",
+    "postPreview": "Nội dung bài viết:",
+    "archiving": "Đang lưu trữ...",
+    "deleting": "Đang xóa...",
+    "reporting": "Đang báo cáo...",
+    "archiveSuccess": "Lưu trữ bài viết thành công!",
+    "archiveSuccessDesc": "Bạn có thể khôi phục từ bài viết đã lưu trữ.",
+    "archiveError": "Không thể lưu trữ bài viết",
+    "archiveErrorDesc": "Vui lòng thử lại sau.",
+    "deleteSuccess": "Xóa bài viết thành công!",
+    "deleteSuccessDesc": "Bài viết của bạn đã được xóa vĩnh viễn.",
+    "deleteError": "Không thể xóa bài viết",
+    "deleteErrorDesc": "Vui lòng thử lại sau.",
+    "reportSuccess": "Báo cáo bài viết thành công!",
+    "reportSuccessDesc": "Cảm ơn bạn đã giúp giữ cộng đồng an toàn.",
+    "reportError": "Không thể báo cáo bài viết",
+    "reportErrorDesc": "Vui lòng thử lại sau."
+  },
+  "userSheet": {
+    "title": "Menu Cá Nhân",
+    "description": "Quản lý hồ sơ và cài đặt tài khoản",
+    "profile": "Hồ Sơ",
+    "profileDesc": "Xem và chỉnh sửa hồ sơ của bạn",
+    "archivedPosts": "Bài Viết Đã Lưu Trữ",
+    "archivedPostsDesc": "Xem và khôi phục bài viết đã lưu trữ",
+    "settings": "Cài Đặt",
+    "settingsDesc": "Tùy chọn ứng dụng và cấu hình",
+    "disconnect": "Đăng Xuất",
+    "disconnectDesc": "Thoát khỏi tài khoản của bạn"
+  },
+  "archivedPosts": {
+    "title": "Bài Viết Đã Lưu Trữ",
+    "description": "Bài viết sẽ tự động xóa sau 30 ngày. Bạn có thể khôi phục bất cứ lúc nào trước khi hết hạn.",
+    "empty": "Không có bài viết nào được lưu trữ",
+    "emptyDesc": "Khi bạn lưu trữ bài viết, chúng sẽ xuất hiện ở đây.",
+    "restore": "Khôi Phục",
+    "restoring": "Đang khôi phục...",
+    "restoreSuccess": "Khôi phục bài viết thành công!",
+    "restoreError": "Không thể khôi phục bài viết. Vui lòng thử lại.",
+    "archivedOn": "Đã lưu trữ vào",
+    "daysLeft": "{{days}} ngày còn lại",
+    "hoursLeft": "{{hours}} giờ còn lại",
+    "lessThanHour": "Dưới 1 giờ",
+    "expired": "Đã hết hạn",
+    "loading": "Đang tải...",
+    "loadMore": "Tải thêm",
+    "confirmRestore": "Khôi Phục Bài Viết",
+    "confirmRestoreDesc": "Bài viết này sẽ được khôi phục vào feed và hiển thị cho người theo dõi bạn.",
+    "postPreview": "Nội dung bài viết:",
+    "restoreSuccessDesc": "Bài viết của bạn đã hiển thị trong feed.",
+    "restoreErrorDesc": "Vui lòng thử lại sau."
+  },
   "header": {
-    "searchPlaceholder": "Tìm kiếm bài viết, hồ sơ...",
-    "user": "Người dùng",
-    "search": "Tìm kiếm",
     "profile": "Hồ sơ",
     "settings": "Cài đặt",
     "disconnect": "Ngắt kết nối",
     "userMenu": "Menu người dùng"
   },
-
   "notifications": {
     "title": "Thông báo",
     "empty": "Chưa có thông báo nào",
@@ -41,7 +107,8 @@
       "like": "đã thích bài viết của bạn",
       "comment": "đã bình luận bài viết của bạn",
       "follow": "đã bắt đầu theo dõi bạn",
-      "newPost": "đã chia sẻ bài viết mới"
+      "newPost": "đã chia sẻ bài viết mới",
+      "repost": "đã đăng lại bài viết của bạn"
     },
     "timeAgo": {
       "now": "vừa xong",
@@ -55,34 +122,30 @@
       "weeks": "{{count}} tuần"
     }
   },
+  "nav": {
+    "home": "Trang chủ",
+    "search": "Tìm kiếm",
+    "create": "Tạo bài viết",
+    "notifications": "Thông báo",
+    "messages": "Tin nhắn",
+    "friends": "Gợi ý kết bạn",
+    "profile": "Hồ sơ",
+    "settings": "Cài đặt",
+    "logout": "Đăng xuất"
+  },
   "settings": {
     "language": "Ngôn ngữ",
     "back": "Quay lại",
-       "theme": "Giao diện",
-    "theme.light": "Sáng",
-    "theme.dark": "Tối"
+    "theme": "Giao diện",
+    "theme.light": "Sáng"
   },
-
-   "nav": {
-    "home": "Trang chủ",
-    "search": "Tìm kiếm",
-    "notifications": "Thông báo",
-    "messages": "Tin nhắn",
-    "friends": "Bạn bè"
-  },
-  
   "feed": {
-    "error": {
-      "title": "Lỗi tải bài viết",
-      "loading": "Không thể tải bài viết"
-    },
-    "empty": {
-      "title": "Chưa có bài viết nào",
-      "description": "Hãy là người đầu tiên chia sẻ điều gì đó!"
-    },
     "createPost": {
+      "title": "Tạo bài viết",
       "placeholder": "Bạn đang nghĩ gì?",
-      "button": "Đăng bài"
+      "post": "Đăng",
+      "posting": "Đang đăng...",
+      "addToPost": "Thêm vào bài viết"
     },
     "actions": {
       "like": "Thích",
@@ -97,6 +160,7 @@
       "post": "Gửi"
     }
   },
+  
   "common": {
     "like": "Thích",
     "edit": "Chỉnh sửa",

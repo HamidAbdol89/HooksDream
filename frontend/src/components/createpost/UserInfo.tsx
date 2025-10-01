@@ -1,30 +1,28 @@
+// src/components/createpost/UserInfo.tsx
 import React from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
 import { useTranslation } from 'react-i18next';
+
 interface UserInfoProps {
   profile: any;
-  isMobile: boolean;
 }
 
-export const UserInfo: React.FC<UserInfoProps> = ({
-  profile,
-  isMobile
-}) => {
+export const UserInfo: React.FC<UserInfoProps> = ({ profile }) => {
   const { t } = useTranslation('common');
 
   if (!profile) {
     return (
-      <div className={`flex items-start space-x-3 border-b ${isMobile ? 'py-3' : 'py-4'}`}>
-        <Avatar className={`flex-shrink-0 ${isMobile ? 'w-8 h-8' : 'w-10 h-10'}`}>
+      <div className="flex items-start space-x-3 pb-4 border-b">
+        <Avatar className="w-12 h-12 flex-shrink-0">
           <AvatarFallback>
             {t('common.userInitial')}
           </AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">
-          <p className={`font-medium leading-none truncate ${isMobile ? 'text-sm' : 'text-sm'}`}>
+          <p className="font-medium text-base leading-none truncate">
             {t('common.loading')}...
           </p>
-          <p className={`text-muted-foreground truncate ${isMobile ? 'text-xs' : 'text-sm'}`}>
+          <p className="text-muted-foreground text-sm truncate mt-1">
             {t('common.loadingProfile')}...
           </p>
         </div>
@@ -33,8 +31,8 @@ export const UserInfo: React.FC<UserInfoProps> = ({
   }
 
   return (
-    <div className={`flex items-start space-x-3 border-b ${isMobile ? 'py-3' : 'py-4'}`}>
-      <Avatar className={`flex-shrink-0 ${isMobile ? 'w-8 h-8' : 'w-10 h-10'}`}>
+    <div className="flex items-start space-x-3 pb-4 border-b">
+      <Avatar className="w-12 h-12 flex-shrink-0">
         <AvatarImage 
           src={profile.avatar || ''} 
           alt={profile.displayName || profile.username || t('common.user')} 
@@ -44,10 +42,10 @@ export const UserInfo: React.FC<UserInfoProps> = ({
         </AvatarFallback>
       </Avatar>
       <div className="flex-1 min-w-0">
-        <p className={`font-medium leading-none truncate ${isMobile ? 'text-sm' : 'text-sm'}`}>
+        <p className="font-medium text-base leading-none truncate">
           {profile.displayName || profile.username || t('common.user')}
         </p>
-        <p className={`text-muted-foreground truncate ${isMobile ? 'text-xs' : 'text-sm'}`}>
+        <p className="text-muted-foreground text-sm truncate mt-1">
           {profile.username && profile.displayName !== profile.username 
             ? `@${profile.username}` 
             : (profile.email || '')

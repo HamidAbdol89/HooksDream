@@ -6,6 +6,15 @@ import { PostHeader } from './PostHeader';
 import { PostContent } from '@/components/posts/PostContent';
 import { PostMedia } from '@/components/posts/PostMedia';
 import { PostActions } from '@/components/posts/PostActions';
+import { Button } from '@/components/ui/Button';
+import { MoreHorizontal, Trash2, Edit, Flag } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { EngagementStats } from '@/components/posts/EngagementStats';
 import { CommentInput } from '@/components/comment/CommentInput';
 import { CommentSection } from '@/components/comment/CommentSection';
@@ -18,6 +27,7 @@ import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import { useNavigate } from 'react-router-dom';
 import { formatTimeAgo } from '@/utils/formatters';
 import { FollowButton } from '@/components/ui/FollowButton';
+import { useTranslation } from 'react-i18next';
 
 // Lazy load ImageModal for better code splitting
 const ImageModal = lazy(() => import('./ImageModal').then(module => ({ default: module.ImageModal })));
@@ -32,7 +42,7 @@ interface PostCardProps {
   isFollowLoading?: boolean;
   currentUserHashId?: string; 
   currentUser?: UserProfile;
-  onPostUpdate?: (updatedPost: Post) => void;
+  onPostUpdate?: (updatedPost: Post | null) => void;
   // ✅ Performance props for virtual scrolling
   isVisible?: boolean;
   priority?: 'high' | 'normal' | 'low';
@@ -67,6 +77,7 @@ export const PostCard: React.FC<PostCardProps> = memo(({
   } = usePostInteractions(post, onBookmark);
 
   const navigate = useNavigate();
+  const { t } = useTranslation('common');
 
   const {
     isModalOpen,
@@ -143,6 +154,44 @@ useEffect(() => {
     const targetUser = displayUser || post.userId;
     navigate(`/profile/${targetUser._id || targetUser.username}`);
   }, [displayUser, post.userId, navigate]);
+
+  // Delete post handler - now handled by PostActions dialog
+  const handleDeletePost = useCallback(async () => {
+    try {
+      await api.post.deletePost(post._id);
+      // Trigger post removal from feed
+      if (onPostUpdate) {
+        onPostUpdate(null); // Signal to remove post from feed
+      }
+    } catch (error) {
+      console.error('Error deleting post:', error);
+    }
+  }, [post._id, onPostUpdate]);
+
+  // Archive post handler - now handled by PostActions dialog
+  const handleArchivePost = useCallback(async () => {
+    try {
+      await api.post.archivePost(post._id);
+      // Trigger post removal from feed
+      if (onPostUpdate) {
+        onPostUpdate(null); // Signal to remove post from feed
+      }
+    } catch (error) {
+      console.error('Error archiving post:', error);
+    }
+  }, [post._id, onPostUpdate]);
+
+  // Edit post handler (placeholder)
+  const handleEditPost = useCallback(() => {
+    // TODO: Implement edit post functionality
+    console.log('Edit post:', post._id);
+  }, [post._id]);
+
+  // Report post handler (placeholder)
+  const handleReportPost = useCallback(() => {
+    // TODO: Implement report post functionality
+    console.log('Report post:', post._id);
+  }, [post._id]);
 
   return (
     <article className="bg-background/95 backdrop-blur-sm border-0 border-b border-border/50 hover:bg-background/98 transition-all duration-300 group">
@@ -250,7 +299,7 @@ useEffect(() => {
       {/* Original post content or deleted message */}
       {isRepost ? (
         <div className="px-3 sm:px-4">
-          {originalPost?.isDeleted ? (
+          {originalPost?.isDeleted || post.originalPostDeleted ? (
             <div className="mb-3">
               <div className="p-4 border border-dashed border-border/60 rounded-xl bg-muted/20 text-center">
                 <p className="text-muted-foreground italic text-sm">
@@ -335,6 +384,11 @@ useEffect(() => {
           onShare={onShare}
           onBookmark={handleBookmark}
           currentUser={currentUser}
+          isOwnProfile={isOwnProfile}
+          onArchive={handleArchivePost}
+          onDelete={handleDeletePost}
+          onEdit={handleEditPost}
+          onReport={handleReportPost}
           onRepostSuccess={(repost) => {
             // Update repost count optimistically
             if (onPostUpdate) {

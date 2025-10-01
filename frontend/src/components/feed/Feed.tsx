@@ -2,8 +2,6 @@ import React, { useCallback, useRef, useState, useMemo } from 'react';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import { useSocial } from '@/hooks/useSocial';
 import { useTranslation } from 'react-i18next';
-import { CreatePostModal } from '../posts/CreatePostModal';
-import { FeedHeader } from './FeedHeader';
 import { PostList } from './PostList';
 import { VirtualPostList } from './VirtualPostList';
 import { LoadingState } from './LoadingState';
@@ -55,7 +53,6 @@ export const FeedContainer: React.FC<FeedContainerProps> = React.memo(({
   const { t } = useTranslation('common');
   const { profile } = useGoogleAuth();
   const { isFollowLoading } = useSocial();
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const observerRef = useRef<IntersectionObserver>();
 
   // Debounce infinite scroll để mobile không spam
@@ -77,8 +74,6 @@ export const FeedContainer: React.FC<FeedContainerProps> = React.memo(({
     observerRef.current.observe(node);
   }, [debouncedLoadMore]);
 
-  const handleCreatePost = () => setIsCreateModalOpen(true);
-  const handleCloseModal = () => setIsCreateModalOpen(false);
 
   return (
     <div className="min-h-screen bg-background relative">
@@ -90,11 +85,6 @@ export const FeedContainer: React.FC<FeedContainerProps> = React.memo(({
       )}
 
       <div className="w-full max-w-full md:max-w-3xl lg:max-w-5xl mx-auto">
-        <FeedHeader
-          currentUserProfile={currentUserProfile}
-          profile={profile}
-          onCreatePost={handleCreatePost}
-        />
 
         <div className="pb-20">
           {error ? (
@@ -102,7 +92,7 @@ export const FeedContainer: React.FC<FeedContainerProps> = React.memo(({
           ) : loading && posts.length === 0 ? (
             <LoadingState />
           ) : posts.length === 0 ? (
-            <EmptyState onCreatePost={handleCreatePost} />
+            <EmptyState />
           ) : useVirtualScrolling ? (
             <VirtualPostList
               posts={posts}
@@ -138,11 +128,6 @@ export const FeedContainer: React.FC<FeedContainerProps> = React.memo(({
         </div>
       </div>
 
-      <CreatePostModal
-        isOpen={isCreateModalOpen}
-        onClose={handleCloseModal}
-        onPostCreated={onPostCreated}
-      />
     </div>
   );
 });

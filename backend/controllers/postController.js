@@ -1,5 +1,7 @@
 const Post = require('../models/Post');
 const User = require('../models/User');
+const Comment = require('../models/Comment');
+const Notification = require('../models/Notification');
 const { createResponse } = require('../utils/helpers');
 const linkPreviewService = require('../services/linkPreviewService');
 
@@ -18,7 +20,14 @@ exports.getPosts = async (req, res) => {
     try {
         const { page = 1, limit = 10, sort = 'latest' } = req.query;
         
-        let query = { isDeleted: false, visibility: 'public' };
+        let query = { 
+            isDeleted: false, 
+            $or: [
+                { isArchived: false },
+                { isArchived: { $exists: false } }
+            ],
+            visibility: 'public' 
+        };
         let sortOption = { createdAt: -1 };
         
         switch (sort) {
@@ -295,8 +304,88 @@ exports.deletePost = async (req, res) => {
             });
         }
         
-        // Soft delete
-        await post.softDelete();
+        // Hard delete - xóa images/video từ Cloudinary trước (optional, không fail nếu lỗi)
+        try {
+            if (post.images && post.images.length > 0) {
+                const cloudinary = require('cloudinary').v2;
+                for (const imageUrl of post.images) {
+                    try {
+                        // Extract public_id từ Cloudinary URL
+                        // Format: https://res.cloudinary.com/cloud/image/upload/v123456/folder/filename.jpg
+                        const urlParts = imageUrl.split('/');
+                        const filename = urlParts[urlParts.length - 1];
+                        const publicId = filename.split('.')[0];
+                        await cloudinary.uploader.destroy(publicId);
+                        console.log(`Deleted image from Cloudinary: ${publicId}`);
+                    } catch (error) {
+                        console.error('Error deleting image from Cloudinary:', error);
+                    }
+                }
+            }
+            
+            if (post.video) {
+                const cloudinary = require('cloudinary').v2;
+                try {
+                    // Extract public_id từ Cloudinary URL
+                    const urlParts = post.video.split('/');
+                    const filename = urlParts[urlParts.length - 1];
+                    const publicId = filename.split('.')[0];
+                    await cloudinary.uploader.destroy(publicId, { resource_type: 'video' });
+                    console.log(`Deleted video from Cloudinary: ${publicId}`);
+                } catch (error) {
+                    console.error('Error deleting video from Cloudinary:', error);
+                }
+            }
+        } catch (cloudinaryError) {
+            console.error('Cloudinary deletion failed, continuing with database cleanup:', cloudinaryError);
+        }
+        
+        // Nếu đây là repost, giảm repost count của original post
+        if (post.repost_of) {
+            try {
+                await Post.findByIdAndUpdate(post.repost_of, { 
+                    $inc: { repostCount: -1 } 
+                });
+                console.log(`Decreased repost count for original post: ${post.repost_of}`);
+            } catch (error) {
+                console.error('Error updating original post repost count:', error);
+            }
+        }
+        
+        // Nếu đây là original post, mark tất cả reposts để hiển thị "bài gốc đã bị gỡ"
+        if (!post.repost_of) {
+            try {
+                // Tìm tất cả reposts của post này
+                const reposts = await Post.find({ repost_of: id });
+                console.log(`Found ${reposts.length} reposts of this original post`);
+                
+                // Mark reposts để hiển thị "original deleted" message
+                // Không xóa reposts, chỉ mark để UI hiển thị message
+                await Post.updateMany(
+                    { repost_of: id },
+                    { $set: { originalPostDeleted: true } }
+                );
+                console.log(`Marked ${reposts.length} reposts as having deleted original`);
+            } catch (error) {
+                console.error('Error handling reposts of deleted original post:', error);
+            }
+        }
+        
+        // Hard delete từ MongoDB
+        await Post.findByIdAndDelete(id);
+        
+        // Xóa tất cả comments của post này
+        await Comment.deleteMany({ postId: id });
+        
+        // Likes sẽ được xóa cùng với post (embedded trong Post model)
+        
+        // Xóa tất cả notifications liên quan đến post này
+        await Notification.deleteMany({ 
+            $or: [
+                { 'metadata.postId': id },
+                { entityId: id }
+            ]
+        });
         
         // Cập nhật post count của user
         await User.findByIdAndUpdate(req.userId, { $inc: { postCount: -1 } });
@@ -322,9 +411,262 @@ exports.deletePost = async (req, res) => {
         });
         
     } catch (error) {
+        console.error('Error deleting post:', error);
         res.status(500).json({
             success: false,
-            message: 'Internal server error'
+            message: 'Internal server error',
+            error: error.message
+        });
+    }
+};
+
+// Archive post - soft delete với TTL 30 ngày
+exports.archivePost = async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        console.log('Archive request - postId:', id, 'userId:', req.userId);
+        
+        // Tìm post không quan tâm đến isDeleted/isArchived để debug
+        const anyPost = await Post.findById(id);
+        console.log('Any post found:', anyPost ? {
+            _id: anyPost._id,
+            userId: anyPost.userId,
+            isDeleted: anyPost.isDeleted,
+            isArchived: anyPost.isArchived
+        } : 'null');
+        
+        // Đơn giản hóa query để test
+        const post = await Post.findOne({
+            _id: id
+        });
+        
+        console.log('Simple query result:', post ? {
+            _id: post._id,
+            userId: post.userId,
+            isDeleted: post.isDeleted,
+            isArchived: post.isArchived
+        } : 'null');
+        
+        // Check conditions manually
+        if (post && post.isDeleted === true) {
+            return res.status(404).json({
+                success: false,
+                message: 'Post is deleted'
+            });
+        }
+        
+        if (post && post.isArchived === true) {
+            return res.status(400).json({
+                success: false,
+                message: 'Post is already archived'
+            });
+        }
+        
+        console.log('Found post:', post ? {
+            _id: post._id,
+            userId: post.userId,
+            isDeleted: post.isDeleted,
+            isArchived: post.isArchived
+        } : 'null');
+        
+        if (!post) {
+            return res.status(404).json({
+                success: false,
+                message: 'Post not found or already archived'
+            });
+        }
+        
+        // Check ownership với debug
+        console.log('Ownership check - post.userId:', post.userId, 'req.userId:', req.userId, 'match:', post.userId === req.userId);
+        
+        if (post.userId !== req.userId) {
+            return res.status(403).json({
+                success: false,
+                message: 'Access denied'
+            });
+        }
+        
+        // Archive post với TTL 30 ngày
+        console.log('About to archive post...');
+        await post.archivePost();
+        console.log('Post archived successfully, new state:', {
+            isArchived: post.isArchived,
+            archivedAt: post.archivedAt,
+            expiresAt: post.expiresAt
+        });
+        
+        // Emit real-time event for post archival
+        if (global.socketServer) {
+            const archiveData = {
+                postId: id,
+                userId: req.userId,
+                timestamp: new Date().toISOString()
+            };
+            
+            // Broadcast to post room, global feed, and user's followers
+            global.socketServer.emitToPost(id, 'post:archived', archiveData);
+            global.socketServer.io.to('feed:global').emit('post:archived', archiveData);
+            global.socketServer.io.to(`user:${req.userId}:posts`).emit('post:archived', archiveData);
+        }
+        
+        console.log('Sending success response...');
+        res.json({
+            success: true,
+            message: 'Post archived successfully',
+            data: {
+                archivedAt: post.archivedAt,
+                expiresAt: post.expiresAt
+            }
+        });
+        console.log('Response sent successfully');
+        
+    } catch (error) {
+        console.error('Error archiving post:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+            error: error.message
+        });
+    }
+};
+
+// Lấy archived posts của user
+exports.getArchivedPosts = async (req, res) => {
+    try {
+        console.log('🔍 getArchivedPosts called with userId:', req.userId);
+        
+        const { page = 1, limit = 10 } = req.query;
+        const userId = req.userId;
+        
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'User not authenticated'
+            });
+        }
+        
+        const query = { 
+            userId: userId,
+            isDeleted: false,
+            isArchived: true
+        };
+        
+        console.log('📋 Query:', query);
+        
+        const posts = await Post.find(query)
+            .populate('userId', 'username displayName avatar isVerified')
+            .populate('originalPost')
+            .populate({
+                path: 'repost_of',
+                populate: {
+                    path: 'userId',
+                    select: 'username displayName avatar isVerified'
+                }
+            })
+            .sort({ archivedAt: -1 })
+            .limit(limit * 1)
+            .skip((page - 1) * limit)
+            .lean();
+        
+        console.log('📝 Found posts:', posts.length);
+        
+        // Transform data to match frontend expectations
+        const transformedPosts = posts.map(post => ({
+            ...post,
+            likesCount: post.likeCount || 0,
+            commentsCount: post.commentCount || 0,
+            isLiked: post.likes ? post.likes.some(like => like.userId === req.userId) : false
+        }));
+        
+        const total = await Post.countDocuments(query);
+        const currentPage = parseInt(page);
+        const totalPages = Math.ceil(total / limit);
+        
+        console.log('📊 Pagination:', { total, currentPage, totalPages });
+        
+        res.json({
+            success: true,
+            data: transformedPosts,
+            pagination: {
+                page: currentPage,
+                limit: parseInt(limit),
+                total,
+                pages: totalPages,
+                hasMore: currentPage < totalPages,
+                hasNext: currentPage < totalPages,
+                hasPrev: currentPage > 1
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error getting archived posts:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+            error: error.message
+        });
+    }
+};
+
+// Restore archived post
+exports.restorePost = async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        console.log('Restore request - postId:', id, 'userId:', req.userId);
+        
+        const post = await Post.findOne({
+            _id: id,
+            isDeleted: false,
+            isArchived: true
+        });
+        
+        if (!post) {
+            return res.status(404).json({
+                success: false,
+                message: 'Archived post not found'
+            });
+        }
+        
+        // Check ownership
+        if (post.userId !== req.userId) {
+            return res.status(403).json({
+                success: false,
+                message: 'Access denied'
+            });
+        }
+        
+        // Restore post
+        console.log('About to restore post...');
+        await post.restorePost();
+        console.log('Post restored successfully');
+        
+        // Emit real-time event for post restoration
+        if (global.socketServer) {
+            const restoreData = {
+                postId: id,
+                userId: req.userId,
+                timestamp: new Date().toISOString()
+            };
+            
+            // Broadcast to post room, global feed, and user's followers
+            global.socketServer.emitToPost(id, 'post:restored', restoreData);
+            global.socketServer.io.to('feed:global').emit('post:restored', restoreData);
+            global.socketServer.io.to(`user:${req.userId}:posts`).emit('post:restored', restoreData);
+        }
+        
+        res.json({
+            success: true,
+            message: 'Post restored successfully'
+        });
+        
+    } catch (error) {
+        console.error('Error restoring post:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+            error: error.message
         });
     }
 };
@@ -346,7 +688,11 @@ exports.getUserPosts = async (req, res) => {
         
         let query = { 
             userId: userId,
-            isDeleted: false
+            isDeleted: false,
+            $or: [
+                { isArchived: false },
+                { isArchived: { $exists: false } }
+            ]
         };
         
         // Nếu không phải chính user đó, chỉ hiển thị public posts
@@ -563,6 +909,10 @@ exports.searchPosts = async (req, res) => {
         
         let query = { 
             isDeleted: false,
+            $or: [
+                { isArchived: false },
+                { isArchived: { $exists: false } }
+            ],
             visibility: 'public'
         };
         
@@ -759,6 +1109,11 @@ exports.repostPost = async (req, res) => {
         
         // Cập nhật post count của user
         await User.findByIdAndUpdate(req.userId, { $inc: { postCount: 1 } });
+        
+        // Tạo notification cho tác giả post gốc
+        const NotificationHelper = require('../utils/notificationHelper');
+        const notificationHelper = new NotificationHelper();
+        await notificationHelper.handleRepost(id, originalPost.userId, req.userId);
         
         // Emit real-time event
         if (global.socketServer) {

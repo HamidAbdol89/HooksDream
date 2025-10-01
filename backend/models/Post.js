@@ -140,6 +140,27 @@ const PostSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    // Flag để mark khi original post bị xóa
+    originalPostDeleted: {
+        type: Boolean,
+        default: false
+    },
+    // Archive functionality - soft delete với TTL 30 ngày
+    isArchived: {
+        type: Boolean,
+        default: false,
+        index: true // Index cho query performance
+    },
+    archivedAt: {
+        type: Date,
+        default: null
+    },
+    // TTL field - auto delete sau 30 ngày
+    expiresAt: {
+        type: Date,
+        default: null,
+        index: { expireAfterSeconds: 0 } // MongoDB TTL index
+    },
     // Privacy settings
     visibility: {
         type: String,
@@ -294,10 +315,33 @@ PostSchema.methods.softDelete = async function() {
     await this.save();
 };
 
+// Method để archive post với TTL 30 ngày
+PostSchema.methods.archivePost = async function() {
+    const now = new Date();
+    const expiryDate = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 ngày
+    
+    this.isArchived = true;
+    this.archivedAt = now;
+    this.expiresAt = expiryDate;
+    await this.save();
+};
+
+// Method để restore archived post
+PostSchema.methods.restorePost = async function() {
+    this.isArchived = false;
+    this.archivedAt = null;
+    this.expiresAt = null;
+    await this.save();
+};
+
 // Static method để lấy posts công khai
 PostSchema.statics.getPublicPosts = function(page = 1, limit = 10) {
     return this.find({ 
         isDeleted: false,
+        $or: [
+            { isArchived: false },
+            { isArchived: { $exists: false } }
+        ],
         visibility: 'public'
     })
     .populate('userId', 'username displayName avatar')
@@ -318,6 +362,10 @@ PostSchema.statics.getPublicPosts = function(page = 1, limit = 10) {
 PostSchema.statics.getTrendingPosts = function(limit = 10) {
     return this.find({
         isDeleted: false,
+        $or: [
+            { isArchived: false },
+            { isArchived: { $exists: false } }
+        ],
         visibility: 'public',
         createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } // Last 7 days
     })

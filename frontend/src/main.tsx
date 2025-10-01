@@ -5,6 +5,7 @@ import { BrowserRouter } from "react-router-dom";
 import './styles/globals.css'
 import "./i18n";
 import { ReactQueryProvider } from './providers/ReactQueryProvider';
+import { ToastProvider } from './components/ui/SuccessToast';
 // 🔥 BỎ UnfollowConfirmProvider ở đây vì đã có trong ProtectedApp
 
 // Register Service Worker for PWA
@@ -24,7 +25,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <ReactQueryProvider>
       <BrowserRouter>
-        <App />
+        <ToastProvider>
+          <App />
+        </ToastProvider>
       </BrowserRouter>
     </ReactQueryProvider>
   </React.StrictMode>

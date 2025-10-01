@@ -1,10 +1,19 @@
 // src/components/posts/PostHeader.tsx (updated với Socket.IO)
-import React, { memo, useMemo, useCallback } from 'react';
+import React, { memo, useMemo, useCallback, useState } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/Avatar";
+import { Button } from '@/components/ui/Button';
 import { formatTimeAgo } from '@/utils/formatters';
 import { useTranslation } from "react-i18next";
 import { User } from '@/types/post';
 import { FollowButton } from '@/components/ui/FollowButton';
+import { MoreHorizontal, Trash2, Edit, Flag } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 interface PostHeaderProps {
   user: User;
@@ -13,6 +22,11 @@ interface PostHeaderProps {
   isFollowLoading?: boolean;
   onUserClick: () => void;
   isOwnProfile?: boolean;
+  currentUserId?: string;
+  postId?: string;
+  onDelete?: () => void;
+  onEdit?: () => void;
+  onReport?: () => void;
 }
 
 export const PostHeader: React.FC<PostHeaderProps> = memo(({
@@ -21,22 +35,31 @@ export const PostHeader: React.FC<PostHeaderProps> = memo(({
   onFollow,
   isFollowLoading = false,
   onUserClick,
-  isOwnProfile = false
+  isOwnProfile = false,
+  currentUserId,
+  postId,
+  onDelete,
+  onEdit,
+  onReport
 }) => {
   const { t } = useTranslation("common");
   
   // Memoize expensive calculations
-  const { shouldShowFollowButton, userInitial, formattedTime } = useMemo(() => {
+  const { shouldShowFollowButton, userInitial, formattedTime, isAuthor, shouldShowMenu } = useMemo(() => {
     const showFollowBtn = onFollow && !isOwnProfile;
     const initial = user.displayName?.charAt(0)?.toUpperCase() || user.username?.charAt(0)?.toUpperCase() || '?';
     const timeFormatted = formatTimeAgo(createdAt);
+    const isPostAuthor = currentUserId === user._id;
+    const showMenu = isPostAuthor || onReport; // Show menu if author or can report
     
     return {
       shouldShowFollowButton: showFollowBtn,
       userInitial: initial,
-      formattedTime: timeFormatted
+      formattedTime: timeFormatted,
+      isAuthor: isPostAuthor,
+      shouldShowMenu: showMenu
     };
-  }, [onFollow, isOwnProfile, user.displayName, user.username, createdAt]);
+  }, [onFollow, isOwnProfile, user.displayName, user.username, createdAt, currentUserId, user._id, onReport]);
   
   // Memoize click handler
   const handleUserClick = useCallback(() => {
@@ -99,16 +122,60 @@ export const PostHeader: React.FC<PostHeaderProps> = memo(({
         </div>
       </div>
       
-      {/* Follow/Unfollow button với Socket.IO - chỉ hiển thị nếu không phải chính mình */}
-      {shouldShowFollowButton && user._id && (
-        <FollowButton
-          userId={user._id}
-          initialIsFollowing={user.isFollowing}
-          username={user.username}
-          size="sm"
-          className="px-3 sm:px-4 py-1 sm:py-1.5 text-xs sm:text-sm"
-        />
-      )}
+      <div className="flex items-center space-x-2">
+        {/* Follow/Unfollow button với Socket.IO - chỉ hiển thị nếu không phải chính mình */}
+        {shouldShowFollowButton && user._id && (
+          <FollowButton
+            userId={user._id}
+            initialIsFollowing={user.isFollowing}
+            username={user.username}
+            size="sm"
+            className="px-3 sm:px-4 py-1 sm:py-1.5 text-xs sm:text-sm"
+          />
+        )}
+
+        {/* Post Actions Menu */}
+        {shouldShowMenu && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {isAuthor && (
+                <>
+                  {onEdit && (
+                    <DropdownMenuItem onClick={onEdit}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      {t('post.edit', 'Edit post')}
+                    </DropdownMenuItem>
+                  )}
+                  {onDelete && (
+                    <DropdownMenuItem 
+                      onClick={onDelete}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      {t('post.delete', 'Delete post')}
+                    </DropdownMenuItem>
+                  )}
+                </>
+              )}
+              
+              {!isAuthor && onReport && (
+                <>
+                  {isAuthor && <DropdownMenuSeparator />}
+                  <DropdownMenuItem onClick={onReport}>
+                    <Flag className="mr-2 h-4 w-4" />
+                    {t('post.report', 'Report post')}
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
     </header>
   );
 });
