@@ -154,7 +154,14 @@ export const PostDetailPage: React.FC = () => {
           onLike={handleLike}
           currentUserHashId={user?._id}
           currentUser={user as any}
-          onPostUpdate={(updatedPost) => setPost(updatedPost)}
+          onPostUpdate={(updatedPost) => {
+            if (updatedPost === null) {
+              // Post was deleted, navigate back
+              navigate('/feed');
+            } else {
+              setPost(updatedPost);
+            }
+          }}
           highlightCommentId={highlightCommentId}
         />
       </div>

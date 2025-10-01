@@ -77,6 +77,9 @@ export function useEditProfile({ isOpen, user, onSave, onClose }: UseEditProfile
     }
   }, [isOpen, address, API_BASE]);
 
+  // Use ref to track previous values and avoid infinite loops
+  const prevGlobalUserRef = useRef<{ avatar?: string; coverImage?: string }>({});
+
   useEffect(() => {
     if (!globalUser || !resolvedUser || globalUser._id !== resolvedUser._id) {
       return;
@@ -87,11 +90,17 @@ export function useEditProfile({ isOpen, user, onSave, onClose }: UseEditProfile
       return;
     }
 
-    // Chỉ update nếu có thay đổi thực sự
-    const hasAvatarChange = globalUser.avatar !== resolvedUser.avatar;
-    const hasCoverChange = globalUser.coverImage !== resolvedUser.coverImage;
+    // Check if globalUser values actually changed
+    const prevValues = prevGlobalUserRef.current;
+    const hasAvatarChange = globalUser.avatar !== prevValues.avatar && globalUser.avatar !== resolvedUser.avatar;
+    const hasCoverChange = globalUser.coverImage !== prevValues.coverImage && globalUser.coverImage !== resolvedUser.coverImage;
 
     if (hasAvatarChange || hasCoverChange) {
+      // Update previous values
+      prevGlobalUserRef.current = {
+        avatar: globalUser.avatar,
+        coverImage: globalUser.coverImage
+      };
 
       setResolvedUser(prev => prev ? { ...prev, ...globalUser } : globalUser);
       
@@ -108,7 +117,7 @@ export function useEditProfile({ isOpen, user, onSave, onClose }: UseEditProfile
         }));
       }
     }
-  }, [globalUser?.avatar, globalUser?.coverImage, resolvedUser]); // ✅ Specific dependencies
+  }, [globalUser?.avatar, globalUser?.coverImage]); // ✅ Only depend on globalUser values
 
   // Initialize form data when user is resolved
   useEffect(() => {

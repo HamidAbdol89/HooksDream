@@ -64,8 +64,9 @@ export const Feed: React.FC = () => {
     addNewPost(newPost);
   }, [addNewPost]);
 
-  const handlePostUpdate = useCallback((updatedPost: Post) => {
+  const handlePostUpdate = useCallback((updatedPost: Post | null) => {
     // This will be handled by React Query cache invalidation
+    // updatedPost can be null when post is deleted/archived
     refresh();
   }, [refresh]);
 

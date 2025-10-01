@@ -16,7 +16,7 @@ interface VirtualPostListProps {
   onRefresh: () => void;
   onLike: (postId: string) => void;
   onFollow: (userId: string, currentStatus: boolean) => void;
-  onPostUpdate?: (updatedPost: Post) => void;
+  onPostUpdate?: (updatedPost: Post | null) => void;
   isFollowLoading: boolean;
   currentUserHashId?: string;
   currentUser?: UserProfile;

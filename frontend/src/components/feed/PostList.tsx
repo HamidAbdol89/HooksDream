@@ -15,7 +15,7 @@ interface PostListProps {
   onRefresh: () => void;
   onLike: (postId: string) => void;
   onFollow: (userId: string, currentStatus: boolean) => void;
-  onPostUpdate?: (updatedPost: Post) => void; // THÊM PROP MỚI
+  onPostUpdate?: (updatedPost: Post | null) => void; // THÊM PROP MỚI
   isFollowLoading: boolean;
   lastPostRef: (node: HTMLDivElement | null) => void;
   currentUserHashId?: string;

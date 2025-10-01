@@ -12,7 +12,7 @@ interface PostWithRepostProps {
   onComment: (postId: string) => void;
   onShare: (postId: string) => void;
   onRepost?: (postId: string) => void;
-  onPostUpdate?: (updatedPost: Post) => void;
+  onPostUpdate?: (updatedPost: Post | null) => void;
 }
 
 export const PostWithRepost: React.FC<PostWithRepostProps> = ({

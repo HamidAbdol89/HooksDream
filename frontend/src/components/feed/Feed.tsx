@@ -25,7 +25,7 @@ interface FeedContainerProps {
   onLike: (postId: string) => void;
   onFollow: (userId: string, currentStatus: boolean) => void;
   onPostCreated: (newPost: any) => void;
-  onPostUpdate?: (updatedPost: Post) => void;
+  onPostUpdate?: (updatedPost: Post | null) => void;
   isConnected: boolean;
   currentUserHashId?: string;
   currentUser?: UserProfile;
