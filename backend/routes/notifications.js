@@ -18,11 +18,11 @@ router.patch('/:notificationId/read', authMiddleware, notificationController.mar
 // Mark all notifications as read
 router.patch('/mark-all-read', authMiddleware, notificationController.markAllAsRead);
 
+// Clear all notifications (must be before /:notificationId)
+router.delete('/clear-all', authMiddleware, notificationController.clearAllNotifications);
+
 // Delete notification
 router.delete('/:notificationId', authMiddleware, notificationController.deleteNotification);
-
-// Clear all notifications
-router.delete('/clear-all', authMiddleware, notificationController.clearAllNotifications);
 
 // Get notification settings
 router.get('/settings', authMiddleware, notificationController.getSettings);

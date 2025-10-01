@@ -190,26 +190,13 @@ const NotificationsPage: React.FC = () => {
 
   // API helper function
   const apiCall = async (endpoint: string, options: RequestInit = {}) => {
-    // Debug all localStorage keys
-    console.log('All localStorage keys:', Object.keys(localStorage));
-    console.log('localStorage contents:', {
-      user_hash_id: localStorage.getItem('user_hash_id'),
-      token: localStorage.getItem('token'),
-      authToken: localStorage.getItem('authToken'),
-      user: localStorage.getItem('user'),
-      accessToken: localStorage.getItem('accessToken')
-    });
-    
     const token = localStorage.getItem('auth_token');
     
-    console.log('Token check:', { token: token ? 'Present' : 'Missing', length: token?.length });
-    
     if (!token) {
-      throw new Error('User not authenticated - no token found in localStorage');
+      throw new Error('User not authenticated');
     }
 
     const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-    console.log('API URL:', apiUrl);
     
     const response = await fetch(`${apiUrl}/api/notifications${endpoint}`, {
       ...options,
@@ -219,12 +206,9 @@ const NotificationsPage: React.FC = () => {
         ...options.headers,
       },
     });
-
-    console.log('Response status:', response.status);
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.log('Error response:', errorText);
       throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
@@ -238,15 +222,9 @@ const NotificationsPage: React.FC = () => {
       setError(null);
 
       const data = await apiCall(`?page=${page}&limit=20`);
-      console.log('Notifications API response:', data);
       
       if (data.success) {
         const { notifications: newNotifications, pagination, unreadCount: newUnreadCount } = data.data;
-        console.log('Notifications data:', { 
-          notificationsCount: newNotifications?.length, 
-          unreadCount: newUnreadCount,
-          notifications: newNotifications 
-        });
         
         if (page === 1) {
           setNotifications(newNotifications);
@@ -278,9 +256,11 @@ const NotificationsPage: React.FC = () => {
           )
         );
         setUnreadCount(data.data.unreadCount);
+      } else {
+        throw new Error(data.message || 'Failed to mark as read');
       }
-    } catch (err) {
-      console.error('Failed to mark notification as read:', err);
+    } catch (err: any) {
+      alert(`Error: ${err.message}`);
     }
   }, []);
   
@@ -297,9 +277,11 @@ const NotificationsPage: React.FC = () => {
           }))
         );
         setUnreadCount(0);
+      } else {
+        throw new Error(data.message || 'Failed to mark all as read');
       }
-    } catch (err) {
-      console.error('Failed to mark all notifications as read:', err);
+    } catch (err: any) {
+      alert(`Error: ${err.message}`);
     }
   }, []);
   
@@ -310,9 +292,11 @@ const NotificationsPage: React.FC = () => {
       if (data.success) {
         setNotifications(prev => prev.filter(notification => notification._id !== id));
         setUnreadCount(data.data.unreadCount);
+      } else {
+        throw new Error(data.message || 'Failed to delete notification');
       }
-    } catch (err) {
-      console.error('Failed to delete notification:', err);
+    } catch (err: any) {
+      alert(`Error: ${err.message}`);
     }
   }, []);
   
@@ -323,9 +307,11 @@ const NotificationsPage: React.FC = () => {
       if (data.success) {
         setNotifications([]);
         setUnreadCount(0);
+      } else {
+        throw new Error(data.message || 'Failed to clear notifications');
       }
-    } catch (err) {
-      console.error('Failed to clear notifications:', err);
+    } catch (err: any) {
+      alert(`Error: ${err.message}`);
     }
   }, []);
 

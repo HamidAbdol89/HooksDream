@@ -1,11 +1,21 @@
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 
+// Socket server instance
+let socketServer = null;
+const setSocketServer = (server) => {
+    socketServer = server;
+};
+
+const getNotificationHelper = () => {
+    return socketServer?.getNotificationHelper();
+};
+
 class NotificationController {
     // Get notifications for current user
     async getNotifications(req, res) {
         try {
-            const userId = req.user.userId;
+            const userId = req.userId;
             const page = parseInt(req.query.page) || 1;
             const limit = parseInt(req.query.limit) || 20;
             const skip = (page - 1) * limit;
@@ -54,7 +64,7 @@ class NotificationController {
     // Get unread count only
     async getUnreadCount(req, res) {
         try {
-            const userId = req.user.userId;
+            const userId = req.userId;
             const unreadCount = await Notification.getUnreadCount(userId);
 
             res.json({
@@ -73,7 +83,7 @@ class NotificationController {
     // Mark notification as read
     async markAsRead(req, res) {
         try {
-            const userId = req.user.userId;
+            const userId = req.userId;
             const { notificationId } = req.params;
 
             const notification = await Notification.findOne({
@@ -84,7 +94,6 @@ class NotificationController {
             if (!notification) {
                 return res.status(404).json({
                     success: false,
-                    message: 'Notification not found'
                 });
             }
 
@@ -92,6 +101,12 @@ class NotificationController {
 
             // Get updated unread count
             const unreadCount = await Notification.getUnreadCount(userId);
+
+            // Emit socket event for real-time update
+            const notificationHelper = getNotificationHelper();
+            if (notificationHelper) {
+                await notificationHelper.emitUnreadCountUpdate(userId);
+            }
 
             res.json({
                 success: true,
@@ -112,9 +127,15 @@ class NotificationController {
     // Mark all notifications as read
     async markAllAsRead(req, res) {
         try {
-            const userId = req.user.userId;
+            const userId = req.userId;
 
             await Notification.markAllAsRead(userId);
+
+            // Emit socket event for real-time update
+            const notificationHelper = getNotificationHelper();
+            if (notificationHelper) {
+                await notificationHelper.emitUnreadCountUpdate(userId);
+            }
 
             res.json({
                 success: true,
@@ -133,7 +154,7 @@ class NotificationController {
     // Delete notification
     async deleteNotification(req, res) {
         try {
-            const userId = req.user.userId;
+            const userId = req.userId;
             const { notificationId } = req.params;
 
             const notification = await Notification.findOne({
@@ -153,6 +174,12 @@ class NotificationController {
             // Get updated unread count
             const unreadCount = await Notification.getUnreadCount(userId);
 
+            // Emit socket event for real-time update
+            const notificationHelper = getNotificationHelper();
+            if (notificationHelper) {
+                await notificationHelper.emitUnreadCountUpdate(userId);
+            }
+
             res.json({
                 success: true,
                 message: 'Notification deleted',
@@ -170,12 +197,18 @@ class NotificationController {
     // Clear all notifications
     async clearAllNotifications(req, res) {
         try {
-            const userId = req.user.userId;
+            const userId = req.userId;
 
             await Notification.updateMany(
                 { recipient: userId },
                 { isDeleted: true }
             );
+
+            // Emit socket event for real-time update
+            const notificationHelper = getNotificationHelper();
+            if (notificationHelper) {
+                await notificationHelper.emitUnreadCountUpdate(userId);
+            }
 
             res.json({
                 success: true,
@@ -194,7 +227,7 @@ class NotificationController {
     // Get notification settings (placeholder for future)
     async getSettings(req, res) {
         try {
-            const userId = req.user.userId;
+            const userId = req.userId;
             
             // Default settings - can be expanded to user preferences
             const settings = {
@@ -224,7 +257,7 @@ class NotificationController {
     // Update notification settings (placeholder for future)
     async updateSettings(req, res) {
         try {
-            const userId = req.user.userId;
+            const userId = req.userId;
             const settings = req.body;
 
             // TODO: Save to user preferences
@@ -245,3 +278,4 @@ class NotificationController {
 }
 
 module.exports = new NotificationController();
+module.exports.setSocketServer = setSocketServer;

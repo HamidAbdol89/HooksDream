@@ -33,14 +33,9 @@ exports.toggleLike = async (req, res) => {
         if (isLiked && post.author && post.author.toString() !== req.userId) {
             const notificationHelper = getNotificationHelper();
             if (notificationHelper) {
-                console.log('Creating like notification:', {
-                    postId: post._id,
-                    postAuthor: post.author,
-                    liker: req.userId
-                });
                 await notificationHelper.handlePostLike(
                     post._id,
-                    post.author.toString(), // Ensure it's a string
+                    post.author.toString(),
                     req.userId,
                     isLiked
                 );

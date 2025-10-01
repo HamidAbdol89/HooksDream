@@ -62,7 +62,7 @@ app.use(cors({
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
@@ -179,11 +179,13 @@ const likeController = require('./controllers/likeController');
 const followController = require('./controllers/followController');
 const commentController = require('./controllers/commentController');
 const postController = require('./controllers/postController');
+const notificationController = require('./controllers/notificationController');
 
 likeController.setSocketServer(socketServer);
 followController.setSocketServer(socketServer);
 commentController.setSocketServer(socketServer);
 postController.setSocketServer(socketServer);
+notificationController.setSocketServer(socketServer);
 
 // Khởi động server
 const PORT = process.env.PORT || (process.env.NODE_ENV === 'development' ? 5000 : 8080);
