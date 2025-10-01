@@ -137,10 +137,10 @@ exports.createComment = async (req, res) => {
                 }
             } else {
                 // Comment notification to post author
-                if (post.author && post.author.toString() !== req.userId) {
+                if (post.userId && post.userId.toString() !== req.userId) {
                     await notificationHelper.handleComment(
                         id,
-                        post.author.toString(),
+                        post.userId.toString(),
                         req.userId,
                         comment._id
                     );

@@ -30,12 +30,12 @@ exports.toggleLike = async (req, res) => {
         const isLiked = await post.toggleLike(req.userId);
         
         // Send notification if liked (not unliked) and not own post
-        if (isLiked && post.author && post.author.toString() !== req.userId) {
+        if (isLiked && post.userId && post.userId.toString() !== req.userId) {
             const notificationHelper = getNotificationHelper();
             if (notificationHelper) {
                 await notificationHelper.handlePostLike(
                     post._id,
-                    post.author.toString(),
+                    post.userId.toString(),
                     req.userId,
                     isLiked
                 );
