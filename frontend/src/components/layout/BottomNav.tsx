@@ -1,5 +1,6 @@
 // src/components/layout/BottomNav.tsx
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { User, LogOut, Settings, X } from 'lucide-react';
 import { useTranslation } from "react-i18next";
 import { useGoogleAuth } from '../../hooks/useGoogleAuth';
@@ -7,7 +8,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/Avatar";
 import { useAppStore } from "@/store/useAppStore";
 import { SettingsModal } from './setting/SettingsModal';
 import { useNavItems } from './NavItems';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useSocial } from '../../hooks/useSocial';
 import { Badge } from '@/components/ui/badge';
 import { UserProfileSheet } from './UserProfileSheet';
@@ -26,67 +27,17 @@ interface BottomNavProps {
 export const BottomNav: React.FC<BottomNavProps> = ({ isInChat = false }) => {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
+  const location = useLocation();
   const { profile, user, isConnected } = useAppStore();
   const { logout } = useGoogleAuth();
   const typedUser = user as UserType;
   
   // 🔥 SỬ DỤNG useSocial THAY VÌ useAppStore cho profile data
-  const { useCurrentProfile } = useSocial();
-  
-  // 🔥 STABLE USER ID - tránh re-render không cần thiết
-  const stableUserId = useMemo(() => 
-    user?.id || user?._id || typedUser?.id || typedUser?._id || profile?.id,
-    [user?.id, user?._id, typedUser?.id, typedUser?._id, profile?.id]
-  );
-
-  // 🔥 CHỈ FETCH KHI CÓ USER ID VÀ CONNECTED
-  const { 
-    data: profileData,
-    isLoading: isProfileLoading,
-    error: profileError
-  } = useCurrentProfile();
-
-  // 🔥 MEMOIZED DATA GETTERS - tránh tính toán lại không cần thiết
-  const displayData = useMemo(() => {
-    const fallbackData = {
-      username: user?.name || typedUser?.name || profile?.username || 'User',
-      avatar: profile?.avatar || '',
-      displayName: profile?.displayName || user?.name || typedUser?.name || 'User'
-    };
-
-    if (!isConnected || !stableUserId || isProfileLoading) {
-      return fallbackData;
-    }
-
-    if (profileError) {
-      console.warn('Profile fetch error:', profileError);
-      return fallbackData;
-    }
-
-    return {
-      username: profileData?.data?.username || fallbackData.username,
-      avatar: profileData?.data?.avatar || fallbackData.avatar,
-      displayName: profileData?.data?.displayName || fallbackData.displayName
-    };
-  }, [isConnected, stableUserId, isProfileLoading, profileError, profileData, user, typedUser, profile]);
-
-  const { username, avatar, displayName } = displayData;
-
-  // Avatar fallback
-  const avatarFallback = useMemo(() => 
-    (displayName || username || 'U').charAt(0).toUpperCase(),
-    [displayName, username]
-  );
-
-  // Navigation function
   const navItems = useNavItems();
-  
-  // State và refs
   const [isUserSheetOpen, setIsUserSheetOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [currentSettingsView, setCurrentSettingsView] = useState<'main' | 'language' | 'theme'>('main');
 
-  // 🔥 MEMOIZED CALLBACKS - tránh re-render children
   const openSettings = useCallback((view: 'main' | 'language' | 'theme' = 'main') => {
     setIsSettingsOpen(true);
     setCurrentSettingsView(view);
@@ -95,22 +46,24 @@ export const BottomNav: React.FC<BottomNavProps> = ({ isInChat = false }) => {
 
   const closeSettings = useCallback(() => setIsSettingsOpen(false), []);
 
-  const handleDisconnect = useCallback(async () => {
-    try {
-      // Đóng tất cả menu trước
-      setIsUserSheetOpen(false);
-      setIsSettingsOpen(false);
-      
-      // Thực hiện logout
-      await logout();
-      
-      // Force redirect về trang đăng nhập
-      window.location.href = '/';
-    } catch (error) {
-      // Nếu có lỗi, vẫn redirect
-      window.location.href = '/';
-    }
-  }, [logout]);
+  // Simple ripple effect
+  const createRipple = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const button = e.currentTarget;
+    const circle = document.createElement("span");
+    const diameter = Math.max(button.clientWidth, button.clientHeight);
+    const radius = diameter / 2;
+
+    circle.style.width = circle.style.height = `${diameter}px`;
+    circle.style.left = `${e.clientX - button.getBoundingClientRect().left - radius}px`;
+    circle.style.top = `${e.clientY - button.getBoundingClientRect().top - radius}px`;
+    circle.classList.add("ripple");
+
+    const existingRipple = button.querySelector(".ripple");
+    if (existingRipple) existingRipple.remove();
+
+    button.appendChild(circle);
+    setTimeout(() => circle.remove(), 600);
+  };
 
   // Nếu đang trong chat, ẩn bottom nav
   if (isInChat) {
@@ -120,40 +73,73 @@ export const BottomNav: React.FC<BottomNavProps> = ({ isInChat = false }) => {
   return (
     <>
       {/* Navigation items - Mobile Bottom Nav */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-xl border-t border-border/50 z-30">
-  <div className="max-w-md mx-auto">
-    <div className="flex items-center justify-around h-16">
-      {navItems.map((item, index) => (
-        <div key={index} className="flex-1 flex justify-center">
-          <button
-            onClick={item.onClick}
-            className={`
-              relative flex flex-col items-center justify-center
-              transition-transform duration-150 active:scale-95
-              ${item.isCenter 
-                ? 'w-14 h-14 -mt-6 rounded-full bg-primary text-primary-foreground shadow-md border-4 border-background' 
-                : 'w-12 h-12 rounded-xl text-muted-foreground aria-[current=page]:text-primary'}
-            `}
-            aria-current={undefined}
-          >
-            {item.icon}
-            
-            {/* Badge */}
-            {item.badge && Number(item.badge) > 0 && (
-              <span className={`
-                absolute bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px]
-                flex items-center justify-center px-1 border-2 border-background
-                ${item.isCenter ? 'top-1 right-1' : 'top-0 right-0'}
-              `}>
-                {Number(item.badge) > 99 ? '99+' : item.badge}
-              </span>
-            )}
-          </button>
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50">
+        <div className="bg-background/95 backdrop-blur-xl rounded-t-3xl p-2 border-t border-border/50 transition-all duration-300 mx-auto max-w-md">
+          <div className="flex justify-around items-center">
+            {navItems.map((item, index) => {
+              const isActive = location.pathname === (
+                item.label === t('nav.home') ? '/feed' :
+                item.label === t('nav.friends') ? '/friend' :
+                item.label === t('nav.create') ? '/post' :
+                item.label === t('nav.notifications') ? '/notifications' :
+                item.label === t('nav.messages') ? '/messages' : ''
+              );
+              
+              return (
+                <button
+                  key={index}
+                  onClick={(e) => { 
+                    createRipple(e); 
+                    item.onClick(); 
+                  }}
+                  className="relative overflow-hidden flex items-center gap-2 sm:gap-3 transition-all duration-500 rounded-full px-3 py-2.5 sm:px-4 sm:py-3"
+                >
+                  {/* Active background highlight */}
+                  {isActive && (
+                    <motion.div
+                      className="absolute inset-0 bg-primary text-primary-foreground rounded-full shadow-md"
+                      layoutId="activeTab"
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    />
+                  )}
+                
+                  {/* Icon with scale animation */}
+                  <motion.div
+                    animate={{ scale: isActive ? 1.1 : 1 }}
+                    transition={{ duration: 0.3 }}
+                    className={`relative z-10 ${isActive ? 'text-primary-foreground' : 'text-muted-foreground'}`}
+                  >
+                    {item.icon}
+                  </motion.div>
+                
+                  {/* Animated text label */}
+                  <AnimatePresence mode="wait">
+                    {isActive && (
+                      <motion.span
+                        key={`active-${index}`}
+                        initial={{ opacity: 0, x: 20, width: 0 }}
+                        animate={{ opacity: 1, x: 0, width: "auto" }}
+                        exit={{ opacity: 0, x: -20, width: 0 }}
+                        transition={{ duration: 0.4, ease: "easeOut" }}
+                        className="text-xs sm:text-sm font-medium whitespace-nowrap overflow-hidden text-primary-foreground relative z-10"
+                      >
+                        {item.label}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                
+                  {/* Badge */}
+                  {item.badge && Number(item.badge) > 0 && (
+                    <span className="absolute bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1 border-2 border-background -top-1 -right-1 z-20">
+                      {Number(item.badge) > 99 ? '99+' : item.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      ))}
-    </div>
-  </div>
-</div>
+      </div>
 
 
       {/* User Profile Sheet */}
@@ -170,6 +156,26 @@ export const BottomNav: React.FC<BottomNavProps> = ({ isInChat = false }) => {
         currentView={currentSettingsView}
         onChangeView={setCurrentSettingsView}
       />
+      
+      {/* Ripple CSS */}
+      <style>{`
+        .ripple {
+          position: absolute;
+          border-radius: 50%;
+          background-color: currentColor;
+          opacity: 0.3;
+          transform: scale(0);
+          animation: ripple 0.6s linear;
+          pointer-events: none;
+        }
+        
+        @keyframes ripple {
+          to {
+            transform: scale(4);
+            opacity: 0;
+          }
+        }
+      `}</style>
     </>
   );
 };

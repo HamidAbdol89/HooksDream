@@ -134,30 +134,102 @@ export const useCreatePost = (): UseCreatePostReturn => {
 
     setIsSubmitting(true);
     try {
-      const formData = new FormData();
-      formData.append('content', content.trim());
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+      const token = localStorage.getItem('auth_token');
       
-      // Add images
-      images.forEach((image) => {
-        formData.append('images', image);
-      });
-
-      // Add video
-      if (video) {
-        formData.append('video', video);
+      if (!token) {
+        throw new Error('Authentication token not found');
       }
 
-      const response = await fetch('/api/posts', {
+      // Debug logging
+      console.log('📤 Creating post with:', {
+        content: content.trim(),
+        imagesCount: images.length,
+        hasVideo: !!video
+      });
+
+      let imageUrls: string[] = [];
+      let videoUrl = '';
+
+      // Upload images first if any
+      if (images.length > 0) {
+        const imageFormData = new FormData();
+        images.forEach((image) => {
+          imageFormData.append('images', image);
+        });
+
+        const imageUploadResponse = await fetch(`${API_BASE_URL}/api/posts/upload-images`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: imageFormData
+        });
+
+        if (!imageUploadResponse.ok) {
+          const errorText = await imageUploadResponse.text();
+          throw new Error(`Image upload failed: ${errorText}`);
+        }
+
+        const imageResult = await imageUploadResponse.json();
+        imageUrls = imageResult.data.map((item: any) => item.url);
+      }
+
+      // Upload video if any
+      if (video) {
+        const videoFormData = new FormData();
+        videoFormData.append('video', video);
+
+        const videoUploadResponse = await fetch(`${API_BASE_URL}/api/posts/upload-video`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: videoFormData
+        });
+
+        if (!videoUploadResponse.ok) {
+          const errorText = await videoUploadResponse.text();
+          throw new Error(`Video upload failed: ${errorText}`);
+        }
+
+        const videoResult = await videoUploadResponse.json();
+        videoUrl = videoResult.data.url;
+      }
+
+      // Create post with uploaded URLs
+      const postData = {
+        content: content.trim(),
+        images: imageUrls,
+        video: videoUrl,
+        visibility: 'public'
+      };
+
+      const response = await fetch(`${API_BASE_URL}/api/posts`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('user_hash_id')}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
-        body: formData
+        body: JSON.stringify(postData)
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create post');
+        const errorText = await response.text();
+        console.error('❌ Create post failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText
+        });
+        throw new Error(`Failed to create post: ${response.status} ${errorText}`);
       }
+
+      console.log('✅ Post created successfully');
+      
+      // Clear form
+      setContent('');
+      setImages([]);
+      setVideo(null);
       
       // Navigate back to feed
       navigate('/feed');

@@ -66,6 +66,9 @@ const ProtectedAppContent: React.FC = () => {
   const isMessagesPage = location.pathname.startsWith('/messages');
   const isInChat = isMessagesPage && location.pathname !== '/messages';
   
+  // MobileHeader only shows on feed page
+  const shouldShowMobileHeader = location.pathname === '/feed' || location.pathname === '/';
+  
   if (!isConnected || !user) {
     return <ModernAuthConnect />;
   }
@@ -76,8 +79,8 @@ const ProtectedAppContent: React.FC = () => {
         {/* Desktop Header */}
         {!isEditProfilePage && !isCreatePostPage && <Header isInChat={isInChat} />}
         
-        {/* Mobile Header */}
-        {!isEditProfilePage && !isCreatePostPage && <MobileHeader />}
+        {/* Mobile Header - Only show on specific pages */}
+        {shouldShowMobileHeader && <MobileHeader />}
         
         {/* Mobile Bottom Navigation */}
         {!isEditProfilePage && !isCreatePostPage && <BottomNav isInChat={isInChat} />}

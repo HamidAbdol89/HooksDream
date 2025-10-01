@@ -164,7 +164,7 @@ class PWAManager {
 
   // Send push subscription to backend
   private async sendSubscriptionToBackend(subscription: any): Promise<void> {
-    const token = localStorage.getItem('google_auth_token');
+    const token = localStorage.getItem('auth_token');
     if (!token) return;
 
     try {

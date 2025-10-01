@@ -69,7 +69,7 @@ export const usePushNotifications = () => {
       setSubscription(subscription);
       
       // Send subscription to server
-      const token = localStorage.getItem('google_auth_token');
+      const token = localStorage.getItem('auth_token');
       await fetch('/api/notifications/subscribe', {
         method: 'POST',
         headers: { 
