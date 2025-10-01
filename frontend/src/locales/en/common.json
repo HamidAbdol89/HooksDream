@@ -26,6 +26,35 @@
     "disconnect": "Disconnect",
     "userMenu": "User Menu"
   },
+
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications yet",
+    "emptyDescription": "When someone likes, comments, or follows you, you'll see it here.",
+    "items": "notifications",
+    "markAllRead": "Mark all read",
+    "markAsRead": "Mark as read",
+    "clearAll": "Clear All",
+    "loadMore": "Load more",
+    "noMore": "No more notifications",
+    "types": {
+      "like": "liked your post",
+      "comment": "commented on your post",
+      "follow": "started following you",
+      "newPost": "shared a new post"
+    },
+    "timeAgo": {
+      "now": "now",
+      "minute": "1m",
+      "minutes": "{{count}}m",
+      "hour": "1h",
+      "hours": "{{count}}h",
+      "day": "1d",
+      "days": "{{count}}d",
+      "week": "1w",
+      "weeks": "{{count}}w"
+    }
+  },
   "settings": {
     "language": "Language",
     "back": "Back",

@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { 
   Bell, 
   Heart, 
@@ -17,6 +18,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
+import { vi, enUS } from 'date-fns/locale';
 
 interface NotificationItemProps {
   notification: any;
@@ -31,7 +33,23 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   onDelete,
   onClick
 }) => {
+  const { t, i18n } = useTranslation('common');
   const [showActions, setShowActions] = useState(false);
+
+  const getNotificationMessage = (type: string) => {
+    switch (type) {
+      case 'like':
+        return t('notifications.types.like', 'liked your post');
+      case 'comment':
+        return t('notifications.types.comment', 'commented on your post');
+      case 'follow':
+        return t('notifications.types.follow', 'started following you');
+      case 'newPost':
+        return t('notifications.types.newPost', 'shared a new post');
+      default:
+        return notification.message;
+    }
+  };
 
   const getNotificationIcon = (type: string) => {
     const iconProps = { className: "w-4 h-4" };
@@ -114,13 +132,16 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
                   )}
                 </span>
                 <span className="text-muted-foreground ml-1">
-                  {notification.message}
+                  {getNotificationMessage(notification.type)}
                 </span>
               </p>
               
               <div className="flex items-center space-x-2 mt-1">
                 <span className="text-xs text-muted-foreground">
-                  {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                  {formatDistanceToNow(new Date(notification.createdAt), { 
+                    addSuffix: true,
+                    locale: i18n.language === 'vi' ? vi : enUS
+                  })}
                 </span>
                 {!notification.isRead && (
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
@@ -150,7 +171,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
                       onClick={handleMarkAsRead}
                     >
                       <Check className="w-4 h-4" />
-                      <span>Mark as read</span>
+                      <span>{t('notifications.markAsRead', 'Mark as read')}</span>
                     </button>
                   )}
                   <button
@@ -158,7 +179,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
                     onClick={handleDelete}
                   >
                     <Trash2 className="w-4 h-4" />
-                    <span>Delete</span>
+                    <span>{t('common.delete', 'Delete')}</span>
                   </button>
                 </div>
               )}
@@ -180,6 +201,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
 
 const NotificationsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation('common');
   
   // Real state for notifications
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -362,42 +384,59 @@ const NotificationsPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      {/* Header */}
-      <div className="sticky top-0 bg-background/95 backdrop-blur-sm border-b z-10">
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center space-x-3">
-            <Bell className="w-6 h-6" />
-            <h1 className="text-xl font-bold">Notifications</h1>
-            {unreadCount > 0 && (
-              <Badge variant="destructive" className="h-5 px-2 text-xs">
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </Badge>
-            )}
-          </div>
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+      <div className="max-w-2xl mx-auto">
+        {/* Modern Header */}
+        <div className="sticky top-0 bg-background/95 backdrop-blur-md border-b border-border/50 z-10">
+          <div className="flex items-center justify-between px-4 py-6 sm:px-6">
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                <Bell className="w-7 h-7 text-primary" />
+                {unreadCount > 0 && (
+                  <div className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5 animate-pulse">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </div>
+                )}
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+                  {t('notifications.title', 'Notifications')}
+                </h1>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  {notifications.length === 0 ? t('notifications.empty', 'No notifications yet') : 
+                   `${notifications.length} ${t('notifications.items', 'notifications')}`}
+                </p>
+              </div>
+            </div>
 
-          <div className="flex items-center space-x-2">
-            {unreadCount > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleMarkAllAsRead}
-              >
-                <Check className="w-4 h-4 mr-1" />
-                Mark all read
-              </Button>
-            )}
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/notifications/settings')}
-            >
-              <Settings className="w-4 h-4" />
-            </Button>
+            {/* Mobile-optimized actions */}
+            <div className="flex items-center space-x-2">
+              {unreadCount > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleMarkAllAsRead}
+                  className="hidden sm:flex items-center space-x-2 hover:bg-primary hover:text-primary-foreground transition-all duration-200"
+                >
+                  <Check className="w-4 h-4" />
+                  <span className="hidden md:inline">{t('notifications.markAllRead', 'Mark all read')}</span>
+                </Button>
+              )}
+              
+              {/* Mobile: Mark all read icon only */}
+              {unreadCount > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleMarkAllAsRead}
+                  className="sm:hidden w-10 h-10 p-0 rounded-full"
+                >
+                  <Check className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
       {/* Content */}
       <div className="pb-20">
@@ -416,9 +455,9 @@ const NotificationsPage: React.FC = () => {
         ) : notifications.length === 0 ? (
           <div className="text-center py-12">
             <Bell className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">No notifications yet</h3>
+            <h3 className="text-lg font-medium mb-2">{t('notifications.empty', 'No notifications yet')}</h3>
             <p className="text-muted-foreground">
-              When someone likes, comments, or follows you, you'll see it here.
+              {t('notifications.emptyDescription', 'When someone likes, comments, or follows you, you\'ll see it here.')}
             </p>
           </div>
         ) : (
@@ -458,12 +497,13 @@ const NotificationsPage: React.FC = () => {
                   onClick={handleClearAll}
                   className="text-muted-foreground"
                 >
-                  Clear All Notifications
+{t('notifications.clearAll', 'Clear All')}
                 </Button>
               </div>
             )}
           </>
         )}
+      </div>
       </div>
     </div>
   );
