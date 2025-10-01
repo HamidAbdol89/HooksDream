@@ -15,6 +15,7 @@ interface CommentSectionProps {
   postId: string;
   currentUser?: UserProfile;
   showInput?: boolean;
+  highlightCommentId?: string | null;
 }
 
 // Mobile-first shimmer loading component
@@ -48,7 +49,8 @@ const BatchLoadingSkeleton = ({ count = 3 }: { count?: number }) => (
 export const CommentSection: React.FC<CommentSectionProps> = ({ 
   postId, 
   currentUser,
-  showInput = true
+  showInput = true,
+  highlightCommentId
 }) => {
   const { t } = useTranslation('common');
   const [comments, setComments] = useState<CommentType[]>([]);
@@ -57,6 +59,27 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  // Scroll to highlighted comment when comments load
+  useEffect(() => {
+    if (highlightCommentId && comments.length > 0 && !loading) {
+      const timer = setTimeout(() => {
+        const element = document.getElementById(`comment-${highlightCommentId}`);
+        if (element) {
+          element.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+          });
+          // Add pulse animation
+          element.classList.add('animate-pulse');
+          setTimeout(() => {
+            element.classList.remove('animate-pulse');
+          }, 2000);
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [highlightCommentId, comments.length, loading]);
 
   // Load initial comments with debouncing
   const loadComments = useCallback(async (pageNum = 1, append = false, isRefresh = false) => {
@@ -139,12 +162,19 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
       {/* Comments List - Optimized rendering */}
       <div className="space-y-0 comment-list">
         {comments.map((comment) => (
-          <div key={comment._id} className="border-b border-border/10 last:border-b-0 comment-item">
+          <div 
+            key={comment._id} 
+            id={`comment-${comment._id}`}
+            className={`border-b border-border/10 last:border-b-0 comment-item ${
+              highlightCommentId === comment._id ? 'bg-yellow-50 border-yellow-200' : ''
+            }`}
+          >
             <Comment
               comment={comment}
               postId={postId}
               onCommentUpdate={refreshComments}
               currentUser={currentUser}
+              isHighlighted={highlightCommentId === comment._id}
             />
           </div>
         ))}

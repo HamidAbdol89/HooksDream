@@ -110,14 +110,16 @@ interface CommentProps {
   comment: any;
   postId: string;
   onCommentUpdate: () => void;
-currentUser?: UserProfile;
+  currentUser?: UserProfile;
+  isHighlighted?: boolean;
 }
 
 export const Comment: React.FC<CommentProps> = ({ 
   comment, 
   postId, 
   onCommentUpdate, 
-  currentUser 
+  currentUser,
+  isHighlighted = false
 }) => {
   const { t } = useTranslation('common');
   const [isLiking, setIsLiking] = useState(false);
@@ -243,7 +245,9 @@ export const Comment: React.FC<CommentProps> = ({
   };
 
   return (
-    <div className="p-4 border-b border-border/30 last:border-b-0">
+    <div className={`p-4 border-b border-border/30 last:border-b-0 transition-all duration-300 ${
+      isHighlighted ? 'bg-yellow-50 border-yellow-200 shadow-sm' : ''
+    }`}>
       {/* Comment Header */}
       <div className="flex items-start space-x-3">
         <Avatar className="w-8 h-8 flex-shrink-0">

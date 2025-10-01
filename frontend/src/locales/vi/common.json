@@ -34,6 +34,7 @@
     "markAllRead": "Đánh dấu tất cả đã đọc",
     "markAsRead": "Đánh dấu đã đọc",
     "clearAll": "Xóa tất cả",
+    "confirmClear": "Bạn có chắc chắn muốn xóa tất cả thông báo?",
     "loadMore": "Tải thêm",
     "noMore": "Không còn thông báo nào",
     "types": {

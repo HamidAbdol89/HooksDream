@@ -24,7 +24,7 @@ interface NotificationItemProps {
   notification: any;
   onMarkAsRead: (id: string) => void;
   onDelete: (id: string) => void;
-  onClick: (url: string) => void;
+  onClick: (notification: any) => void;
 }
 
 const NotificationItem: React.FC<NotificationItemProps> = ({
@@ -74,10 +74,8 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   };
 
   const handleClick = () => {
-    if (!notification.isRead) {
-      onMarkAsRead(notification._id);
-    }
-    onClick(notification.url);
+    console.log('🖱️ NotificationItem clicked');
+    onClick(notification);
   };
 
   const handleMarkAsRead = (e: React.MouseEvent) => {
@@ -353,19 +351,84 @@ const NotificationsPage: React.FC = () => {
     setLoadingMore(false);
   }, [loadingMore, hasMore, notifications.length, loadNotifications]);
 
-  const handleNotificationClick = useCallback((url: string) => {
-    navigate(url);
-  }, [navigate]);
+  const handleNotificationClick = useCallback((notification: any) => {
+    console.log('🔔 Notification clicked:', notification);
+    console.log('📋 All notification keys:', Object.keys(notification));
+    console.log('📋 Notification fields:', {
+      type: notification.type,
+      entityType: notification.entityType,
+      entityId: notification.entityId,
+      metadata: notification.metadata,
+      sender: notification.sender,
+      url: notification.url
+    });
+
+    // Mark as read first
+    if (!notification.isRead) {
+      markAsRead(notification._id);
+    }
+
+    // Handle different notification types
+    switch (notification.type) {
+      case 'like':
+      case 'comment':
+      case 'newPost':
+      case 'post_from_following':
+        // Check metadata for postId and commentId
+        const postId = notification.metadata?.postId || notification.entityId;
+        const commentId = notification.metadata?.commentId;
+        
+        console.log('📝 Post notification - postId:', postId, 'commentId:', commentId);
+        console.log('📝 Entity info:', { entityType: notification.entityType, entityId: notification.entityId });
+        
+        if (postId) {
+          const url = `/post/${postId}`;
+          if (notification.type === 'comment' && commentId) {
+            console.log('💬 Comment notification - navigating to:', `${url}?highlight=${commentId}`);
+            navigate(`${url}?highlight=${commentId}`);
+          } else {
+            console.log('📄 Post notification - navigating to:', url);
+            navigate(url);
+          }
+        } else {
+          console.log('❌ No postId found in notification metadata or entityId');
+        }
+        break;
+        
+      case 'follow':
+        console.log('👤 Follow notification - sender:', notification.sender);
+        // Navigate to user profile using user ID
+        const userId = notification.sender?._id;
+        if (userId) {
+          console.log('🔗 Navigating to profile:', `/profile/${userId}`);
+          navigate(`/profile/${userId}`);
+        } else {
+          console.log('❌ No sender ID found in notification');
+        }
+        break;
+        
+      default:
+        console.log('🔄 Default case - url:', notification.url);
+        // Fallback to URL if provided
+        if (notification.url) {
+          console.log('🔗 Navigating to URL:', notification.url);
+          navigate(notification.url);
+        } else {
+          console.log('❌ No navigation target found');
+        }
+        break;
+    }
+  }, [navigate, markAsRead]);
 
   const handleMarkAllAsRead = useCallback(async () => {
     await markAllAsRead();
   }, [markAllAsRead]);
 
   const handleClearAll = useCallback(async () => {
-    if (window.confirm('Are you sure you want to clear all notifications?')) {
+    if (window.confirm(t('notifications.confirmClear', 'Are you sure you want to clear all notifications?'))) {
       await clearAllNotifications();
     }
-  }, [clearAllNotifications]);
+  }, [clearAllNotifications, t]);
 
   if (error) {
     return (

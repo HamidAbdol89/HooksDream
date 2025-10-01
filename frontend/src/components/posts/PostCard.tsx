@@ -36,6 +36,8 @@ interface PostCardProps {
   // ✅ Performance props for virtual scrolling
   isVisible?: boolean;
   priority?: 'high' | 'normal' | 'low';
+  // ✅ Notification highlight support
+  highlightCommentId?: string | null;
 }
 
 export const PostCard: React.FC<PostCardProps> = memo(({ 
@@ -51,7 +53,9 @@ export const PostCard: React.FC<PostCardProps> = memo(({
   onPostUpdate,
   // ✅ Performance props
   isVisible = true,
-  priority = 'normal'
+  priority = 'normal',
+  // ✅ Notification highlight
+  highlightCommentId
 }) => {
   const {
     isExpanded,
@@ -366,7 +370,8 @@ useEffect(() => {
       {showComments && (
         <CommentSection 
           postId={post._id} 
-          currentUser={currentUser}   
+          currentUser={currentUser}
+          highlightCommentId={highlightCommentId}
         />
       )}
 

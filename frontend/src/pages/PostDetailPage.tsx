@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { PostCard } from '@/components/posts/PostCard';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Button } from '@/components/ui/Button';
@@ -10,7 +10,11 @@ import { useAppStore } from '@/store/useAppStore';
 export const PostDetailPage: React.FC = () => {
   const { postId } = useParams<{ postId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAppStore();
+  
+  // Get highlight comment ID from URL params
+  const highlightCommentId = searchParams.get('highlight');
   
   const [post, setPost] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -151,6 +155,7 @@ export const PostDetailPage: React.FC = () => {
           currentUserHashId={user?._id}
           currentUser={user as any}
           onPostUpdate={(updatedPost) => setPost(updatedPost)}
+          highlightCommentId={highlightCommentId}
         />
       </div>
     </div>

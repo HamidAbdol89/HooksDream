@@ -35,6 +35,7 @@
     "markAllRead": "Mark all read",
     "markAsRead": "Mark as read",
     "clearAll": "Clear All",
+    "confirmClear": "Are you sure you want to clear all notifications?",
     "loadMore": "Load more",
     "noMore": "No more notifications",
     "types": {
