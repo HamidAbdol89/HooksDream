@@ -174,8 +174,19 @@ const socketServer = new SocketServer(server);
 // Make socket server available globally for controllers
 global.socketServer = socketServer;
 
+// Initialize notification system in controllers
+const likeController = require('./controllers/likeController');
+const followController = require('./controllers/followController');
+const commentController = require('./controllers/commentController');
+const postController = require('./controllers/postController');
+
+likeController.setSocketServer(socketServer);
+followController.setSocketServer(socketServer);
+commentController.setSocketServer(socketServer);
+postController.setSocketServer(socketServer);
+
 // Khởi động server
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || (process.env.NODE_ENV === 'development' ? 5000 : 8080);
 const HOST = process.env.HOST || '0.0.0.0';
 
 // ⚡ Start server function - called after DB connection

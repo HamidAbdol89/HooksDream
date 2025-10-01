@@ -3,6 +3,16 @@ const User = require('../models/User');
 const { createResponse } = require('../utils/helpers');
 const linkPreviewService = require('../services/linkPreviewService');
 
+// Get socket server instance for notifications
+let socketServer = null;
+const setSocketServer = (server) => {
+    socketServer = server;
+};
+
+const getNotificationHelper = () => {
+    return socketServer?.getNotificationHelper();
+};
+
 // Lấy danh sách posts (public feed)
 exports.getPosts = async (req, res) => {
     try {
@@ -108,6 +118,12 @@ exports.createPost = async (req, res) => {
         await post.save();
         await post.populate('userId', 'username displayName avatar isVerified');
         await User.findByIdAndUpdate(req.userId, { $inc: { postCount: 1 } });
+
+        // Send notification to followers about new post
+        const notificationHelper = getNotificationHelper();
+        if (notificationHelper) {
+            await notificationHelper.handleNewPostFromFollowing(post._id, req.userId);
+        }
 
         // Emit real-time event for new post
         if (global.socketServer) {
@@ -773,3 +789,6 @@ exports.repostPost = async (req, res) => {
         });
     }
 };
+
+// Export setSocketServer function
+exports.setSocketServer = setSocketServer;

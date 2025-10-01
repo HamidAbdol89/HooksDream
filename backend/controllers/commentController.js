@@ -3,6 +3,16 @@ const Post = require('../models/Post');
 const mongoose = require('mongoose'); // THÊM IMPORT NÀY
 const { createResponse } = require('../utils/helpers');
 
+// Get socket server instance for notifications
+let socketServer = null;
+const setSocketServer = (server) => {
+    socketServer = server;
+};
+
+const getNotificationHelper = () => {
+    return socketServer?.getNotificationHelper();
+};
+
 // Lấy comments của post
 exports.getComments = async (req, res) => {
     try {
@@ -109,6 +119,40 @@ exports.createComment = async (req, res) => {
         
         await comment.save();
         await comment.populate('userId', 'username displayName avatar isVerified');
+        
+        // Send notifications
+        const notificationHelper = getNotificationHelper();
+        if (notificationHelper) {
+            if (parentCommentId) {
+                // Reply notification to parent comment author
+                const parentComment = await Comment.findById(parentCommentId);
+                if (parentComment && parentComment.userId !== req.userId) {
+                    await notificationHelper.handleReply(
+                        id,
+                        parentComment.userId,
+                        req.userId,
+                        comment._id,
+                        parentCommentId
+                    );
+                }
+            } else {
+                // Comment notification to post author
+                if (post.author && post.author.toString() !== req.userId) {
+                    console.log('Creating comment notification:', {
+                        postId: id,
+                        postAuthor: post.author,
+                        commenter: req.userId,
+                        commentId: comment._id
+                    });
+                    await notificationHelper.handleComment(
+                        id,
+                        post.author.toString(), // Ensure it's a string
+                        req.userId,
+                        comment._id
+                    );
+                }
+            }
+        }
         
         res.status(201).json({
             success: true,
@@ -239,3 +283,6 @@ exports.getCommentStats = async (req, res) => {
         });
     }
 };
+
+// Export setSocketServer function
+exports.setSocketServer = setSocketServer;

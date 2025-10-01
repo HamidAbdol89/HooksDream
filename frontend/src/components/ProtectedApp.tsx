@@ -14,6 +14,7 @@ import PostDetailPage from "@/pages/PostDetailPage";
 import FriendPage from "@/pages/FriendPage";
 import MessagesPage from "@/pages/MessagesPage";
 import EditProfilePage from "@/pages/EditProfilePage";
+import NotificationsPage from "@/pages/NotificationsPage";
 import { UnfollowConfirmProvider } from "@/contexts/UnfollowConfirmContext";
 import { ChatProvider, useChatContext } from "@/contexts/ChatContext";
 import { useSocket } from "@/hooks/useSocket";
@@ -118,6 +119,7 @@ const ProtectedAppContent: React.FC = () => {
                     <Route path="/edit-profile/:address" element={<EditProfilePage />} />
                     <Route path="/search" element={<SearchPage />} />
                     <Route path="/friend" element={<FriendPage />} />
+                    <Route path="/notifications" element={<NotificationsPage />} />
                     <Route path="/post/:postId" element={<PostDetailPage />} />
                     <Route path="/*" element={<Feed />} />
                   </Routes>

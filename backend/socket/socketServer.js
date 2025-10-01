@@ -2,6 +2,7 @@
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const NotificationHelper = require('../utils/notificationHelper');
 
 class SocketServer {
     constructor(server) {
@@ -37,6 +38,9 @@ class SocketServer {
 
         this.connectedUsers = new Map(); // userId -> socketId
         this.userRooms = new Map(); // userId -> Set of rooms
+        
+        // Initialize notification helper
+        this.notificationHelper = new NotificationHelper(this);
         
         this.setupMiddleware();
         this.setupEventHandlers();
@@ -351,6 +355,35 @@ class SocketServer {
                 this.userRooms.delete(socket.userId);
             });
 
+            // ===== NOTIFICATION EVENTS =====
+            
+            // Join notifications room
+            socket.on('notifications:join', () => {
+                socket.join(`notifications:${socket.userId}`);
+                this.userRooms.get(socket.userId).add(`notifications:${socket.userId}`);
+            });
+
+            // Leave notifications room
+            socket.on('notifications:leave', () => {
+                socket.leave(`notifications:${socket.userId}`);
+                this.userRooms.get(socket.userId).delete(`notifications:${socket.userId}`);
+            });
+
+            // Mark notification as read
+            socket.on('notification:read', async (data) => {
+                try {
+                    const { notificationId } = data;
+                    // Emit to user's notification room
+                    socket.to(`notifications:${socket.userId}`).emit('notification:marked_read', {
+                        notificationId,
+                        userId: socket.userId,
+                        timestamp: new Date().toISOString()
+                    });
+                } catch (error) {
+                    socket.emit('notification:error', { message: 'Failed to mark notification as read' });
+                }
+            });
+
             // Handle connection errors
             socket.on('error', (error) => {
                 // Handle socket errors silently
@@ -390,6 +423,16 @@ class SocketServer {
     getUsersInConversation(conversationId) {
         const room = this.io.sockets.adapter.rooms.get(`conversation:${conversationId}`);
         return room ? Array.from(room) : [];
+    }
+
+    // Notification utility methods
+    emitToNotifications(userId, event, data) {
+        this.io.to(`notifications:${userId}`).emit(event, data);
+    }
+
+    // Get notification helper instance
+    getNotificationHelper() {
+        return this.notificationHelper;
     }
 
     // Update user online status in database

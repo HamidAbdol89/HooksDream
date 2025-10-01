@@ -32,7 +32,7 @@ export const useNavItems = () => {
     {
       icon: <Bell className="w-5 h-5" />,
       label: t('nav.notifications'),
-      onClick: () => console.log('Navigate to Notifications'),
+      onClick: () => navigate('/notifications'),
       badge: unreadCount.notifications > 0 ? unreadCount.notifications : undefined
     },
     {

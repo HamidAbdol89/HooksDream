@@ -26,6 +26,35 @@ export const useUnreadCount = (currentUserId?: string) => {
   const { useConversations } = useChat();
   const { data: conversations } = useConversations();
 
+  // Fetch notifications unread count
+  const fetchNotificationsCount = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) return;
+
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/notifications/unread-count`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setUnreadCount(prev => ({
+            ...prev,
+            notifications: data.data.unreadCount || 0
+          }));
+        }
+      }
+    } catch (error) {
+      // Silently fail for notifications count
+      console.warn('Failed to fetch notifications count:', error);
+    }
+  }, []);
+
   // Calculate unread messages from conversations using unreadCount field
   const calculateUnreadMessages = useCallback(() => {
     if (!conversations?.data) return 0;
@@ -44,6 +73,13 @@ export const useUnreadCount = (currentUserId?: string) => {
       messages: Math.max(0, Number(messagesCount) || 0) // Ensure positive number
     }));
   }, [calculateUnreadMessages]);
+
+  // Fetch initial notifications count
+  useEffect(() => {
+    if (currentUserId) {
+      fetchNotificationsCount();
+    }
+  }, [currentUserId, fetchNotificationsCount]);
 
   // Listen for real-time message updates
   useEffect(() => {
@@ -90,16 +126,46 @@ export const useUnreadCount = (currentUserId?: string) => {
       }
     };
 
+    // Handle notification events
+    const handleNewNotification = () => {
+      setUnreadCount(prev => ({
+        ...prev,
+        notifications: prev.notifications + 1
+      }));
+    };
+
+    const handleNotificationRead = () => {
+      setUnreadCount(prev => ({
+        ...prev,
+        notifications: Math.max(0, prev.notifications - 1)
+      }));
+    };
+
+    const handleNotificationCountUpdate = (data: { unreadCount: number }) => {
+      setUnreadCount(prev => ({
+        ...prev,
+        notifications: data.unreadCount || 0
+      }));
+    };
+
     socket.on('message:new', handleNewMessage);
     socket.on('chat:message:status', handleMessageRead);
     socket.on('conversation:updated', handleConversationRead);
     socket.on('conversation:read', handleConversationRead);
+    
+    // Notification events
+    socket.on('notification:new', handleNewNotification);
+    socket.on('notification:marked_read', handleNotificationRead);
+    socket.on('notification:unread_count', handleNotificationCountUpdate);
 
     return () => {
       socket.off('message:new', handleNewMessage);
       socket.off('chat:message:status', handleMessageRead);
       socket.off('conversation:updated', handleConversationRead);
       socket.off('conversation:read', handleConversationRead);
+      socket.off('notification:new', handleNewNotification);
+      socket.off('notification:marked_read', handleNotificationRead);
+      socket.off('notification:unread_count', handleNotificationCountUpdate);
     };
   }, [socket, currentUserId, calculateUnreadMessages]);
 
@@ -122,6 +188,7 @@ export const useUnreadCount = (currentUserId?: string) => {
   return {
     unreadCount,
     clearUnreadMessages,
-    clearUnreadNotifications
+    clearUnreadNotifications,
+    refreshNotificationsCount: fetchNotificationsCount
   };
 };

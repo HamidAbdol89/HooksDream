@@ -1,11 +1,20 @@
 const Post = require('../models/Post');
 const { createResponse } = require('../utils/helpers');
 
+// Get socket server instance for notifications
+let socketServer = null;
+const setSocketServer = (server) => {
+    socketServer = server;
+};
+
+const getNotificationHelper = () => {
+    return socketServer?.getNotificationHelper();
+};
+
 // Like/Unlike post
 exports.toggleLike = async (req, res) => {
     try {
         const { id } = req.params;
-        
         const post = await Post.findOne({
             _id: id,
             isDeleted: false
@@ -19,6 +28,24 @@ exports.toggleLike = async (req, res) => {
         }
         
         const isLiked = await post.toggleLike(req.userId);
+        
+        // Send notification if liked (not unliked) and not own post
+        if (isLiked && post.author && post.author.toString() !== req.userId) {
+            const notificationHelper = getNotificationHelper();
+            if (notificationHelper) {
+                console.log('Creating like notification:', {
+                    postId: post._id,
+                    postAuthor: post.author,
+                    liker: req.userId
+                });
+                await notificationHelper.handlePostLike(
+                    post._id,
+                    post.author.toString(), // Ensure it's a string
+                    req.userId,
+                    isLiked
+                );
+            }
+        }
         
         res.json({
             success: true,
@@ -36,3 +63,6 @@ exports.toggleLike = async (req, res) => {
         });
     }
 };
+
+// Export setSocketServer function
+exports.setSocketServer = setSocketServer;

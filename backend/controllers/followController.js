@@ -2,6 +2,16 @@ const User = require('../models/User');
 const Follow = require('../models/Follow');
 const { createResponse } = require('../utils/helpers');
 
+// Get socket server instance for notifications
+let socketServer = null;
+const setSocketServer = (server) => {
+    socketServer = server;
+};
+
+const getNotificationHelper = () => {
+    return socketServer?.getNotificationHelper();
+};
+
 // Follow/Unfollow user với Socket.IO
 exports.followUser = async (req, res) => {
     try {
@@ -57,7 +67,13 @@ exports.followUser = async (req, res) => {
             ]);
             
             isFollowing = true;
+            
+            // Send follow notification
+            const notificationHelper = getNotificationHelper();
+            if (notificationHelper) {
+                await notificationHelper.handleFollow(currentUserId, userId);
             }
+        }
         
         // Lấy số lượng mới nhất
         const [updatedTargetUser, updatedCurrentUser] = await Promise.all([
@@ -275,3 +291,6 @@ exports.checkFollowStatus = async (req, res) => {
         );
     }
 };
+
+// Export setSocketServer function
+exports.setSocketServer = setSocketServer;
