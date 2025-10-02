@@ -2,11 +2,11 @@
 import React, { useState, useMemo } from 'react';
 import { User, LogOut, Settings, Archive, X } from 'lucide-react';
 import { useTranslation } from "react-i18next";
-import { useGoogleAuth } from '../../hooks/useGoogleAuth';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/Avatar";
 import { useAppStore } from "@/store/useAppStore";
 import { useNavigate } from 'react-router-dom';
 import { useSocial } from '../../hooks/useSocial';
+import { simpleAuth } from '@/utils/simpleAuth';
 import {
   Sheet,
   SheetContent,
@@ -41,7 +41,6 @@ export const UserProfileSheet: React.FC<UserProfileSheetProps> = ({
   const { t } = useTranslation('common');
   const navigate = useNavigate();
   const { profile, user, isConnected } = useAppStore();
-  const { logout } = useGoogleAuth();
   const typedUser = user as UserType;
   
   const { useCurrentProfile } = useSocial();
@@ -82,9 +81,10 @@ export const UserProfileSheet: React.FC<UserProfileSheetProps> = ({
   const handleDisconnect = async () => {
     try {
       onClose();
-      await logout();
-      window.location.href = '/';
+      await simpleAuth.logout();
     } catch (error) {
+      console.error('Logout error:', error);
+      // Force redirect even if logout fails
       window.location.href = '/';
     }
   };

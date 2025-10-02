@@ -2,15 +2,15 @@
 // Mobile-first, accessible, and performance-optimized with Clean design
 
 import React, { useEffect, useState } from 'react';
-import { useModernGoogleAuth, AuthState } from '@/hooks/useModernGoogleAuth';
+import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from "react-i18next";
 import { Check, ChevronDown } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import ModernGoogleLogin from './ModernGoogleLogin';
+import SimpleGoogleLogin from './SimpleGoogleLogin';
 
 export const ModernAuthConnect: React.FC = () => {
-  const { authState, isLoading, isConnected, progress } = useModernGoogleAuth();
+  const { isConnected } = useAppStore();
   const { t, i18n } = useTranslation("common");
   const [isOpen, setIsOpen] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
@@ -133,20 +133,19 @@ export const ModernAuthConnect: React.FC = () => {
 
       {/* Google Login */}
       <div className="space-y-4 sm:space-y-5">
-        <ModernGoogleLogin
-          disabled={!agreeTerms}
-          onSuccess={() => {
-            console.log('✅ Modern Google login successful');
-          }}
-          onError={(error: any) => {
-            console.error('❌ Modern Google login error:', error);
-          }}
-        />
-        
-        {!agreeTerms && (
-          <p className="text-sm sm:text-base text-muted-foreground text-center px-2">
+        {agreeTerms ? (
+          <SimpleGoogleLogin
+            onSuccess={() => {
+              console.log('✅ Simple Google login successful');
+            }}
+            onError={(error: any) => {
+              console.error('❌ Simple Google login error:', error);
+            }}
+          />
+        ) : (
+          <div className="p-4 border border-dashed border-gray-300 rounded-lg text-center text-gray-500">
             {t("auth.pleaseAgreeTerms")}
-          </p>
+          </div>
         )}
       </div>
     </div>
