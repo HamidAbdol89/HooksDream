@@ -1,6 +1,7 @@
 const Post = require('../models/Post');
 const User = require('../models/User');
 const Comment = require('../models/Comment');
+const SearchHistory = require('../models/SearchHistory');
 const { createResponse } = require('../utils/helpers');
 
 // Unified search - tìm kiếm cả users và posts
@@ -52,11 +53,15 @@ exports.unifiedSearch = async (req, res) => {
         // Search Posts
         if (type === 'all' || type === 'posts') {
             const postQuery = { 
-                isDeleted: false, 
-                visibility: 'public',
-                $or: [
-                    { content: searchRegex },
-                    { hashtags: { $in: [query.trim().toLowerCase()] } }
+                $and: [
+                    { $or: [{ isDeleted: { $ne: true } }, { isDeleted: { $exists: false } }] },
+                    { $or: [{ visibility: 'public' }, { visibility: { $exists: false } }] },
+                    {
+                        $or: [
+                            { content: searchRegex },
+                            { hashtags: { $in: [query.trim().toLowerCase()] } }
+                        ]
+                    }
                 ]
             };
 
@@ -81,22 +86,53 @@ exports.unifiedSearch = async (req, res) => {
                 .skip(type === 'posts' ? (pageNum - 1) * limitNum : 0)
                 .lean();
 
-            // Add comment count and like status
+            // Enhance posts with required fields for frontend
             for (let post of posts) {
-                if (post.commentCount === undefined) {
-                    post.commentCount = await Comment.countDocuments({
-                        postId: post._id,
-                        isDeleted: false
-                    });
+                // Always calculate comment count from Comment collection
+                post.commentCount = await Comment.countDocuments({
+                    postId: post._id,
+                    isDeleted: false
+                });
+                
+                // Always calculate like count from likes array
+                post.likeCount = post.likes ? post.likes.length : 0;
+                
+                // Always calculate repost count from Post collection
+                post.repostCount = await Post.countDocuments({
+                    repost_of: post._id,
+                    isDeleted: false
+                });
+                
+                // Share count (not implemented yet)
+                post.shareCount = 0;
+                
+                // Ensure arrays exist
+                if (!post.images) post.images = [];
+                if (!post.hashtags) post.hashtags = [];
+                
+                // Ensure basic fields
+                if (!post.type) post.type = 'text';
+                if (!post.visibility) post.visibility = 'public';
+                
+                // Ensure userId is populated properly
+                if (!post.userId) {
+                    post.userId = {
+                        _id: 'unknown',
+                        username: 'unknown',
+                        displayName: 'Unknown User',
+                        avatar: '/default-avatar.png',
+                        isVerified: false
+                    };
                 }
             }
 
             if (req.userId) {
                 posts.forEach(post => {
-                    post.isLiked = post.likes.some(like => like.userId === req.userId);
+                    post.isLiked = post.likes && post.likes.some(like => like.userId === req.userId);
                 });
             }
 
+            
             results.posts = posts;
         }
 
@@ -110,15 +146,64 @@ exports.unifiedSearch = async (req, res) => {
             });
         } else if (type === 'posts') {
             results.total = await Post.countDocuments({ 
-                isDeleted: false, 
-                visibility: 'public',
-                $or: [
-                    { content: searchRegex },
-                    { hashtags: { $in: [query.trim().toLowerCase()] } }
+                $and: [
+                    { $or: [{ isDeleted: { $ne: true } }, { isDeleted: { $exists: false } }] },
+                    { $or: [{ visibility: 'public' }, { visibility: { $exists: false } }] },
+                    {
+                        $or: [
+                            { content: searchRegex },
+                            { hashtags: { $in: [query.trim().toLowerCase()] } }
+                        ]
+                    }
                 ]
             });
         } else {
             results.total = results.users.length + results.posts.length;
+        }
+
+        // Lưu search history nếu user đã đăng nhập
+        if (req.userId && query.trim().length > 0) {
+            try {
+                // Chuẩn bị top results để lưu
+                const topResults = {
+                    users: results.users.slice(0, 3).map(user => ({
+                        _id: user._id,
+                        username: user.username,
+                        displayName: user.displayName,
+                        avatar: user.avatar,
+                        isVerified: user.isVerified || false
+                    })),
+                    posts: results.posts.slice(0, 2).map(post => ({
+                        _id: post._id,
+                        content: post.content?.substring(0, 100) || '',
+                        likeCount: post.likeCount || 0,
+                        commentCount: post.commentCount || 0,
+                        repostCount: post.repostCount || 0,
+                        userId: {
+                            _id: post.userId?._id,
+                            username: post.userId?.username,
+                            displayName: post.userId?.displayName,
+                            avatar: post.userId?.avatar
+                        }
+                    }))
+                };
+
+                await SearchHistory.create({
+                    userId: req.userId,
+                    query: query.trim(),
+                    searchType: type,
+                    resultsCount: results.total,
+                    topResults: topResults,
+                    metadata: {
+                        userAgent: req.get('User-Agent'),
+                        ip: req.ip || req.connection.remoteAddress,
+                        source: 'web'
+                    }
+                });
+            } catch (historyError) {
+                // Không làm gián đoạn search nếu lưu history thất bại
+                console.error('Failed to save search history:', historyError);
+            }
         }
 
         res.json(createResponse(true, 'Search completed successfully', results, null, null, {
@@ -383,6 +468,109 @@ exports.getTrendingHashtags = async (req, res) => {
 
     } catch (error) {
         console.error('Get trending hashtags error:', error);
+        res.status(500).json(
+            createResponse(false, 'Internal server error', null, null, 500)
+        );
+    }
+};
+
+// Get user's search history
+exports.getSearchHistory = async (req, res) => {
+    try {
+        const { limit = 10 } = req.query;
+        const userId = req.userId;
+
+        if (!userId) {
+            return res.status(401).json(
+                createResponse(false, 'Authentication required', null, null, 401)
+            );
+        }
+
+        const recentSearches = await SearchHistory.getRecentSearches(userId, parseInt(limit));
+
+        res.json(createResponse(true, 'Search history retrieved successfully', {
+            searches: recentSearches,
+            total: recentSearches.length
+        }));
+
+    } catch (error) {
+        console.error('Get search history error:', error);
+        res.status(500).json(
+            createResponse(false, 'Internal server error', null, null, 500)
+        );
+    }
+};
+
+// Delete search history item
+exports.deleteSearchHistoryItem = async (req, res) => {
+    try {
+        const { query } = req.params;
+        const userId = req.userId;
+
+        if (!userId) {
+            return res.status(401).json(
+                createResponse(false, 'Authentication required', null, null, 401)
+            );
+        }
+
+        await SearchHistory.deleteMany({ 
+            userId: userId, 
+            query: query 
+        });
+
+        res.json(createResponse(true, 'Search history item deleted successfully'));
+
+    } catch (error) {
+        console.error('Delete search history error:', error);
+        res.status(500).json(
+            createResponse(false, 'Internal server error', null, null, 500)
+        );
+    }
+};
+
+// Clear all search history
+exports.clearSearchHistory = async (req, res) => {
+    try {
+        const userId = req.userId;
+
+        if (!userId) {
+            return res.status(401).json(
+                createResponse(false, 'Authentication required', null, null, 401)
+            );
+        }
+
+        const result = await SearchHistory.deleteMany({ userId: userId });
+
+        res.json(createResponse(true, 'Search history cleared successfully', {
+            deletedCount: result.deletedCount
+        }));
+
+    } catch (error) {
+        console.error('Clear search history error:', error);
+        res.status(500).json(
+            createResponse(false, 'Internal server error', null, null, 500)
+        );
+    }
+};
+
+// Get popular searches (public)
+exports.getPopularSearches = async (req, res) => {
+    try {
+        const { limit = 10, days = 7 } = req.query;
+
+        const popularSearches = await SearchHistory.getPopularSearches(
+            parseInt(limit), 
+            parseInt(days)
+        );
+
+        res.json(createResponse(true, 'Popular searches retrieved successfully', {
+            searches: popularSearches,
+            total: popularSearches.length,
+            period: `${days} days`
+        }));
+
+    } catch (error) {
+        console.error('Get popular searches error:', error);
         res.status(500).json(
             createResponse(false, 'Internal server error', null, null, 500)
         );

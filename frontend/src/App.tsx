@@ -1,9 +1,9 @@
 import React from 'react';
-import ProtectedApp from './components/ProtectedApp';
+import ProtectedAppSimple from './components/ProtectedAppSimple';
 import './App.css';
 
 const App: React.FC = () => {
-  return <ProtectedApp />;
+  return <ProtectedAppSimple />;
 };
 
 export default App;

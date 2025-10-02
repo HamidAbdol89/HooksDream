@@ -1,4 +1,5 @@
 import React from 'react';
+import { ClipLoader } from 'react-spinners';
 import { cn } from '../../utils/helpers';
 
 interface LoadingSpinnerProps {
@@ -12,30 +13,26 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   size = 'md',
   color = 'default'
 }) => {
-  const sizeClasses = {
-    sm: 'w-4 h-4',
-    md: 'w-8 h-8',
-    lg: 'w-12 h-12'
+  const sizeMap = {
+    sm: 16,
+    md: 32,
+    lg: 48
   };
 
-  const colorClasses = {
-    default: 'text-purple-500',
-    white: 'text-white',
-    primary: 'text-primary'
+  const colorMap = {
+    default: '#8b5cf6',
+    white: '#ffffff',
+    primary: 'hsl(var(--primary))'
   };
 
   return (
-    <div
-      className={cn(
-        'animate-spin rounded-full border-2 border-current border-t-transparent',
-        sizeClasses[size],
-        colorClasses[color],
-        className
-      )}
-      role="status"
-      aria-label="Loading"
-    >
-      <span className="sr-only">Loading...</span>
+    <div className={cn('flex items-center justify-center', className)}>
+      <ClipLoader
+        color={colorMap[color]}
+        size={sizeMap[size]}
+        aria-label="Loading Spinner"
+        data-testid="loader"
+      />
     </div>
   );
 };

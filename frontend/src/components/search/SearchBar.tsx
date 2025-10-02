@@ -11,7 +11,7 @@ interface SearchBarProps {
 
 export const SearchBar: React.FC<SearchBarProps> = ({
   variant = 'button',
-  placeholder = "Tìm kiếm người dùng, bài viết...",
+  placeholder = "Search users, posts, hashtags...",
   className = ""
 }) => {
   const navigate = useNavigate();
@@ -20,18 +20,18 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     navigate('/search');
   };
 
-  if (variant === 'button') {
+  if (variant === 'input') {
     return (
-      <Button
-        variant="outline"
-        size="sm"
+      <div 
+        className={`relative flex items-center bg-accent/50 rounded-full px-4 py-2 cursor-pointer hover:bg-accent/70 transition-colors ${className}`}
         onClick={handleSearchClick}
-        className={`flex items-center gap-2 hover:bg-accent transition-all duration-200 ${className}`}
       >
-        <Search className="h-4 w-4" />
-        <span className="hidden sm:inline">Tìm kiếm nâng cao</span>
-        <Sparkles className="h-3 w-3 opacity-60 hidden lg:inline" />
-      </Button>
+        <Search className="h-4 w-4 text-muted-foreground mr-3" />
+        <span className="text-muted-foreground text-sm flex-1">
+          {placeholder}
+        </span>
+        <Sparkles className="h-4 w-4 text-muted-foreground" />
+      </div>
     );
   }
 
@@ -41,30 +41,23 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         variant="ghost"
         size="sm"
         onClick={handleSearchClick}
-        className={`p-2 hover:bg-accent transition-colors ${className}`}
-        aria-label="Tìm kiếm nâng cao"
+        className={`p-2 ${className}`}
       >
         <Search className="h-4 w-4" />
       </Button>
     );
   }
 
-  // Input variant - fake input that navigates to search
+  // Default button variant
   return (
-    <div className={`max-w-md ${className}`}>
-      <div 
-        onClick={handleSearchClick}
-        className="relative cursor-pointer"
-      >
-        <div className="flex items-center gap-3 px-4 py-2 bg-muted/50 hover:bg-muted/70 rounded-lg border transition-colors">
-          <Search className="h-4 w-4 text-muted-foreground" />
-          <span className="text-muted-foreground text-sm flex-1">
-            {placeholder}
-          </span>
-          <Sparkles className="h-3 w-3 text-muted-foreground/60" />
-        </div>
-      </div>
-    </div>
+    <Button
+      variant="outline"
+      onClick={handleSearchClick}
+      className={`flex items-center gap-2 ${className}`}
+    >
+      <Search className="h-4 w-4" />
+      <span className="hidden sm:inline">Search</span>
+    </Button>
   );
 };
 

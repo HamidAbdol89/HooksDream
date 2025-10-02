@@ -1,11 +1,11 @@
 // hooks/useInfiniteScroll.ts
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect } from 'react';
+import { useInView } from 'react-intersection-observer';
 
 interface UseInfiniteScrollProps {
   onLoadMore: () => void;
   hasMore: boolean;
   loading: boolean;
-  threshold?: number;
   rootMargin?: string;
 }
 
@@ -13,36 +13,18 @@ export const useInfiniteScroll = ({
   onLoadMore,
   hasMore,
   loading,
-  threshold = 100,
   rootMargin = '0px'
 }: UseInfiniteScrollProps) => {
-  const targetRef = useRef<HTMLDivElement>(null);
-  const observerRef = useRef<IntersectionObserver | null>(null);
-
-  const handleIntersect = useCallback(([entry]: IntersectionObserverEntry[]) => {
-    if (entry.isIntersecting && hasMore && !loading) {
-      onLoadMore();
-    }
-  }, [hasMore, loading, onLoadMore]);
+  const { ref, inView } = useInView({
+    threshold: 0.1,
+    rootMargin,
+  });
 
   useEffect(() => {
-    if (!targetRef.current) return;
+    if (inView && hasMore && !loading) {
+      onLoadMore();
+    }
+  }, [inView, hasMore, loading, onLoadMore]);
 
-    const options = {
-      root: null,
-      rootMargin,
-      threshold: 0.1
-    };
-
-    observerRef.current = new IntersectionObserver(handleIntersect, options);
-    observerRef.current.observe(targetRef.current);
-
-    return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-      }
-    };
-  }, [handleIntersect, rootMargin]);
-
-  return { targetRef };
+  return { targetRef: ref };
 };

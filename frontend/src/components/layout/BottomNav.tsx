@@ -1,6 +1,5 @@
 // src/components/layout/BottomNav.tsx
 import React, { useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { User, LogOut, Settings, X } from 'lucide-react';
 import { useTranslation } from "react-i18next";
 import { useGoogleAuth } from '../../hooks/useGoogleAuth';
@@ -37,6 +36,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ isInChat = false }) => {
   const [isUserSheetOpen, setIsUserSheetOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [currentSettingsView, setCurrentSettingsView] = useState<'main' | 'language' | 'theme'>('main');
+  const [activeIndex, setActiveIndex] = useState(0);
 
   const openSettings = useCallback((view: 'main' | 'language' | 'theme' = 'main') => {
     setIsSettingsOpen(true);
@@ -94,39 +94,26 @@ export const BottomNav: React.FC<BottomNavProps> = ({ isInChat = false }) => {
                   }}
                   className="relative overflow-hidden flex items-center gap-2 sm:gap-3 transition-all duration-500 rounded-full px-3 py-2.5 sm:px-4 sm:py-3"
                 >
-                  {/* Active background highlight */}
+                  {/* Active background highlight - simplified */}
                   {isActive && (
-                    <motion.div
-                      className="absolute inset-0 bg-primary text-primary-foreground rounded-full shadow-md"
-                      layoutId="activeTab"
-                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                    />
+                    <div className="absolute inset-0 bg-primary text-primary-foreground rounded-full shadow-md transition-all duration-300 ease-out" />
                   )}
                 
                   {/* Icon with scale animation */}
-                  <motion.div
-                    animate={{ scale: isActive ? 1.1 : 1 }}
-                    transition={{ duration: 0.3 }}
-                    className={`relative z-10 ${isActive ? 'text-primary-foreground' : 'text-muted-foreground'}`}
+                  <div
+                    className={`relative z-10 transition-transform duration-300 ${
+                      isActive ? 'scale-110 text-primary-foreground' : 'scale-100 text-muted-foreground'
+                    }`}
                   >
                     {item.icon}
-                  </motion.div>
+                  </div>
                 
-                  {/* Animated text label */}
-                  <AnimatePresence mode="wait">
-                    {isActive && (
-                      <motion.span
-                        key={`active-${index}`}
-                        initial={{ opacity: 0, x: 20, width: 0 }}
-                        animate={{ opacity: 1, x: 0, width: "auto" }}
-                        exit={{ opacity: 0, x: -20, width: 0 }}
-                        transition={{ duration: 0.4, ease: "easeOut" }}
-                        className="text-xs sm:text-sm font-medium whitespace-nowrap overflow-hidden text-primary-foreground relative z-10"
-                      >
-                        {item.label}
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
+                  {/* Animated text label - simplified */}
+                  {isActive && (
+                    <span className="text-xs sm:text-sm font-medium whitespace-nowrap text-primary-foreground relative z-10 animate-in slide-in-from-right-2 duration-300">
+                      {item.label}
+                    </span>
+                  )}
                 
                   {/* Badge */}
                   {item.badge && Number(item.badge) > 0 && (
