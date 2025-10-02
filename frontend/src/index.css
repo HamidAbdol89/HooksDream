@@ -110,3 +110,25 @@
     scrollbar-color: rgba(120,120,120,0.5) transparent;
   }
 }
+
+.container {
+  display: flex;
+  flex: 1;
+  min-width: 0; /* Allows truncation */
+}
+
+.avatar {
+  flex-shrink: 0; /* Never compress */
+}
+
+.text-content {
+  flex: 1;
+  min-width: 0; /* Allows truncation */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge {
+  flex-shrink: 0; /* Never compress */
+}

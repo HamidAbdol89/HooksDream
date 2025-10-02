@@ -1,38 +1,43 @@
-// ProtectedApp.tsx
-import React from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+// ProtectedApp.tsx - Enhanced with Framer Motion transitions
+import React from 'react';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { useAppStore } from "@/store/useAppStore";
+import { useSocket } from "@/hooks/useSocket";
 import ModernAuthConnect from "@/components/auth/ModernAuthConnect";
 import { Header } from "@/components/layout/Header";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import SidebarLeft from "@/components/layout/SidebarLeft";
 import { SidebarRight } from "@/components/layout/SidebarRight";
-import { Feed } from "../pages/FeedPage";
+import { UnfollowConfirmProvider } from "@/contexts/UnfollowConfirmContext";
+import { ChatProvider } from "@/contexts/ChatContext";
+import { ToastProvider } from "@/components/ui/SuccessToast";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
+import { SwiperCarousel } from "@/components/navigation/SwiperCarousel";
+import { Feed } from "../pages/FeedPage";
 import ProfilePage from "@/pages/ProfilePage";
-import SearchPage from "@/pages/SearchPage";
 import PostDetailPage from "@/pages/PostDetailPage";
 import FriendPage from "@/pages/FriendPage";
 import MessagesPage from "@/pages/MessagesPage";
 import EditProfilePage from "@/pages/EditProfilePage";
 import NotificationsPage from "@/pages/NotificationsPage";
 import { CreatePostPage } from "@/pages/CreatePostPage";
-import { UnfollowConfirmProvider } from "@/contexts/UnfollowConfirmContext";
-import { ChatProvider, useChatContext } from "@/contexts/ChatContext";
-import { useSocket } from "@/hooks/useSocket";
-import { ToastProvider } from "@/components/ui/SuccessToast";
-import { useIsMobile } from "@/hooks/useIsMobile";
+
+// Lazy load SearchPage for better performance
+const SearchPage = React.lazy(() => import("@/pages/SearchPage"));
 
 const ProtectedAppContent: React.FC = () => {
   const { isConnected, user } = useAppStore();
   const location = useLocation();
-  const isMobile = useIsMobile(); // ✅ Use centralized hook
+  const navigate = useNavigate();
+  const isMobile = useIsMobile();
   
   // Initialize Socket connection
   const { isConnected: socketConnected, connectionError } = useSocket();
   
-  // ✅ Check persistent session to prevent flash
+  // Check persistent session to prevent flash
   const [isCheckingSession, setIsCheckingSession] = React.useState(true);
   
   React.useEffect(() => {
@@ -65,10 +70,11 @@ const ProtectedAppContent: React.FC = () => {
   const isCreatePostPage = location.pathname === '/post';
   const isMessagesPage = location.pathname.startsWith('/messages');
   const isInChat = isMessagesPage && location.pathname !== '/messages';
+  const isSearchPage = location.pathname === '/search';
   
-  // MobileHeader only shows on feed page
-  const shouldShowMobileHeader = location.pathname === '/feed' || location.pathname === '/';
-  
+  // MobileHeader only shows on feed page (not on search page)
+  const shouldShowMobileHeader = (location.pathname === '/feed' || location.pathname === '/') && !isSearchPage;
+
   if (!isConnected || !user) {
     return <ModernAuthConnect />;
   }
@@ -77,15 +83,15 @@ const ProtectedAppContent: React.FC = () => {
     <UnfollowConfirmProvider>
       <div className="min-h-screen bg-background text-foreground transition-colors duration-200">
         {/* Desktop Header */}
-        {!isEditProfilePage && !isCreatePostPage && <Header isInChat={isInChat} />}
+        {!isEditProfilePage && !isCreatePostPage && !isSearchPage && <Header isInChat={isInChat} />}
         
         {/* Mobile Header - Only show on specific pages */}
         {shouldShowMobileHeader && <MobileHeader />}
         
-        {/* Mobile Bottom Navigation */}
-        {!isEditProfilePage && !isCreatePostPage && <BottomNav isInChat={isInChat} />}
+        {/* Mobile Bottom Navigation - Hide on search page */}
+        {!isEditProfilePage && !isCreatePostPage && !isSearchPage && <BottomNav isInChat={isInChat} />}
         
-        <main className={`w-full ${isMessagesPage || isInChat || isEditProfilePage || isCreatePostPage ? 'px-0 py-0' : 'px-0 py-6'}`}>
+        <main className={`w-full ${isMessagesPage || isInChat || isEditProfilePage || isCreatePostPage || isSearchPage ? 'px-0 py-0' : 'px-0 py-6'}`}>
           {isEditProfilePage ? (
             // Full width layout for Edit Profile page
             <div className="w-full">
@@ -117,7 +123,7 @@ const ProtectedAppContent: React.FC = () => {
               </TooltipProvider>
             </div>
           ) : (
-            // Standard layout with sidebars for other pages
+            // Standard layout with sidebars for other pages - ADD GESTURE SUPPORT HERE
             <div className="w-full lg:grid lg:grid-cols-12 lg:gap-6 lg:px-8">
               {/* Left Sidebar - Hidden when in chat */}
               {!isInChat && (
@@ -128,19 +134,71 @@ const ProtectedAppContent: React.FC = () => {
                 </aside>
               )}
 
-              {/* Main Content */}
+              {/* Main Content - WITH GESTURE SUPPORT */}
               <section className={`w-full ${!isInChat ? 'lg:col-span-6' : 'lg:col-span-9'}`}>
                 <TooltipProvider>
-                  <Routes>
-                    <Route path="/profile/:userId" element={<ProfilePage />} />
-                    <Route path="/profile/me" element={<ProfilePage />} />
-                    <Route path="/edit-profile/:address" element={<EditProfilePage />} />
-                    <Route path="/search" element={<SearchPage />} />
-                    <Route path="/friend" element={<FriendPage />} />
-                    <Route path="/notifications" element={<NotificationsPage />} />
-                    <Route path="/post/:postId" element={<PostDetailPage />} />
-                    <Route path="/*" element={<Feed />} />
-                  </Routes>
+                  <AnimatePresence mode="wait">
+                    <Routes location={location} key={location.pathname}>
+                      <Route path="/profile/:userId" element={
+                        <motion.div
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          transition={{ duration: 0.2, ease: "easeOut" }}
+                        >
+                          <ProfilePage />
+                        </motion.div>
+                      } />
+                      <Route path="/profile/me" element={
+                        <motion.div
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          transition={{ duration: 0.2, ease: "easeOut" }}
+                        >
+                          <ProfilePage />
+                        </motion.div>
+                      } />
+                      <Route path="/post/:postId" element={
+                        <motion.div
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          transition={{ duration: 0.2, ease: "easeOut" }}
+                        >
+                          <PostDetailPage />
+                        </motion.div>
+                      } />
+                      <Route path="/search" element={
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.2, ease: "easeOut" }}
+                          className="h-full"
+                        >
+                          <React.Suspense fallback={
+                            <div className="flex items-center justify-center h-screen">
+                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                            </div>
+                          }>
+                            <SearchPage />
+                          </React.Suspense>
+                        </motion.div>
+                      } />
+                      {/* SwiperCarousel handles all main navigation */}
+                      <Route path="/*" element={
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <SwiperCarousel />
+                        </motion.div>
+                      } />
+                    </Routes>
+                  </AnimatePresence>
                 </TooltipProvider>
               </section>
 
@@ -153,13 +211,12 @@ const ProtectedAppContent: React.FC = () => {
             </div>
           )}
         </main>
-
       </div>
     </UnfollowConfirmProvider>
   );
 };
 
-const ProtectedApp: React.FC = () => {
+const ProtectedAppSimple: React.FC = () => {
   return (
     <ChatProvider>
       <ProtectedAppContent />
@@ -167,4 +224,4 @@ const ProtectedApp: React.FC = () => {
   );
 };
 
-export default ProtectedApp;
+export default ProtectedAppSimple;

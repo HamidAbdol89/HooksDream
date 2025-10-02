@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -13,6 +13,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { 
+  useSearchQuery, 
+  useTrendingHashtags, 
+  useSearchHistory, 
+  useSearchHistoryMutations,
+  useDebouncedSearch 
+} from '@/hooks/useSearchQuery';
 
 interface SearchResult {
   _id: string;
@@ -40,167 +47,24 @@ interface SearchResult {
   visibility?: string;
 }
 
-export const SimpleSearch: React.FC = () => {
+export const SimpleSearchRQ: React.FC = () => {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
-  const [trendingHashtags, setTrendingHashtags] = useState<string[]>([]);
-  const [searchHistory, setSearchHistory] = useState<Array<{
-    query: string;
-    lastSearched: string;
-    searchCount: number;
-    topResults?: {
-      users: Array<{
-        _id: string;
-        username: string;
-        displayName: string;
-        avatar: string;
-        isVerified: boolean;
-      }>;
-      posts: Array<{
-        _id: string;
-        content: string;
-        likeCount?: number;
-        commentCount?: number;
-        repostCount?: number;
-        userId: {
-          _id: string;
-          username: string;
-          displayName: string;
-          avatar: string;
-        };
-      }>;
-    };
-  }>>([]);
   const [showClearDialog, setShowClearDialog] = useState(false);
   const navigate = useNavigate();
 
-  // Load trending hashtags
-  useEffect(() => {
-    const loadTrending = async () => {
-      try {
-        const url = `http://localhost:5000/api/search/trending?limit=10`;
-        const response = await fetch(url);
-        const data = await response.json();
-        
-        if (data.success) {
-          setTrendingHashtags(data.data.map((item: any) => item.hashtag));
-        }
-      } catch (error) {
-        // Silently fail for trending hashtags
-      }
-    };
-    
-    loadTrending();
-    loadSearchHistory();
-  }, []);
+  // Debounced search query
+  const debouncedQuery = useDebouncedSearch(query, 500);
+  
+  // React Query hooks
+  const { data: results = [], isLoading, error } = useSearchQuery(debouncedQuery);
+  const { data: trendingHashtags = [] } = useTrendingHashtags();
+  const { data: searchHistory = [] } = useSearchHistory();
+  const { deleteHistoryItem, clearAllHistory } = useSearchHistoryMutations();
 
-  // Load search history
-  const loadSearchHistory = async () => {
-    try {
-      const token = localStorage.getItem('auth_token');
-      if (!token) return;
+  // Derived state
+  const hasSearched = debouncedQuery.trim().length > 0;
 
-      const response = await fetch('http://localhost:5000/api/search/history?limit=5', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
-      
-      if (data.success) {
-        setSearchHistory(data.data.searches);
-      }
-    } catch (error) {
-      // Silently fail for search history
-    }
-  };
-
-  // Debounced search
-  const searchPosts = useCallback(async (searchQuery: string) => {
-    if (!searchQuery.trim()) {
-      setResults([]);
-      setHasSearched(false);
-      return;
-    }
-
-    setLoading(true);
-    setHasSearched(true);
-
-    try {
-      const token = localStorage.getItem('auth_token');
-      const headers: Record<string, string> = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const url = `http://localhost:5000/api/search?q=${encodeURIComponent(searchQuery.trim())}&type=all&limit=20`;
-      const response = await fetch(url, { headers });
-      const data = await response.json();
-
-
-      if (data.success) {
-        const { users = [], posts = [] } = data.data;
-        const searchResults: SearchResult[] = [];
-
-        // Add users
-        users.forEach((user: any) => {
-          searchResults.push({
-            _id: user._id,
-            _type: 'user',
-            objectID: `user_${user._id}`,
-            username: user.username,
-            displayName: user.displayName,
-            avatar: user.avatar,
-            isVerified: user.isVerified
-          });
-        });
-
-        // Add posts
-        posts.forEach((post: any) => {
-          if (post._id && post.content) {
-            searchResults.push({
-              _id: post._id,
-              _type: 'post',
-              objectID: `post_${post._id}`,
-              content: post.content,
-              userId: post.userId,
-              likeCount: post.likeCount || 0,
-              commentCount: post.commentCount || 0,
-              repostCount: post.repostCount || 0,
-              images: post.images || [],
-              hashtags: post.hashtags || [],
-              createdAt: post.createdAt,
-              type: post.type || 'text',
-              visibility: post.visibility || 'public'
-            });
-          }
-        });
-
-        setResults(searchResults);
-        
-        // Reload search history after successful search
-        loadSearchHistory();
-      } else {
-        setResults([]);
-      }
-    } catch (error) {
-      setResults([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Debounce search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      searchPosts(query);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [query, searchPosts]);
-
+  // Event handlers
   const handleUserClick = (user: SearchResult) => {
     navigate(`/profile/${user._id}`);
   };
@@ -209,54 +73,28 @@ export const SimpleSearch: React.FC = () => {
     navigate(`/post/${post._id}`);
   };
 
-  const handleHashtagClick = (hashtag: string) => {
-    setQuery(`#${hashtag}`);
-  };
-
   const handleHistoryClick = (historyQuery: string) => {
     setQuery(historyQuery);
   };
 
-  const deleteHistoryItem = async (historyQuery: string) => {
+  const handleHashtagClick = (hashtag: string) => {
+    setQuery(`#${hashtag}`);
+  };
+
+  const handleDeleteHistoryItem = async (historyQuery: string) => {
     try {
-      const token = localStorage.getItem('auth_token');
-      if (!token) return;
-
-      const response = await fetch(`http://localhost:5000/api/search/history/${encodeURIComponent(historyQuery)}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        // Remove from local state only if API call succeeded
-        setSearchHistory(prev => prev.filter(item => item.query !== historyQuery));
-      }
+      await deleteHistoryItem.mutateAsync(historyQuery);
     } catch (error) {
-      // Silently fail but don't update UI
+      // Silently fail
     }
   };
 
-  const clearAllHistory = async () => {
+  const handleClearAllHistory = async () => {
     try {
-      const token = localStorage.getItem('auth_token');
-      if (!token) return;
-
-      const response = await fetch('http://localhost:5000/api/search/history', {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        // Clear local state only if API call succeeded
-        setSearchHistory([]);
-        setShowClearDialog(false);
-      }
+      await clearAllHistory.mutateAsync();
+      setShowClearDialog(false);
     } catch (error) {
-      // Silently fail but don't update UI
+      // Silently fail
     }
   };
 
@@ -266,8 +104,6 @@ export const SimpleSearch: React.FC = () => {
 
   const clearSearch = () => {
     setQuery('');
-    setResults([]);
-    setHasSearched(false);
   };
 
   const goBack = () => {
@@ -277,18 +113,24 @@ export const SimpleSearch: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background border-b">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
         <div className="flex items-center gap-4 p-4">
-          <Button variant="ghost" size="sm" onClick={goBack}>
-            <ArrowLeft className="h-4 w-4" />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={goBack}
+            className="p-2"
+          >
+            <ArrowLeft className="h-5 w-5" />
           </Button>
           
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
+              type="text"
+              placeholder="Search users, posts, hashtags..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search users, posts, hashtags..."
               className="pl-10 pr-10"
               autoFocus
             />
@@ -309,19 +151,19 @@ export const SimpleSearch: React.FC = () => {
       {/* Content */}
       <div className="container mx-auto px-4 py-6 max-w-2xl">
         {/* Loading */}
-        {loading && (
+        {isLoading && (
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         )}
 
         {/* Results */}
-        {!loading && hasSearched && (
+        {!isLoading && hasSearched && (
           <div className="space-y-4">
             {results.length > 0 ? (
               <>
                 <p className="text-sm text-muted-foreground">
-                  {results.length} results found for "{query}"
+                  {results.length} results found for "{debouncedQuery}"
                 </p>
                 
                 {results.map((result) => (
@@ -339,7 +181,7 @@ export const SimpleSearch: React.FC = () => {
                           />
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
-                              <h3 className="font-semibold">{result.displayName}</h3>
+                              <h3 className="font-medium">{result.displayName}</h3>
                               {result.isVerified && (
                                 <Badge variant="secondary" className="text-xs">✓</Badge>
                               )}
@@ -352,36 +194,28 @@ export const SimpleSearch: React.FC = () => {
                           className="space-y-3"
                           onClick={() => handlePostClick(result)}
                         >
-                          {/* Post Author */}
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-3">
                             <img 
                               src={result.userId?.avatar || '/default-avatar.png'} 
                               alt={result.userId?.displayName}
                               className="w-8 h-8 rounded-full"
                             />
-                            <div>
+                            <div className="flex items-center gap-2">
                               <span className="font-medium text-sm">{result.userId?.displayName}</span>
-                              <span className="text-muted-foreground text-sm ml-2">@{result.userId?.username}</span>
+                              {result.userId?.isVerified && (
+                                <Badge variant="secondary" className="text-xs">✓</Badge>
+                              )}
+                              <span className="text-xs text-muted-foreground">@{result.userId?.username}</span>
                             </div>
                           </div>
-
-                          {/* Post Content */}
-                          <p className="text-sm line-clamp-3">{result.content}</p>
-
-                          {/* Hashtags */}
+                          
+                          <p className="text-sm leading-relaxed">{result.content}</p>
+                          
                           {result.hashtags && result.hashtags.length > 0 && (
                             <div className="flex flex-wrap gap-1">
-                              {result.hashtags.slice(0, 3).map((tag: string) => (
-                                <Badge 
-                                  key={tag} 
-                                  variant="outline" 
-                                  className="text-xs cursor-pointer hover:bg-primary hover:text-primary-foreground"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleHashtagClick(tag);
-                                  }}
-                                >
-                                  #{tag}
+                              {result.hashtags.slice(0, 3).map((hashtag) => (
+                                <Badge key={hashtag} variant="outline" className="text-xs">
+                                  #{hashtag}
                                 </Badge>
                               ))}
                               {result.hashtags.length > 3 && (
@@ -407,7 +241,7 @@ export const SimpleSearch: React.FC = () => {
             ) : (
               <div className="text-center py-12">
                 <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">No results found for "{query}"</h3>
+                <h3 className="text-lg font-medium mb-2">No results found for "{debouncedQuery}"</h3>
                 <p className="text-muted-foreground">Try searching for something else</p>
               </div>
             )}
@@ -415,8 +249,10 @@ export const SimpleSearch: React.FC = () => {
         )}
 
         {/* Empty State - Clean */}
-        {!hasSearched && !loading && (
+        {!hasSearched && !isLoading && (
           <div className="space-y-6">
+
+            
             {/* Search History - Moved to top */}
             {searchHistory.length > 0 && (
               <Card>
@@ -442,21 +278,21 @@ export const SimpleSearch: React.FC = () => {
                             {item.topResults.users.slice(0, 2).map((user) => (
                               <div
                                 key={user._id}
-                                className="flex items-center justify-between p-2 rounded-lg hover:bg-accent/50 cursor-pointer"
+                                className="flex items-center justify-between p-2 rounded-lg hover:bg-accent/50 cursor-pointer group"
                                 onClick={() => navigate(`/profile/${user._id}`)}
                               >
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 flex-1 min-w-0 overflow-hidden">
                                   <img 
                                     src={user.avatar || '/default-avatar.png'} 
                                     alt={user.displayName}
-                                    className="w-8 h-8 rounded-full"
+                                    className="w-8 h-8 rounded-full flex-shrink-0"
                                   />
-                                  <div>
-                                    <div className="font-medium text-sm">{user.displayName}</div>
-                                    <div className="text-muted-foreground text-xs">@{user.username}</div>
+                                  <div className="flex-1 min-w-0 overflow-hidden">
+                                    <div className="font-medium text-sm truncate max-w-full">{user.displayName}</div>
+                                    <div className="text-muted-foreground text-xs truncate max-w-full">@{user.username}</div>
                                   </div>
                                   {user.isVerified && (
-                                    <Badge variant="secondary" className="text-xs px-1 py-0">✓</Badge>
+                                    <Badge variant="secondary" className="text-xs px-1 py-0 flex-shrink-0">✓</Badge>
                                   )}
                                 </div>
                                 <Button
@@ -464,7 +300,7 @@ export const SimpleSearch: React.FC = () => {
                                   size="sm"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    deleteHistoryItem(item.query);
+                                    handleDeleteHistoryItem(item.query);
                                   }}
                                   className="opacity-50 hover:opacity-100 transition-opacity p-1 h-6 w-6"
                                 >
@@ -480,15 +316,15 @@ export const SimpleSearch: React.FC = () => {
                                 className="flex items-start justify-between p-2 rounded-lg hover:bg-accent/50 cursor-pointer"
                                 onClick={() => navigate(`/post/${post._id}`)}
                               >
-                                <div className="flex items-start gap-3 flex-1">
+                                <div className="flex items-start gap-3 flex-1 min-w-0 overflow-hidden">
                                   <img 
                                     src={post.userId.avatar || '/default-avatar.png'} 
                                     alt={post.userId.displayName}
-                                    className="w-8 h-8 rounded-full"
+                                    className="w-8 h-8 rounded-full flex-shrink-0"
                                   />
-                                  <div className="flex-1 min-w-0">
-                                    <div className="font-medium text-sm">{post.userId.displayName}</div>
-                                    <div className="text-muted-foreground text-xs truncate">{post.content}</div>
+                                  <div className="flex-1 min-w-0 overflow-hidden">
+                                    <div className="font-medium text-sm truncate max-w-full">{post.userId.displayName}</div>
+                                    <div className="text-muted-foreground text-xs truncate max-w-full">{post.content}</div>
                                     {((post.likeCount ?? 0) > 0 || (post.commentCount ?? 0) > 0 || (post.repostCount ?? 0) > 0) && (
                                       <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                                         {(post.likeCount ?? 0) > 0 && <span>{post.likeCount ?? 0} likes</span>}
@@ -503,7 +339,7 @@ export const SimpleSearch: React.FC = () => {
                                   size="sm"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    deleteHistoryItem(item.query);
+                                    handleDeleteHistoryItem(item.query);
                                   }}
                                   className="opacity-50 hover:opacity-100 transition-opacity p-1 h-6 w-6"
                                 >
@@ -516,10 +352,10 @@ export const SimpleSearch: React.FC = () => {
                             {(!item.topResults.users.length && !item.topResults.posts.length) && (
                               <div className="flex items-center justify-between p-2 rounded-lg hover:bg-accent group">
                                 <div 
-                                  className="flex items-center gap-2 flex-1 cursor-pointer"
+                                  className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
                                   onClick={() => handleHistoryClick(item.query)}
                                 >
-                                  <span className="text-sm font-medium">{item.query}</span>
+                                  <span className="text-sm font-medium truncate">{item.query}</span>
                                   {item.searchCount > 1 && (
                                     <Badge variant="secondary" className="text-xs">
                                       {item.searchCount}
@@ -531,7 +367,7 @@ export const SimpleSearch: React.FC = () => {
                                   size="sm"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    deleteHistoryItem(item.query);
+                                    handleDeleteHistoryItem(item.query);
                                   }}
                                   className="opacity-50 hover:opacity-100 transition-opacity p-1 h-6 w-6"
                                 >
@@ -590,7 +426,7 @@ export const SimpleSearch: React.FC = () => {
             </Button>
             <Button
               variant="default"
-              onClick={clearAllHistory}
+              onClick={handleClearAllHistory}
             >
               Clear All
             </Button>
@@ -601,4 +437,4 @@ export const SimpleSearch: React.FC = () => {
   );
 };
 
-export default SimpleSearch;
+export default SimpleSearchRQ;

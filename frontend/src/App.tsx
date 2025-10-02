@@ -1,5 +1,5 @@
 import React from 'react';
-import ProtectedAppSimple from './components/ProtectedAppSimple';
+import ProtectedAppSimple from './components/ProtectedApp';
 import './App.css';
 
 const App: React.FC = () => {
