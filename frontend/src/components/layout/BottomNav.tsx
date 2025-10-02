@@ -12,6 +12,8 @@ import { useSocial } from '../../hooks/useSocial';
 import { useSwiper } from '@/contexts/SwiperContext';
 import { Badge } from '@/components/ui/badge';
 import { UserProfileSheet } from './UserProfileSheet';
+import { useScrollDirection } from '@/hooks/useScrollDirection';
+import { motion } from 'framer-motion';
 
 interface UserType {
   id?: string;
@@ -30,6 +32,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ isInChat = false }) => {
   const location = useLocation();
   const { profile, user, isConnected } = useAppStore();
   const { navigateToSlide, currentIndex } = useSwiper();
+  const { isVisible } = useScrollDirection({ threshold: 10 });
   
   // Map current index to path for active state
   const SWIPER_PATHS = ['/feed', '/friend', '/notifications', '/messages'];
@@ -79,10 +82,21 @@ export const BottomNav: React.FC<BottomNavProps> = ({ isInChat = false }) => {
 
   return (
     <>
-      {/* Navigation items - Mobile Bottom Nav */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50">
+      {/* Navigation items - Mobile Bottom Nav with scroll animation */}
+      <motion.div 
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50"
+        initial={{ y: 0 }}
+        animate={{ 
+          y: isVisible ? 0 : 100,
+          opacity: isVisible ? 1 : 0
+        }}
+        transition={{ 
+          duration: 0.3, 
+          ease: "easeInOut"
+        }}
+      >
         <div className="bg-background/95 backdrop-blur-xl rounded-t-3xl p-2 border-t border-border/50 transition-all duration-300 mx-auto max-w-md">
-          <div className="flex justify-around items-center">
+          <div className="flex justify-around items-center py-1">
             {navItems.map((item, index) => {
               const targetPath = (
                 item.label === t('nav.home') ? '/feed' :
@@ -94,47 +108,49 @@ export const BottomNav: React.FC<BottomNavProps> = ({ isInChat = false }) => {
               const isActive = activeTabFromIndex === targetPath;
               
               return (
-                <button
-                  key={index}
-                  onClick={(e) => { 
-                    createRipple(e);
-                    item.onClick(); 
-                  }}
-                  className="relative overflow-hidden flex items-center gap-2 sm:gap-3 transition-all duration-500 rounded-full px-3 py-2.5 sm:px-4 sm:py-3"
-                >
-                  {/* Active background highlight - simplified */}
-                  {isActive && (
-                    <div className="absolute inset-0 bg-primary text-primary-foreground rounded-full shadow-md transition-all duration-300 ease-out" />
-                  )}
-                
-                  {/* Icon with scale animation */}
-                  <div
-                    className={`relative z-10 transition-transform duration-300 ${
-                      isActive ? 'scale-110 text-primary-foreground' : 'scale-100 text-muted-foreground'
-                    }`}
+                <div className="relative">
+                  <button
+                    key={index}
+                    onClick={(e) => { 
+                      createRipple(e);
+                      item.onClick(); 
+                    }}
+                    className="relative overflow-hidden flex items-center gap-2 sm:gap-3 transition-all duration-500 rounded-full px-3 py-2.5 sm:px-4 sm:py-3"
                   >
-                    {item.icon}
-                  </div>
-                
-                  {/* Animated text label - simplified */}
-                  {isActive && (
-                    <span className="text-xs sm:text-sm font-medium whitespace-nowrap text-primary-foreground relative z-10 animate-in slide-in-from-right-2 duration-300">
-                      {item.label}
-                    </span>
-                  )}
-                
-                  {/* Badge */}
+                    {/* Active background highlight - simplified */}
+                    {isActive && (
+                      <div className="absolute inset-0 bg-primary text-primary-foreground rounded-full shadow-md transition-all duration-300 ease-out" />
+                    )}
+                  
+                    {/* Icon with scale animation */}
+                    <div
+                      className={`relative z-10 transition-transform duration-300 ${
+                        isActive ? 'scale-110 text-primary-foreground' : 'scale-100 text-muted-foreground'
+                      }`}
+                    >
+                      {item.icon}
+                    </div>
+                  
+                    {/* Animated text label - simplified */}
+                    {isActive && (
+                      <span className="text-xs sm:text-sm font-medium whitespace-nowrap text-primary-foreground relative z-10 animate-in slide-in-from-right-2 duration-300">
+                        {item.label}
+                      </span>
+                    )}
+                  </button>
+                  
+                  {/* Badge - Outside button to avoid overflow issues */}
                   {item.badge && Number(item.badge) > 0 && (
-                    <span className="absolute bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1 border-2 border-background -top-1 -right-1 z-20">
+                    <span className="absolute bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 border-2 border-background top-0 right-1 z-50 shadow-lg animate-pulse">
                       {Number(item.badge) > 99 ? '99+' : item.badge}
                     </span>
                   )}
-                </button>
+                </div>
               );
             })}
           </div>
         </div>
-      </div>
+      </motion.div>
 
 
       {/* User Profile Sheet */}

@@ -117,7 +117,7 @@ const ProtectedAppContent: React.FC = () => {
         {/* Mobile Bottom Navigation - Hide on search page */}
         {!isEditProfilePage && !isCreatePostPage && !isSearchPage && <BottomNav isInChat={isInChat} />}
         
-        <main className={`w-full ${isMessagesPage || isInChat || isEditProfilePage || isCreatePostPage || isSearchPage ? 'px-0 py-0' : 'px-0 py-6'}`}>
+        <main className={`w-full ${shouldShowMobileHeader ? 'pt-16' : ''} ${isMessagesPage || isInChat || isEditProfilePage || isCreatePostPage || isSearchPage ? 'px-0 py-0' : 'px-0 py-6'}`}>
           {isEditProfilePage ? (
             // Full width layout for Edit Profile page
             <div className="w-full">

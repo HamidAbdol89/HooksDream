@@ -9,8 +9,10 @@ import { Button } from '@/components/ui/Button';
 import { useAppStore } from '@/store/useAppStore';
 import { useSocial } from '@/hooks/useSocial';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
+import { useScrollDirection } from '@/hooks/useScrollDirection';
 import { UserProfileSheet } from './UserProfileSheet';
 import { SettingsModal } from './setting/SettingsModal';
+import { motion } from 'framer-motion';
 
 interface MobileHeaderProps {
   className?: string;
@@ -22,6 +24,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ className = '' }) =>
   const { profile, user, isConnected } = useAppStore();
   const { useCurrentProfile } = useSocial();
   const { unreadCount } = useUnreadCount(user?.hashId);
+  const { isVisible } = useScrollDirection({ threshold: 10 });
 
   // Profile data
   const { data: profileData, isLoading: isProfileLoading } = useCurrentProfile();
@@ -82,8 +85,19 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ className = '' }) =>
 
   return (
     <>
-      {/* Mobile Header - Only visible on mobile */}
-      <div className={`md:hidden sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b ${className}`}>
+      {/* Mobile Header - Only visible on mobile with scroll animation */}
+      <motion.div 
+        className={`md:hidden fixed top-0 left-0 right-0 z-40 bg-background ${className}`}
+        initial={{ y: 0 }}
+        animate={{ 
+          y: isVisible ? 0 : -100,
+          opacity: isVisible ? 1 : 0
+        }}
+        transition={{ 
+          duration: 0.3, 
+          ease: "easeInOut"
+        }}
+      >
         <div className="flex items-center justify-between px-4 py-3">
           {/* Left side - Logo */}
           <div className="flex items-center space-x-2">
@@ -135,7 +149,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ className = '' }) =>
             </Button>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* User Profile Sheet */}
       <UserProfileSheet
