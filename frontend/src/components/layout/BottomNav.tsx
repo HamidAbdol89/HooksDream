@@ -9,6 +9,7 @@ import { SettingsModal } from './setting/SettingsModal';
 import { useNavItems } from './NavItems';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSocial } from '../../hooks/useSocial';
+import { useSwiper } from '@/contexts/SwiperContext';
 import { Badge } from '@/components/ui/badge';
 import { UserProfileSheet } from './UserProfileSheet';
 
@@ -28,6 +29,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({ isInChat = false }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { profile, user, isConnected } = useAppStore();
+  const { navigateToSlide, currentIndex } = useSwiper();
+  
+  // Map current index to path for active state
+  const SWIPER_PATHS = ['/feed', '/friend', '/notifications', '/messages'];
+  const activeTabFromIndex = SWIPER_PATHS[currentIndex] || location.pathname;
+  
   const { logout } = useGoogleAuth();
   const typedUser = user as UserType;
   
@@ -77,19 +84,20 @@ export const BottomNav: React.FC<BottomNavProps> = ({ isInChat = false }) => {
         <div className="bg-background/95 backdrop-blur-xl rounded-t-3xl p-2 border-t border-border/50 transition-all duration-300 mx-auto max-w-md">
           <div className="flex justify-around items-center">
             {navItems.map((item, index) => {
-              const isActive = location.pathname === (
+              const targetPath = (
                 item.label === t('nav.home') ? '/feed' :
                 item.label === t('nav.friends') ? '/friend' :
                 item.label === t('nav.create') ? '/post' :
                 item.label === t('nav.notifications') ? '/notifications' :
                 item.label === t('nav.messages') ? '/messages' : ''
               );
+              const isActive = activeTabFromIndex === targetPath;
               
               return (
                 <button
                   key={index}
                   onClick={(e) => { 
-                    createRipple(e); 
+                    createRipple(e);
                     item.onClick(); 
                   }}
                   className="relative overflow-hidden flex items-center gap-2 sm:gap-3 transition-all duration-500 rounded-full px-3 py-2.5 sm:px-4 sm:py-3"

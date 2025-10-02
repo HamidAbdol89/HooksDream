@@ -9,11 +9,12 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 
-// Import page components
+// Import page components - NO lazy loading for smooth swiper
 import { Feed } from '@/pages/FeedPage';
-import FriendPage from '@/pages/FriendPage';
+import FriendPage from '@/pages/FriendPageRQ';
 import NotificationsPage from '@/pages/NotificationsPage';
 import MessagesPage from '@/pages/MessagesPage';
+import { useSwiper } from '@/contexts/SwiperContext';
 
 const PAGES = [
   { path: '/feed', component: Feed, title: 'Feed' },
@@ -26,19 +27,19 @@ export const SwiperCarousel: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
-  const swiperRef = useRef<any>(null);
+  const { swiperRef, currentIndex: contextIndex, setCurrentIndex } = useSwiper();
   
-  const currentIndex = PAGES.findIndex(page => page.path === location.pathname);
-  const validIndex = currentIndex !== -1 ? currentIndex : 0;
+  const locationIndex = PAGES.findIndex(page => page.path === location.pathname);
+  const validIndex = locationIndex !== -1 ? locationIndex : 0;
 
-  // Update swiper when location changes
-  useEffect(() => {
-    if (swiperRef.current && currentIndex !== -1) {
-      swiperRef.current.slideTo(currentIndex, 300);
-    }
-  }, [currentIndex]);
+  // Disable auto slide on route change to prevent conflicts
+  // useEffect(() => {
+  //   if (swiperRef.current && currentIndex !== -1) {
+  //     swiperRef.current.slideTo(currentIndex, 300);
+  //   }
+  // }, [currentIndex]);
 
-  if (!isMobile || currentIndex === -1) {
+  if (!isMobile || locationIndex === -1) {
     const CurrentComponent = PAGES[validIndex]?.component || Feed;
     return (
       <div className="w-full h-full">
@@ -49,7 +50,8 @@ export const SwiperCarousel: React.FC = () => {
 
   const handleSlideChange = (swiper: any) => {
     const newIndex = swiper.activeIndex;
-    if (newIndex !== currentIndex && PAGES[newIndex]) {
+    if (newIndex !== contextIndex && PAGES[newIndex]) {
+      setCurrentIndex(newIndex);
       navigate(PAGES[newIndex].path);
     }
   };
@@ -80,6 +82,8 @@ export const SwiperCarousel: React.FC = () => {
         threshold={10}
         longSwipesRatio={0.5}
         longSwipesMs={300}
+        allowTouchMove={true}
+        simulateTouch={true}
       >
         {PAGES.map((page, index) => {
           const PageComponent = page.component;

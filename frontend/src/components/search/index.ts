@@ -1,5 +1,5 @@
 // Simple search system
-export { SimpleSearch } from './SimpleSearch';
+export { default as SimpleSearch } from './SimpleSearchRQ';
 
 // Navigation component
 export { SearchBar } from './SearchBar';

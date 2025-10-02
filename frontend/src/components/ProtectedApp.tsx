@@ -13,20 +13,19 @@ import SidebarLeft from "@/components/layout/SidebarLeft";
 import { SidebarRight } from "@/components/layout/SidebarRight";
 import { UnfollowConfirmProvider } from "@/contexts/UnfollowConfirmContext";
 import { ChatProvider } from "@/contexts/ChatContext";
+import { SwiperProvider } from "@/contexts/SwiperContext";
 import { ToastProvider } from "@/components/ui/SuccessToast";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
-import { SwiperCarousel } from "@/components/navigation/SwiperCarousel";
-import { Feed } from "../pages/FeedPage";
-import ProfilePage from "@/pages/ProfilePage";
-import PostDetailPage from "@/pages/PostDetailPage";
-import FriendPage from "@/pages/FriendPage";
-import MessagesPage from "@/pages/MessagesPage";
-import EditProfilePage from "@/pages/EditProfilePage";
-import NotificationsPage from "@/pages/NotificationsPage";
-import { CreatePostPage } from "@/pages/CreatePostPage";
-
-// Lazy load SearchPage for better performance
+// Lazy load ALL components for better performance and faster navigation
+const SwiperCarousel = React.lazy(() => import("@/components/navigation/SwiperCarousel").then(module => ({ default: module.SwiperCarousel })));
 const SearchPage = React.lazy(() => import("@/pages/SearchPage"));
+const ProfilePage = React.lazy(() => import("@/pages/ProfilePage"));
+const PostDetailPage = React.lazy(() => import("@/pages/PostDetailPage"));
+const EditProfilePage = React.lazy(() => import("@/pages/EditProfilePage"));
+const CreatePostPage = React.lazy(() => import("@/pages/CreatePostPage").then(module => ({ default: module.CreatePostPage })));
+const MessagesPage = React.lazy(() => import("@/pages/MessagesPage"));
+const NotificationsPage = React.lazy(() => import("@/pages/NotificationsPage"));
+const FriendPage = React.lazy(() => import("@/pages/FriendPageRQ"));
 
 const ProtectedAppContent: React.FC = () => {
   const { isConnected, user } = useAppStore();
@@ -80,8 +79,9 @@ const ProtectedAppContent: React.FC = () => {
   }
 
   return (
-    <UnfollowConfirmProvider>
-      <div className="min-h-screen bg-background text-foreground transition-colors duration-200">
+    <SwiperProvider>
+      <UnfollowConfirmProvider>
+        <div className="min-h-screen bg-background text-foreground transition-colors duration-200">
         {/* Desktop Header */}
         {!isEditProfilePage && !isCreatePostPage && !isSearchPage && <Header isInChat={isInChat} />}
         
@@ -139,6 +139,7 @@ const ProtectedAppContent: React.FC = () => {
                 <TooltipProvider>
                   <AnimatePresence mode="wait">
                     <Routes location={location} key={location.pathname}>
+                      {/* Profile pages - Motion transitions */}
                       <Route path="/profile/:userId" element={
                         <motion.div
                           initial={{ opacity: 0, y: 8 }}
@@ -146,7 +147,13 @@ const ProtectedAppContent: React.FC = () => {
                           exit={{ opacity: 0, y: -8 }}
                           transition={{ duration: 0.2, ease: "easeOut" }}
                         >
-                          <ProfilePage />
+                          <React.Suspense fallback={
+                            <div className="flex items-center justify-center h-screen">
+                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                            </div>
+                          }>
+                            <ProfilePage />
+                          </React.Suspense>
                         </motion.div>
                       } />
                       <Route path="/profile/me" element={
@@ -156,9 +163,17 @@ const ProtectedAppContent: React.FC = () => {
                           exit={{ opacity: 0, y: -8 }}
                           transition={{ duration: 0.2, ease: "easeOut" }}
                         >
-                          <ProfilePage />
+                          <React.Suspense fallback={
+                            <div className="flex items-center justify-center h-screen">
+                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                            </div>
+                          }>
+                            <ProfilePage />
+                          </React.Suspense>
                         </motion.div>
                       } />
+                      
+                      {/* Post detail - Motion transitions */}
                       <Route path="/post/:postId" element={
                         <motion.div
                           initial={{ opacity: 0, y: 8 }}
@@ -166,9 +181,17 @@ const ProtectedAppContent: React.FC = () => {
                           exit={{ opacity: 0, y: -8 }}
                           transition={{ duration: 0.2, ease: "easeOut" }}
                         >
-                          <PostDetailPage />
+                          <React.Suspense fallback={
+                            <div className="flex items-center justify-center h-screen">
+                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                            </div>
+                          }>
+                            <PostDetailPage />
+                          </React.Suspense>
                         </motion.div>
                       } />
+                      
+                      {/* Search page - Special motion */}
                       <Route path="/search" element={
                         <motion.div
                           initial={{ opacity: 0, y: 10 }}
@@ -186,16 +209,17 @@ const ProtectedAppContent: React.FC = () => {
                           </React.Suspense>
                         </motion.div>
                       } />
-                      {/* SwiperCarousel handles all main navigation */}
+                      
+                      {/* SwiperCarousel handles: /, /feed, /friend, /notifications, /messages */}
+                      {/* NO motion here - SwiperCarousel has its own swipe animations */}
                       <Route path="/*" element={
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.2 }}
-                        >
+                        <React.Suspense fallback={
+                          <div className="flex items-center justify-center h-screen">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                          </div>
+                        }>
                           <SwiperCarousel />
-                        </motion.div>
+                        </React.Suspense>
                       } />
                     </Routes>
                   </AnimatePresence>
@@ -211,8 +235,9 @@ const ProtectedAppContent: React.FC = () => {
             </div>
           )}
         </main>
-      </div>
-    </UnfollowConfirmProvider>
+        </div>
+      </UnfollowConfirmProvider>
+    </SwiperProvider>
   );
 };
 

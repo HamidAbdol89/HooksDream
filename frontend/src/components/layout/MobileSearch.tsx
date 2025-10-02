@@ -2,7 +2,7 @@
 import React from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { useNavigate } from 'react-router-dom';
-import MobileSearchPage from '@/pages/MobileSearchPage';
+// MobileSearchPage removed - using navigation to /search instead
 
 interface MobileSearchProps {
   isOpen: boolean;
@@ -20,7 +20,7 @@ export const MobileSearch = ({ isOpen, onClose }: MobileSearchProps) => {
   };
 
   // This component now just triggers navigation to /search
-  // The actual search UI is handled by MobileSearchPage
+  // The actual search UI is handled by SearchPage
   React.useEffect(() => {
     if (isOpen) {
       handleOpen();
