@@ -108,9 +108,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({ isInChat = false }) => {
               const isActive = activeTabFromIndex === targetPath;
               
               return (
-                <div className="relative">
+                <div key={index} className="relative">
                   <button
-                    key={index}
                     onClick={(e) => { 
                       createRipple(e);
                       item.onClick(); 

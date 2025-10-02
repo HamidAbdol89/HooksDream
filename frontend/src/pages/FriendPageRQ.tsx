@@ -1,5 +1,5 @@
 // src/pages/FriendPageRQ.tsx - Optimized with React Query
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Users, UserPlus, Crown, Clock, TrendingUp, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PopularUsersSection } from '@/components/feed/PopularUsersSection';
@@ -26,10 +26,31 @@ const FriendPageRQ: React.FC = () => {
   const navigate = useNavigate();
   const { } = useSocial();
   const { useDirectConversation } = useChat();
+  
+  // Reset scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, []);
 
   // React Query hooks - No more manual API calls!
   const { data: allUsers = [], isLoading: isLoadingUsers, error } = useAllUsers(50);
-  const { data: popularUsers = [] } = usePopularUsers();
+  const { data: popularUsersRaw = [] } = usePopularUsers();
+  
+  // Ensure popular users are unique
+  const popularUsers = popularUsersRaw.filter((user, index, self) => 
+    index === self.findIndex(u => u._id === user._id)
+  );
+  
+  // Filter out duplicates between allUsers and popularUsers, and ensure unique users
+  const filteredAllUsers = allUsers
+    .filter((user, index, self) => 
+      // Remove duplicates within allUsers itself
+      index === self.findIndex(u => u._id === user._id)
+    )
+    .filter(user => 
+      // Remove users that are already in popularUsers
+      !popularUsers.some(popularUser => popularUser._id === user._id)
+    );
 
   // Local state for UI
   const [activeTab, setActiveTab] = useState<'discover' | 'popular'>('discover');
@@ -114,14 +135,14 @@ const FriendPageRQ: React.FC = () => {
                 <div className="flex items-center gap-2 mb-4">
                   <UserPlus className="h-5 w-5 text-primary" />
                   <h2 className="text-lg font-semibold">Discover New People</h2>
-                  <span className="text-sm text-muted-foreground">({allUsers.length} users)</span>
+                  <span className="text-sm text-muted-foreground">({filteredAllUsers.length} users)</span>
                 </div>
 
-                {allUsers.length > 0 ? (
+                {filteredAllUsers.length > 0 ? (
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {allUsers.map((user: User) => (
+                    {filteredAllUsers.map((user: User) => (
                       <div
-                        key={user._id}
+                        key={`discover-${user._id}`}
                         className="bg-card rounded-lg border p-4 hover:shadow-md transition-shadow"
                       >
                         <div className="flex items-start gap-3">
@@ -201,7 +222,7 @@ const FriendPageRQ: React.FC = () => {
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {popularUsers.map((user: User) => (
                     <div
-                      key={user._id}
+                      key={`popular-${user._id}`}
                       className="bg-card rounded-lg border p-4 hover:shadow-md transition-shadow"
                     >
                       <div className="flex items-start gap-3">
