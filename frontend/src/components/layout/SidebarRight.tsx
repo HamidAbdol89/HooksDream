@@ -26,7 +26,6 @@ export const SidebarRight: React.FC = () => {
     queryFn: async () => {
       if (!actualUserId || !token) return [];
       
-      console.log('🔍 SidebarRight fetching following for userId:', actualUserId);
       
       const response = await fetch(`${API_BASE_URL}/api/users/${actualUserId}/following?limit=5`, {
         headers: {
@@ -41,7 +40,6 @@ export const SidebarRight: React.FC = () => {
       }
 
       const data = await response.json();
-      console.log('✅ Following data received:', data);
       return data.data || data || [];
     },
     enabled: !!actualUserId && !!token,

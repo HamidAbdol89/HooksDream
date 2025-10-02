@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, startTransition } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination } from 'swiper/modules';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -69,7 +69,9 @@ export const SwiperCarousel: React.FC = () => {
     const newIndex = swiper.activeIndex;
     if (newIndex !== contextIndex && PAGES[newIndex]) {
       setCurrentIndex(newIndex);
-      navigate(PAGES[newIndex].path);
+      startTransition(() => {
+        navigate(PAGES[newIndex].path);
+      });
     }
   };
 
@@ -84,16 +86,9 @@ export const SwiperCarousel: React.FC = () => {
         onSwiper={(swiper) => {
           swiperRef.current = swiper;
         }}
-        className="w-full h-full"
-        style={{
-          '--swiper-pagination-color': '#ffffff',
-          '--swiper-pagination-bullet-inactive-color': 'rgba(255,255,255,0.3)',
-        } as React.CSSProperties}
-        pagination={{
-          clickable: true,
-          bulletClass: 'swiper-pagination-bullet',
-          bulletActiveClass: 'swiper-pagination-bullet-active',
-        }}
+     
+        loop={false}
+        resistanceRatio={0.85}
         speed={300}
         touchRatio={1}
         threshold={10}
@@ -101,13 +96,24 @@ export const SwiperCarousel: React.FC = () => {
         longSwipesMs={300}
         allowTouchMove={true}
         simulateTouch={true}
+        watchSlidesProgress={true}
       >
         {PAGES.map((page, index) => {
           const PageComponent = page.component;
+          const isActive = index === contextIndex;
+          
           return (
             <SwiperSlide key={page.path} className="w-full h-full">
               <div className="w-full h-full">
-                <PageComponent />
+                {/* Only render active page to prevent scroll interference */}
+                {isActive ? (
+                  <PageComponent />
+                ) : (
+                  // Empty slide for inactive pages
+                  <div className="w-full h-full flex items-center justify-center">
+                    <div className="text-muted-foreground">Loading...</div>
+                  </div>
+                )}
               </div>
             </SwiperSlide>
           );

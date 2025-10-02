@@ -1,6 +1,6 @@
 // ProtectedApp.tsx - Enhanced with Framer Motion transitions
-import React from 'react';
-import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import React, { Suspense, useState, useEffect, startTransition } from 'react';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useAppStore } from "@/store/useAppStore";
@@ -11,6 +11,7 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import SidebarLeft from "@/components/layout/SidebarLeft";
 import { SidebarRight } from "@/components/layout/SidebarRight";
+import { useChatContext } from "@/contexts/ChatContext";
 import { UnfollowConfirmProvider } from "@/contexts/UnfollowConfirmContext";
 import { ChatProvider } from "@/contexts/ChatContext";
 import { SwiperProvider } from "@/contexts/SwiperContext";
@@ -28,18 +29,17 @@ const NotificationsPage = React.lazy(() => import("@/pages/NotificationsPage"));
 const FriendPage = React.lazy(() => import("@/pages/FriendPageRQ"));
 
 const ProtectedAppContent: React.FC = () => {
-  const { isConnected, user } = useAppStore();
-  const location = useLocation();
   const navigate = useNavigate();
+  const location = useLocation();
   const isMobile = useIsMobile();
-  
-  // Initialize Socket connection
+  const { isConnected, user, profile } = useAppStore();
+  const { selectedConversationId } = useChatContext();
   const { isConnected: socketConnected, connectionError } = useSocket();
   
   // Check persistent session to prevent flash
-  const [isCheckingSession, setIsCheckingSession] = React.useState(true);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
   
-  React.useEffect(() => {
+  useEffect(() => {
     const checkSession = async () => {
       try {
         // Use SessionManager to check for valid session
@@ -47,7 +47,6 @@ const ProtectedAppContent: React.FC = () => {
         const savedSession = SessionManager.getAuthSession();
         
         if (savedSession && savedSession.user) {
-          console.log('✅ Found valid session, auto-redirecting to feed');
           
           // Valid session exists, populate store if needed
           if (!isConnected || !user) {
@@ -75,11 +74,13 @@ const ProtectedAppContent: React.FC = () => {
   const isEditProfilePage = location.pathname === '/edit-profile' || location.pathname.startsWith('/edit-profile/');
   const isCreatePostPage = location.pathname === '/post';
   const isMessagesPage = location.pathname.startsWith('/messages');
-  const isInChat = isMessagesPage && location.pathname !== '/messages';
+  const isInChat = isMessagesPage && selectedConversationId !== null;
+  const isMessagesListPage = location.pathname === '/messages'; // Only the main messages page
+  
   const isSearchPage = location.pathname === '/search';
   
-  // MobileHeader only shows on feed page (not on search page)
-  const shouldShowMobileHeader = (location.pathname === '/feed' || location.pathname === '/') && !isSearchPage;
+  // MobileHeader only shows on feed page (not on search page or in individual chats)
+  const shouldShowMobileHeader = (location.pathname === '/feed' || location.pathname === '/') && !isSearchPage && !isInChat;
 
   // Show loading while checking session
   if (isCheckingSession) {
@@ -114,8 +115,8 @@ const ProtectedAppContent: React.FC = () => {
         {/* Mobile Header - Only show on specific pages */}
         {shouldShowMobileHeader && <MobileHeader />}
         
-        {/* Mobile Bottom Navigation - Hide on search page */}
-        {!isEditProfilePage && !isCreatePostPage && !isSearchPage && <BottomNav isInChat={isInChat} />}
+        {/* Mobile Bottom Navigation - Hide on search page and in individual chats */}
+        {!isEditProfilePage && !isCreatePostPage && !isSearchPage && !isInChat && <BottomNav isInChat={isInChat} />}
         
         <main className={`w-full ${shouldShowMobileHeader ? 'pt-16' : ''} ${isMessagesPage || isInChat || isEditProfilePage || isCreatePostPage || isSearchPage ? 'px-0 py-0' : 'px-0 py-6'}`}>
           {isEditProfilePage ? (
@@ -123,29 +124,58 @@ const ProtectedAppContent: React.FC = () => {
             <div className="w-full">
               <ToastProvider>
                 <TooltipProvider>
-                  <Routes>
-                    <Route path="/edit-profile/:address" element={<EditProfilePage />} />
-                    <Route path="/edit-profile" element={<EditProfilePage />} />
-                  </Routes>
+                  <Suspense fallback={
+                    <div className="flex items-center justify-center min-h-screen">
+                      <div className="text-center space-y-4">
+                        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+                        <p className="text-muted-foreground">Loading...</p>
+                      </div>
+                    </div>
+                  }>
+                    <Routes>
+                      <Route path="/edit-profile/:address" element={<EditProfilePage />} />
+                      <Route path="/edit-profile" element={<EditProfilePage />} />
+                    </Routes>
+                  </Suspense>
                 </TooltipProvider>
               </ToastProvider>
             </div>
           ) : isCreatePostPage ? (
             // Full width layout for Create Post page
             <div className="w-full">
-              <TooltipProvider>
-                <Routes>
-                  <Route path="/post" element={<CreatePostPage />} />
-                </Routes>
-              </TooltipProvider>
+              <ToastProvider>
+                <TooltipProvider>
+                  <Suspense fallback={
+                    <div className="flex items-center justify-center min-h-screen">
+                      <div className="text-center space-y-4">
+                        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+                        <p className="text-muted-foreground">Loading...</p>
+                      </div>
+                    </div>
+                  }>
+                    <Routes>
+                      <Route path="/post" element={<CreatePostPage />} />
+                    </Routes>
+                  </Suspense>
+                </TooltipProvider>
+              </ToastProvider>
             </div>
-          ) : isMessagesPage || isInChat ? (
+          ) : isInChat ? (
             // Full width layout for Messages page and individual chats
             <div className={`w-full ${isInChat && isMobile ? 'h-screen' : 'h-[calc(100vh-64px)]'}`}>
               <TooltipProvider>
-                <Routes>
-                  <Route path="/messages/*" element={<MessagesPage />} />
-                </Routes>
+                <Suspense fallback={
+                  <div className="flex items-center justify-center min-h-screen">
+                    <div className="text-center space-y-4">
+                      <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+                      <p className="text-muted-foreground">Loading...</p>
+                    </div>
+                  </div>
+                }>
+                  <Routes>
+                    <Route path="/messages/*" element={<MessagesPage />} />
+                  </Routes>
+                </Suspense>
               </TooltipProvider>
             </div>
           ) : (
