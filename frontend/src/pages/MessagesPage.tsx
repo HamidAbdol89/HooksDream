@@ -1,8 +1,9 @@
 // pages/MessagesPage.tsx - Messages Page
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MessageSquare, Search, Plus, UserCheck } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { useParams } from 'react-router-dom';
 import { useChat } from '@/hooks/useChat';
 import { useSocial } from '@/hooks/useSocial';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
@@ -29,6 +30,7 @@ interface User {
 const MessagesPage: React.FC = () => {
   const { t } = useTranslation('common');
   const queryClient = useQueryClient();
+  const { conversationId } = useParams<{ conversationId?: string }>();
   const { useConversations, useDirectConversation, currentUserId } = useChat();
   const { useCurrentProfile } = useSocial();
   const { token } = useGoogleAuth(); // Use token from auth hook
@@ -37,6 +39,20 @@ const MessagesPage: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<'conversations' | 'following'>('conversations');
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+
+  // Auto-select conversation from URL params
+  useEffect(() => {
+    console.log('📱 MessagesPage URL Params:', {
+      conversationId,
+      selectedConversationId,
+      willUpdate: conversationId && conversationId !== selectedConversationId
+    });
+    
+    if (conversationId && conversationId !== selectedConversationId) {
+      console.log('✅ Setting selectedConversationId to:', conversationId);
+      setSelectedConversationId(conversationId);
+    }
+  }, [conversationId, selectedConversationId, setSelectedConversationId]);
   
   // Get current user data first
   const { data: currentUserData } = useCurrentProfile();

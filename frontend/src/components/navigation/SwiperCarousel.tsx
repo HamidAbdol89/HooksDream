@@ -11,7 +11,7 @@ import 'swiper/css/pagination';
 
 // Import page components - NO lazy loading for smooth swiper
 import { Feed } from '@/pages/FeedPage';
-import FriendPage from '@/pages/FriendPageRQ';
+import FriendPage from '@/pages/MobileFriendPage';
 import NotificationsPage from '@/pages/NotificationsPage';
 import MessagesPage from '@/pages/MessagesPage';
 import { useSwiper } from '@/contexts/SwiperContext';

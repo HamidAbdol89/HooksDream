@@ -268,6 +268,33 @@ export const userApi = {
   getPopularUsers: async () => {
     return apiCall('/api/users/popular');
   },
+
+  // Enhanced Friend Discovery APIs
+  getRecommendedUsers: async (limit = 10) => {
+    return apiCall(`/api/discovery/recommended?limit=${limit}`);
+  },
+
+  getNearbyUsers: async (radius = 50, lat?: number, lng?: number, limit = 15) => {
+    const params = new URLSearchParams({
+      radius: radius.toString(),
+      limit: limit.toString()
+    });
+    
+    if (lat && lng) {
+      params.append('lat', lat.toString());
+      params.append('lng', lng.toString());
+    }
+    
+    return apiCall(`/api/discovery/nearby?${params.toString()}`);
+  },
+
+  getNewUsers: async (limit = 20, days = 30) => {
+    return apiCall(`/api/discovery/new?limit=${limit}&days=${days}`);
+  },
+
+  getTrendingUsers: async (limit = 15, days = 7) => {
+    return apiCall(`/api/discovery/trending?limit=${limit}&days=${days}`);
+  },
   
   getProfile: async (hashId: string) => {
     try {
@@ -783,6 +810,32 @@ export const api = {
 
     getMultiplePreviews: async (content: string) => {
       return apiCall('/api/posts/preview-links', {
+        method: 'POST',
+        body: JSON.stringify({ content }),
+      });
+    },
+  },
+
+  // Chat API
+  chat: {
+    getOrCreateDirectConversation: async (userId: string) => {
+      return apiCall(`/api/chat/conversations/direct/${userId}`);
+    },
+
+    getConversations: async () => {
+      return apiCall('/api/chat/conversations');
+    },
+
+    getConversation: async (conversationId: string) => {
+      return apiCall(`/api/chat/conversations/${conversationId}`);
+    },
+
+    getMessages: async (conversationId: string, page = 1, limit = 20) => {
+      return apiCall(`/api/chat/conversations/${conversationId}/messages?page=${page}&limit=${limit}`);
+    },
+
+    sendMessage: async (conversationId: string, content: string) => {
+      return apiCall(`/api/chat/conversations/${conversationId}/messages`, {
         method: 'POST',
         body: JSON.stringify({ content }),
       });

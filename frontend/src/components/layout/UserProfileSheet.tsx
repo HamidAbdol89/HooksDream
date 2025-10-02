@@ -105,12 +105,7 @@ export const UserProfileSheet: React.FC<UserProfileSheetProps> = ({
     <Sheet open={isOpen} onOpenChange={onClose}>
       {trigger && <SheetTrigger asChild>{trigger}</SheetTrigger>}
       <SheetContent side="right" className="w-[80vw] sm:w-[400px] md:w-[480px] lg:w-[540px] max-w-[540px]">
-        <SheetHeader>
-          <SheetTitle className="text-left">{t('userSheet.title')}</SheetTitle>
-          <SheetDescription className="text-left">
-            {t('userSheet.description')}
-          </SheetDescription>
-        </SheetHeader>
+     
 
         <div className="mt-4 sm:mt-6 space-y-4 sm:space-y-6">
           {/* User Profile Section */}

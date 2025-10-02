@@ -26,7 +26,7 @@ const EditProfilePage = React.lazy(() => import("@/pages/EditProfilePage"));
 const CreatePostPage = React.lazy(() => import("@/pages/CreatePostPage").then(module => ({ default: module.CreatePostPage })));
 const MessagesPage = React.lazy(() => import("@/pages/MessagesPage"));
 const NotificationsPage = React.lazy(() => import("@/pages/NotificationsPage"));
-const FriendPage = React.lazy(() => import("@/pages/FriendPageRQ"));
+const FriendPage = React.lazy(() => import("@/pages/MobileFriendPage"));
 
 const ProtectedAppContent: React.FC = () => {
   const navigate = useNavigate();
@@ -74,8 +74,9 @@ const ProtectedAppContent: React.FC = () => {
   const isEditProfilePage = location.pathname === '/edit-profile' || location.pathname.startsWith('/edit-profile/');
   const isCreatePostPage = location.pathname === '/post';
   const isMessagesPage = location.pathname.startsWith('/messages');
-  const isInChat = isMessagesPage && selectedConversationId !== null;
   const isMessagesListPage = location.pathname === '/messages'; // Only the main messages page
+  const hasConversationId = Boolean(location.pathname.match(/^\/messages\/[^?]+/)); // Check if URL has conversationId
+  const isInChat = isMessagesPage && hasConversationId; // Individual chat = full-screen
   
   const isSearchPage = location.pathname === '/search';
   
