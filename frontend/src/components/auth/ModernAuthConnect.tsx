@@ -4,28 +4,56 @@
 import React, { useEffect, useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from "react-i18next";
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown, Loader2 } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import SimpleGoogleLogin from './SimpleGoogleLogin';
+import { SessionManager } from '@/utils/sessionManager';
 
 export const ModernAuthConnect: React.FC = () => {
-  const { isConnected } = useAppStore();
+  const { isConnected, setIsConnected, setUser, setProfile } = useAppStore();
   const { t, i18n } = useTranslation("common");
   const [isOpen, setIsOpen] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
   const navigate = useNavigate();
 
 
+  // Check for existing session on mount
+  useEffect(() => {
+    const checkSession = async () => {
+      console.log('🔍 Checking for existing session...');
+      
+      const session = SessionManager.getAuthSession();
+      if (session) {
+        console.log('✅ Found valid session:', SessionManager.getSessionInfo());
+        
+        // Restore app state from session
+        setUser(session.user);
+        setProfile(session.profile);
+        setIsConnected(true);
+        
+        // Redirect immediately to feed
+        navigate('/feed', { replace: true });
+        return;
+      }
+      
+      console.log('❌ No valid session found');
+      setIsCheckingSession(false);
+    };
+    
+    checkSession();
+  }, [navigate, setUser, setProfile, setIsConnected]);
+
   // Auto redirect when connected
   useEffect(() => {
-    if (isConnected) {
+    if (isConnected && !isCheckingSession) {
       const timer = setTimeout(() => {
-        navigate('/', { replace: true });
+        navigate('/feed', { replace: true });
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [isConnected, navigate]);
+  }, [isConnected, isCheckingSession, navigate]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -42,7 +70,7 @@ export const ModernAuthConnect: React.FC = () => {
 
   const renderSuccessState = () => (
     <div className="text-center py-8 space-y-4">
-      <div className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto">
+      <div className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto animate-pulse">
         <Check className="w-8 h-8 text-green-600 dark:text-green-400" />
       </div>
       
@@ -53,6 +81,11 @@ export const ModernAuthConnect: React.FC = () => {
         <p className="text-muted-foreground text-sm">
           {t("auth.takingToFeed")}
         </p>
+      </div>
+      
+      {/* Progress indicator */}
+      <div className="w-full bg-gray-200 rounded-full h-1.5 mt-4">
+        <div className="bg-green-500 h-1.5 rounded-full animate-pulse" style={{ width: '100%' }}></div>
       </div>
     </div>
   );
@@ -150,6 +183,27 @@ export const ModernAuthConnect: React.FC = () => {
       </div>
     </div>
   );
+
+  // Show loading while checking session
+  if (isCheckingSession) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4 py-8">
+        <div className="text-center space-y-4">
+          <div className="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center mx-auto">
+            <img 
+              src="/logo.png" 
+              alt="HooksDream Logo" 
+              className="w-20 h-20 sm:w-24 sm:h-24 object-contain" 
+            />
+          </div>
+          <div className="flex items-center justify-center space-x-2">
+            <Loader2 className="w-5 h-5 animate-spin text-foreground" />
+            <span className="text-foreground">Checking session...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4 py-8 sm:p-6 lg:p-8">

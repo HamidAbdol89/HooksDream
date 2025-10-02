@@ -1,4 +1,6 @@
 import React, { useEffect, useRef } from 'react';
+import { LoadingOverlay } from '@/components/ui/LoadingOverlay';
+import { useLoginLoading } from '@/hooks/useLoginLoading';
 
 interface SimpleGoogleLoginProps {
   onSuccess?: (response: any) => void;
@@ -9,11 +11,16 @@ const SimpleGoogleLogin: React.FC<SimpleGoogleLoginProps> = ({ onSuccess, onErro
   const buttonRef = useRef<HTMLDivElement>(null);
   const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+  
+  const { isVisible, message, showProgressiveLogin, hideLoading } = useLoginLoading();
 
   // Handle credential response
   const handleCredentialResponse = async (response: any) => {
     try {
       console.log('Google credential received:', response.credential ? 'Yes' : 'No');
+      
+      // Show progressive loading with React components
+      showProgressiveLogin();
       
       const backendResponse = await fetch(`${API_BASE_URL}/api/auth/google/login`, {
         method: 'POST',
@@ -25,19 +32,27 @@ const SimpleGoogleLogin: React.FC<SimpleGoogleLoginProps> = ({ onSuccess, onErro
       console.log('Backend response:', data);
 
       if (data.success && data.data) {
-        // Save token
+        // Save token and session
         localStorage.setItem('auth_token', data.data.token);
         localStorage.setItem('user_hash_id', data.data.user.hashId);
         
+        // Save to SessionManager for 30-day persistence
+        const { SessionManager } = await import('@/utils/sessionManager');
+        SessionManager.saveAuthSession(data.data.token, data.data.user, data.data.profile || data.data.user);
+        
         if (onSuccess) onSuccess(data);
         
-        // Reload page to trigger app state update
-        window.location.reload();
+        // Smooth transition to feed
+        setTimeout(() => {
+          window.location.href = '/feed';
+        }, 1800);
       } else {
+        hideLoading();
         throw new Error(data.message || 'Login failed');
       }
     } catch (error) {
       console.error('Login error:', error);
+      hideLoading();
       if (onError) onError(error);
     }
   };
@@ -81,9 +96,17 @@ const SimpleGoogleLogin: React.FC<SimpleGoogleLoginProps> = ({ onSuccess, onErro
   }, [GOOGLE_CLIENT_ID]);
 
   return (
-    <div className="w-full">
-      <div ref={buttonRef} className="w-full flex justify-center" />
-    </div>
+    <>
+      <div className="w-full">
+        <div ref={buttonRef} className="w-full flex justify-center" />
+      </div>
+      
+      {/* Loading overlay with theme support */}
+      <LoadingOverlay 
+        isVisible={isVisible}
+        message={message}
+      />
+    </>
   );
 };
 

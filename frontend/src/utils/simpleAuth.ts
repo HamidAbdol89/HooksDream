@@ -1,20 +1,22 @@
 // Simple Auth Utils - Clear and straightforward authentication
+import { SessionManager } from './sessionManager';
+
 export const simpleAuth = {
   // Clear all authentication data
   clearAuth: () => {
     console.log('🧹 Clearing all auth data...');
     
-    // Clear localStorage
-    const keysToRemove = [
-      'auth_token',
-      'user_hash_id', 
-      'auth_session',
+    // Use SessionManager to clear properly
+    SessionManager.clearAuthSession();
+    
+    // Clear additional cache data
+    const additionalKeys = [
       'hooksdream_link_previews', // Clear cache too
       'user_data',
       'profile_data'
     ];
     
-    keysToRemove.forEach(key => {
+    additionalKeys.forEach(key => {
       if (localStorage.getItem(key)) {
         console.log(`Removing ${key}:`, localStorage.getItem(key)?.substring(0, 50) + '...');
         localStorage.removeItem(key);
@@ -44,10 +46,12 @@ export const simpleAuth = {
   checkAuthData: () => {
     console.log('🔍 Checking auth data...');
     
+    const sessionInfo = SessionManager.getSessionInfo();
     const authData = {
+      session_info: sessionInfo,
       auth_token: localStorage.getItem('auth_token'),
       user_hash_id: localStorage.getItem('user_hash_id'),
-      auth_session: localStorage.getItem('auth_session'),
+      auth_session: localStorage.getItem('auth_session') ? 'exists' : 'none',
       user_data: localStorage.getItem('user_data'),
       profile_data: localStorage.getItem('profile_data'),
       sessionStorage_keys: Object.keys(sessionStorage),
@@ -72,8 +76,8 @@ export const simpleAuth = {
     console.log('After clearing:');
     simpleAuth.checkAuthData();
     
-    // Reload page to reset app state
-    console.log('🔄 Reloading page...');
+    // Redirect to login page
+    console.log('🔄 Redirecting to login...');
     window.location.href = '/';
   }
 };

@@ -29,6 +29,23 @@ export const SwiperCarousel: React.FC = () => {
   const isMobile = useIsMobile();
   const { swiperRef, currentIndex: contextIndex, setCurrentIndex } = useSwiper();
   
+  // Auto redirect root path to /feed
+  useEffect(() => {
+    if (location.pathname === '/') {
+      navigate('/feed', { replace: true });
+      return;
+    }
+  }, [location.pathname, navigate]);
+  
+  // Don't render while redirecting from root
+  if (location.pathname === '/') {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+  
   const locationIndex = PAGES.findIndex(page => page.path === location.pathname);
   const validIndex = locationIndex !== -1 ? locationIndex : 0;
 

@@ -47,12 +47,19 @@ const ProtectedAppContent: React.FC = () => {
         const savedSession = SessionManager.getAuthSession();
         
         if (savedSession && savedSession.user) {
+          console.log('✅ Found valid session, auto-redirecting to feed');
+          
           // Valid session exists, populate store if needed
           if (!isConnected || !user) {
             const { setIsConnected, setUser, setProfile } = useAppStore.getState();
             setIsConnected(true);
             setUser(savedSession.user);
             setProfile(savedSession.profile || savedSession.user);
+          }
+          
+          // Auto redirect to feed if on root path
+          if (location.pathname === '/') {
+            navigate('/feed', { replace: true });
           }
         }
       } catch (error) {
@@ -62,7 +69,7 @@ const ProtectedAppContent: React.FC = () => {
     };
     
     checkSession();
-  }, [isConnected, user]);
+  }, [isConnected, user, location.pathname, navigate]);
   
   // Check if current page should hide sidebars
   const isEditProfilePage = location.pathname === '/edit-profile' || location.pathname.startsWith('/edit-profile/');
@@ -73,6 +80,25 @@ const ProtectedAppContent: React.FC = () => {
   
   // MobileHeader only shows on feed page (not on search page)
   const shouldShowMobileHeader = (location.pathname === '/feed' || location.pathname === '/') && !isSearchPage;
+
+  // Show loading while checking session
+  if (isCheckingSession) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-20 h-20 flex items-center justify-center mx-auto">
+            <img 
+              src="/logo.png" 
+              alt="HooksDream Logo" 
+              className="w-20 h-20 object-contain animate-pulse" 
+            />
+          </div>
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
+          <p className="text-sm text-muted-foreground">Loading HooksDream...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isConnected || !user) {
     return <ModernAuthConnect />;
