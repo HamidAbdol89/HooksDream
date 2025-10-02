@@ -71,7 +71,12 @@ const searchAPI = {
     if (!query.trim()) return [];
     
     const token = localStorage.getItem('auth_token');
-    const response = await fetch(`http://localhost:5000/api/search?q=${encodeURIComponent(query)}&limit=20`, {
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
+      (import.meta.env.MODE === 'development' 
+        ? 'http://localhost:5000' 
+        : 'https://just-solace-production.up.railway.app');
+    
+    const response = await fetch(`${API_BASE_URL}/api/search?q=${encodeURIComponent(query)}&limit=20`, {
       headers: token ? { 'Authorization': `Bearer ${token}` } : {},
       signal
     });
@@ -121,7 +126,12 @@ const searchAPI = {
   },
 
   getTrendingHashtags: async (): Promise<string[]> => {
-    const response = await fetch('http://localhost:5000/api/search/trending?limit=10');
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
+      (import.meta.env.MODE === 'development' 
+        ? 'http://localhost:5000' 
+        : 'https://just-solace-production.up.railway.app');
+    
+    const response = await fetch(`${API_BASE_URL}/api/search/trending?limit=10`);
     const data = await response.json();
     
     if (data.success) {
@@ -134,7 +144,12 @@ const searchAPI = {
     const token = localStorage.getItem('auth_token');
     if (!token) return [];
 
-    const response = await fetch('http://localhost:5000/api/search/history', {
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
+      (import.meta.env.MODE === 'development' 
+        ? 'http://localhost:5000' 
+        : 'https://just-solace-production.up.railway.app');
+
+    const response = await fetch(`${API_BASE_URL}/api/search/history`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
 
@@ -148,7 +163,12 @@ const searchAPI = {
     const token = localStorage.getItem('auth_token');
     if (!token) return;
 
-    const response = await fetch(`http://localhost:5000/api/search/history/${encodeURIComponent(query)}`, {
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
+      (import.meta.env.MODE === 'development' 
+        ? 'http://localhost:5000' 
+        : 'https://just-solace-production.up.railway.app');
+
+    const response = await fetch(`${API_BASE_URL}/api/search/history/${encodeURIComponent(query)}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` }
     });
@@ -160,7 +180,12 @@ const searchAPI = {
     const token = localStorage.getItem('auth_token');
     if (!token) return;
 
-    const response = await fetch('http://localhost:5000/api/search/history', {
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
+      (import.meta.env.MODE === 'development' 
+        ? 'http://localhost:5000' 
+        : 'https://just-solace-production.up.railway.app');
+
+    const response = await fetch(`${API_BASE_URL}/api/search/history`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` }
     });

@@ -23,7 +23,12 @@ export const createSimpleSearchClient = () => {
           
           try {
             // Direct fetch to backend
-            const url = `http://localhost:5000/api/search?q=${encodeURIComponent(query.trim())}&type=all&limit=10`;
+            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
+              (import.meta.env.MODE === 'development' 
+                ? 'http://localhost:5000' 
+                : 'https://just-solace-production.up.railway.app');
+            
+            const url = `${API_BASE_URL}/api/search?q=${encodeURIComponent(query.trim())}&type=all&limit=10`;
             const response = await fetch(url);
             const data = await response.json();
             
@@ -180,7 +185,12 @@ export const SEARCH_CONFIG = {
 export const getTrendingHashtags = async () => {
   try {
     // Direct fetch to backend
-    const url = `http://localhost:5000/api/search/trending?limit=10`;
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
+      (import.meta.env.MODE === 'development' 
+        ? 'http://localhost:5000' 
+        : 'https://just-solace-production.up.railway.app');
+    
+    const url = `${API_BASE_URL}/api/search/trending?limit=10`;
     const response = await fetch(url);
     const data = await response.json();
     
@@ -204,7 +214,12 @@ export const getSearchSuggestions = async (query: string) => {
     if (query.length < 2) return { users: [], hashtags: [] };
     
     // Direct fetch to backend
-    const url = `http://localhost:5000/api/search/suggestions?q=${encodeURIComponent(query)}&limit=5`;
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
+      (import.meta.env.MODE === 'development' 
+        ? 'http://localhost:5000' 
+        : 'https://just-solace-production.up.railway.app');
+    
+    const url = `${API_BASE_URL}/api/search/suggestions?q=${encodeURIComponent(query)}&limit=5`;
     const response = await fetch(url);
     const data = await response.json();
     
