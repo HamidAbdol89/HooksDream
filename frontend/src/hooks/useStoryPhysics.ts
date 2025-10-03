@@ -52,8 +52,17 @@ export const useStoryPhysics = (stories: Story[]) => {
     const dt = deltaTime * 0.001; // Convert to seconds
     let { position, velocity } = state;
     
-    // Apply gravity (very subtle)
-    velocity.y += PHYSICS_CONFIG.gravity * dt;
+    // Random floating movement instead of just gravity
+    const time = performance.now() * 0.001; // Current time in seconds
+    const randomX = Math.sin(time * 0.5 + position.x * 0.01) * 0.3;
+    const randomY = Math.cos(time * 0.3 + position.y * 0.01) * 0.2;
+    
+    // Apply random drift forces
+    velocity.x += randomX * dt;
+    velocity.y += randomY * dt;
+    
+    // Very subtle gravity to prevent bubbles from floating too high
+    velocity.y += PHYSICS_CONFIG.gravity * 0.2 * dt;
     
     // Apply friction
     velocity.x *= PHYSICS_CONFIG.friction;
@@ -99,17 +108,21 @@ export const useStoryPhysics = (stories: Story[]) => {
       }
     }
     
-    // Magnetism effect (subtle attraction to center or other bubbles)
+    // Random attraction points instead of center magnetism
     if (PHYSICS_CONFIG.magnetism > 0) {
-      const centerX = 50;
-      const centerY = 50;
-      const toCenterX = centerX - position.x;
-      const toCenterY = centerY - position.y;
-      const distanceToCenter = Math.sqrt(toCenterX * toCenterX + toCenterY * toCenterY);
+      // Create multiple random attraction points that change over time
+      const attractionTime = Math.floor(time / 10); // Change every 10 seconds
+      const seed = position.x + position.y + attractionTime;
+      const attractX = 20 + (Math.sin(seed * 0.1) * 0.5 + 0.5) * 60; // Random X between 20-80
+      const attractY = 20 + (Math.cos(seed * 0.13) * 0.5 + 0.5) * 60; // Random Y between 20-80
       
-      if (distanceToCenter > 30) { // Only apply if far from center
-        velocity.x += (toCenterX / distanceToCenter) * PHYSICS_CONFIG.magnetism * dt;
-        velocity.y += (toCenterY / distanceToCenter) * PHYSICS_CONFIG.magnetism * dt;
+      const toAttractX = attractX - position.x;
+      const toAttractY = attractY - position.y;
+      const distanceToAttract = Math.sqrt(toAttractX * toAttractX + toAttractY * toAttractY);
+      
+      if (distanceToAttract > 15 && distanceToAttract < 40) { // Only apply in sweet spot
+        velocity.x += (toAttractX / distanceToAttract) * PHYSICS_CONFIG.magnetism * 0.5 * dt;
+        velocity.y += (toAttractY / distanceToAttract) * PHYSICS_CONFIG.magnetism * 0.5 * dt;
       }
     }
     

@@ -290,9 +290,9 @@ export const REACTION_TYPES = [
 ];
 
 export const PHYSICS_CONFIG: BubblePhysics = {
-  gravity: 0.05, // Reduced gravity for gentler movement
-  friction: 0.99, // Higher friction to slow down faster
-  bounce: 0.5, // Less bouncy for more stable positioning
+  gravity: 0.02, // Very subtle gravity - just to prevent floating too high
+  friction: 0.98, // Less friction for more fluid movement
+  bounce: 0.7, // More bouncy for lively interaction
   collision: true,
-  magnetism: 0.01 // Reduced magnetism to prevent clustering
+  magnetism: 0.03 // Increased magnetism for more dynamic attraction
 };
