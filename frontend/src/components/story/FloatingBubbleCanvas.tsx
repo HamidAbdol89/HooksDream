@@ -147,7 +147,7 @@ export const FloatingBubbleCanvas: React.FC<FloatingBubbleCanvasProps> = ({
   }, [stories]);
 
   return (
-    <div className={`relative w-full h-full overflow-hidden ${className}`}>
+    <div className={`fixed inset-0 w-full h-full overflow-hidden ${className}`}>
       {/* Ambient Background */}
       <div 
         className="absolute inset-0 opacity-10 transition-all duration-1000"

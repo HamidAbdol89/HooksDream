@@ -14,6 +14,14 @@ import { useIsMobile } from '@/hooks/useIsMobile';
 export const StoriesPage: React.FC = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  
+  // Prevent body scroll when on stories page
+  React.useEffect(() => {
+    document.body.classList.add('stories-page');
+    return () => {
+      document.body.classList.remove('stories-page');
+    };
+  }, []);
   const [selectedStory, setSelectedStory] = useState<Story | null>(null);
   const [selectedStoryIndex, setSelectedStoryIndex] = useState<number>(0);
   const [userStories, setUserStories] = useState<Story[]>([]); // Stories of selected user
@@ -139,7 +147,7 @@ export const StoriesPage: React.FC = () => {
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-purple-900/20 dark:to-indigo-900/20 relative overflow-hidden flex flex-col">
+    <div className="fixed inset-0 w-full h-full bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-purple-900/20 dark:to-indigo-900/20 overflow-hidden">
       {/* Desktop Buttons - Top Right */}
       {!isMobile && (
         <div className="absolute top-4 right-4 z-20 flex items-center space-x-3">
@@ -175,17 +183,15 @@ export const StoriesPage: React.FC = () => {
       )}
 
       {/* Main Canvas - Full Screen */}
-      <div className="absolute inset-0">
-        <FloatingBubbleCanvas
-          stories={groupedStories.map(group => ({
-            ...group.latestStory,
-            storyCount: group.totalStories
-          }))}
-          onStoryClick={handleUserBubbleClick}
-          onPositionUpdate={() => {}} // Empty handler for now
-          className="w-full h-full"
-        />
-      </div>
+      <FloatingBubbleCanvas
+        stories={groupedStories.map(group => ({
+          ...group.latestStory,
+          storyCount: group.totalStories
+        }))}
+        onStoryClick={handleUserBubbleClick}
+        onPositionUpdate={() => {}} // Empty handler for now
+        className=""
+      />
 
       {/* Mobile Floating Buttons */}
       {isMobile && (

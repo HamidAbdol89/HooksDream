@@ -37,15 +37,25 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
   const [showReactions, setShowReactions] = useState(false);
   const [showReplyInput, setShowReplyInput] = useState(false);
   const [replyMessage, setReplyMessage] = useState('');
-  const [isMuted, setIsMuted] = useState(true);
+  const [isMuted, setIsMuted] = useState(false); // Auto unmute for videos
   const [viewStartTime, setViewStartTime] = useState<number>(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [videoDuration, setVideoDuration] = useState<number>(5000); // Default 5s, will be updated for videos
+  const [mediaAspectRatio, setMediaAspectRatio] = useState<'portrait' | 'landscape' | 'square'>('portrait');
   
   const progressRef = useRef<NodeJS.Timeout>();
   const videoRef = useRef<HTMLVideoElement>(null);
-  const storyDuration = 5000; // 5 seconds per story
+  const imageRef = useRef<HTMLImageElement>(null);
   
   const currentStory = stories[currentIndex];
+  
+  // Dynamic story duration based on content type
+  const getStoryDuration = useCallback(() => {
+    if (currentStory?.media.type === 'video' && videoDuration > 0) {
+      return videoDuration * 1000; // Convert to milliseconds
+    }
+    return 5000; // Default 5 seconds for images/text
+  }, [currentStory, videoDuration]);
   
   // Check if current story is user's own story
   const isOwnStory = user && currentStory && (currentStory.userId._id === user._id || currentStory.userId._id === user.hashId);
@@ -127,26 +137,132 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
     setShowDeleteConfirm(true);
   }, []);
 
+  // Detect media aspect ratio
+  const detectAspectRatio = useCallback((width: number, height: number) => {
+    const ratio = width / height;
+    if (ratio > 1.2) {
+      setMediaAspectRatio('landscape');
+    } else if (ratio < 0.8) {
+      setMediaAspectRatio('portrait');
+    } else {
+      setMediaAspectRatio('square');
+    }
+  }, []);
+
+  // Handle video metadata loaded
+  const handleVideoLoadedMetadata = useCallback(() => {
+    if (videoRef.current) {
+      const duration = videoRef.current.duration;
+      const width = videoRef.current.videoWidth;
+      const height = videoRef.current.videoHeight;
+      
+      setVideoDuration(duration);
+      detectAspectRatio(width, height);
+      
+      // Auto play and unmute video
+      videoRef.current.muted = isMuted;
+      videoRef.current.play().catch(console.error);
+    }
+  }, [isMuted, detectAspectRatio]);
+
+  // Handle image load
+  const handleImageLoad = useCallback(() => {
+    if (imageRef.current) {
+      const width = imageRef.current.naturalWidth;
+      const height = imageRef.current.naturalHeight;
+      detectAspectRatio(width, height);
+    }
+  }, [detectAspectRatio]);
+
+  // Handle video time update for progress
+  const handleVideoTimeUpdate = useCallback(() => {
+    if (videoRef.current && currentStory?.media.type === 'video') {
+      const currentTime = videoRef.current.currentTime;
+      const duration = videoRef.current.duration;
+      if (duration > 0) {
+        const newProgress = (currentTime / duration) * 100;
+        setProgress(newProgress);
+        
+        // Auto advance when video ends
+        if (currentTime >= duration - 0.1) { // Small buffer to prevent timing issues
+          if (currentIndex < stories.length - 1) {
+            onNext();
+          } else {
+            onClose();
+          }
+        }
+      }
+    }
+  }, [currentStory, currentIndex, stories.length, onNext, onClose]);
+
+  // Get media container classes based on aspect ratio
+  const getMediaContainerClasses = useCallback(() => {
+    const baseClasses = "flex items-center justify-center w-full h-full";
+    
+    switch (mediaAspectRatio) {
+      case 'landscape':
+        return `${baseClasses} px-0 py-8`; // Add vertical padding for landscape
+      case 'portrait':
+        return `${baseClasses}`; // Full screen for portrait - no padding
+      case 'square':
+        return `${baseClasses} p-4`; // Balanced padding for square
+      default:
+        return baseClasses;
+    }
+  }, [mediaAspectRatio]);
+
+  // Get media element classes
+  const getMediaClasses = useCallback(() => {
+    switch (mediaAspectRatio) {
+      case 'landscape':
+        return "w-full h-auto max-h-full object-contain"; // Fit width, maintain aspect ratio
+      case 'portrait':
+        return "w-full h-full object-cover"; // Full screen cover for portrait
+      case 'square':
+        return "max-w-full max-h-full object-contain"; // Fit both dimensions
+      default:
+        return "w-full h-full object-cover"; // Default fallback
+    }
+  }, [mediaAspectRatio]);
+
   // Start view tracking
   useEffect(() => {
     if (currentStory) {
       setViewStartTime(Date.now());
       setProgress(0);
+      
+      // Set aspect ratio based on content type
+      if (currentStory.media.type === 'text') {
+        setMediaAspectRatio('portrait'); // Text stories are always portrait for full screen
+      } else {
+        setMediaAspectRatio('portrait'); // Reset to default, will be updated by media load
+      }
+      
+      // Reset video duration for new story
+      if (currentStory.media.type !== 'video') {
+        setVideoDuration(5); // Default for non-video content
+      }
     }
   }, [currentStory]);
 
-  // Progress bar animation
+  // Progress bar animation (only for non-video content)
   useEffect(() => {
-    if (!currentStory || isPaused) return;
+    if (!currentStory || isPaused || currentStory.media.type === 'video') return;
 
+    const duration = getStoryDuration();
     const startTime = Date.now();
     const updateProgress = () => {
       const elapsed = Date.now() - startTime;
-      const newProgress = Math.min((elapsed / storyDuration) * 100, 100);
+      const newProgress = Math.min((elapsed / duration) * 100, 100);
       setProgress(newProgress);
 
       if (newProgress >= 100) {
-        handleNext();
+        // Handle next will be defined later
+        if (currentIndex < stories.length - 1) {
+          onNext();
+        } else {
+          onClose();
+        }
       } else {
         progressRef.current = setTimeout(updateProgress, 50);
       }
@@ -159,7 +275,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
         clearTimeout(progressRef.current);
       }
     };
-  }, [currentStory, isPaused]);
+  }, [currentStory, isPaused, getStoryDuration, currentIndex, stories.length, onNext, onClose]);
 
   // Handle story navigation
   const handleNext = useCallback(() => {
@@ -181,20 +297,30 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
     }
   }, [currentIndex, onPrevious]);
 
-  // Handle tap interactions
+  // Handle tap zones
   const handleTap = useCallback((event: React.MouseEvent) => {
     const rect = event.currentTarget.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const tapZone = rect.width / 3;
-
+    
     if (x < tapZone) {
       handlePrevious();
     } else if (x > tapZone * 2) {
       handleNext();
     } else {
+      // Toggle pause/play
       setIsPaused(!isPaused);
+      
+      // Control video playback
+      if (currentStory?.media.type === 'video' && videoRef.current) {
+        if (isPaused) {
+          videoRef.current.play().catch(console.error);
+        } else {
+          videoRef.current.pause();
+        }
+      }
     }
-  }, [handlePrevious, handleNext, isPaused]);
+  }, [handlePrevious, handleNext, isPaused, currentStory]);
 
   // Handle swipe gestures
   const handlePanEnd = useCallback((event: any, info: PanInfo) => {
@@ -346,6 +472,15 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
               onClick={(e) => {
                 e.stopPropagation();
                 setIsPaused(!isPaused);
+                
+                // Control video playback
+                if (currentStory?.media.type === 'video' && videoRef.current) {
+                  if (isPaused) {
+                    videoRef.current.play().catch(console.error);
+                  } else {
+                    videoRef.current.pause();
+                  }
+                }
               }}
               className="p-2 bg-black/50 rounded-full text-white"
             >
@@ -371,42 +506,49 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.8, opacity: 0 }}
           transition={{ duration: 0.3 }}
-          className="relative w-full h-full max-w-md mx-auto"
+          className="relative w-full h-full"
         >
-          {/* Background Media */}
-          {currentStory.media.type === 'image' && currentStory.media.url && (
-            <img
-              src={currentStory.media.url}
-              alt="Story content"
-              className="w-full h-full object-cover"
-              onLoad={() => setIsPaused(false)}
-            />
-          )}
+          {/* Background Media Container */}
+          <div className={getMediaContainerClasses()}>
+            {currentStory.media.type === 'image' && currentStory.media.url && (
+              <img
+                ref={imageRef}
+                src={currentStory.media.url}
+                alt="Story content"
+                className={getMediaClasses()}
+                onLoad={handleImageLoad}
+              />
+            )}
           
-          {currentStory.media.type === 'video' && currentStory.media.url && (
-            <video
-              ref={videoRef}
-              src={currentStory.media.url}
-              className="w-full h-full object-cover"
-              autoPlay
-              muted={isMuted}
-              loop
-              playsInline
-              onLoadedData={() => setIsPaused(false)}
-            />
-          )}
-          
-          {currentStory.media.type === 'text' && (
-            <div 
-              className="w-full h-full flex items-center justify-center text-white font-bold text-center p-8"
-              style={{ 
-                background: `linear-gradient(135deg, ${currentStory.visualEffects.colorTheme.primary}, ${currentStory.visualEffects.colorTheme.secondary})`,
-                fontSize: 'clamp(1.5rem, 4vw, 3rem)'
-              }}
-            >
-              {currentStory.content}
-            </div>
-          )}
+            
+            {currentStory.media.type === 'video' && currentStory.media.url && (
+              <video
+                ref={videoRef}
+                src={currentStory.media.url}
+                className={getMediaClasses()}
+                autoPlay
+                muted={isMuted}
+                playsInline
+                onLoadedMetadata={handleVideoLoadedMetadata}
+                onTimeUpdate={handleVideoTimeUpdate}
+                onLoadedData={() => setIsPaused(false)}
+                onPlay={() => setIsPaused(false)}
+                onPause={() => setIsPaused(true)}
+              />
+            )}
+            
+            {currentStory.media.type === 'text' && (
+              <div 
+                className="w-full h-full flex items-center justify-center text-white font-bold text-center p-8"
+                style={{ 
+                  background: `linear-gradient(135deg, ${currentStory.visualEffects.colorTheme.primary}, ${currentStory.visualEffects.colorTheme.secondary})`,
+                  fontSize: 'clamp(1.5rem, 4vw, 3rem)'
+                }}
+              >
+                {currentStory.content}
+              </div>
+            )}
+          </div>
           
           {/* Content Overlay */}
           {currentStory.content && currentStory.media.type !== 'text' && (
