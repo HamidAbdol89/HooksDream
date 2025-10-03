@@ -1,28 +1,48 @@
 // useStories.ts - React Query hook for Story management with caching
 import { useState, useCallback, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Story, CreateStoryData, StoryPosition, UseStoriesReturn } from '@/types/story';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Story, CreateStoryData, StoryPosition } from '@/types/story';
 import { useSocket } from '@/hooks/useSocket';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
+  (import.meta.env.MODE === 'development' 
+    ? 'http://localhost:5000' 
+    : 'https://just-solace-production.up.railway.app');
+
+export interface GetStoriesParams {
+  centerX?: number;
+  centerY?: number;
+  radius?: number;
+}
+
+export interface UseStoriesReturn {
+  stories: Story[];
+  isLoading: boolean;
+  error: Error | null;
+  createStory: any;
+  viewStory: any;
+  addReaction: any;
+  replyToStory: any;
+  deleteStory: any;
+  highlightStory: any;
+  updatePosition: any;
+  refetch: () => void;
+  refreshStories: () => Promise<void>;
+}
 
 // API functions
 const storyApi = {
   // Get active stories
-  getActiveStories: async (params?: { 
-    limit?: number; 
-    centerX?: number; 
-    centerY?: number; 
-    radius?: number; 
-  }): Promise<{ success: boolean; data: Story[]; count: number }> => {
+  getActiveStories: async (params?: GetStoriesParams): Promise<{ success: boolean; data: Story[]; count: number }> => {
     const authToken = localStorage.getItem('auth_token');
     if (!authToken) throw new Error('No authentication token');
 
     const searchParams = new URLSearchParams();
-    if (params?.limit) searchParams.append('limit', params.limit.toString());
     if (params?.centerX !== undefined) searchParams.append('centerX', params.centerX.toString());
     if (params?.centerY !== undefined) searchParams.append('centerY', params.centerY.toString());
     if (params?.radius) searchParams.append('radius', params.radius.toString());
 
-    const response = await fetch(`/api/stories?${searchParams}`, {
+    const response = await fetch(`${API_BASE_URL}/api/stories?${searchParams}`, {
       headers: {
         'Authorization': `Bearer ${authToken}`,
         'Content-Type': 'application/json'
@@ -50,7 +70,7 @@ const storyApi = {
     if (data.settings) formData.append('settings', JSON.stringify(data.settings));
     if (data.position) formData.append('position', JSON.stringify(data.position));
 
-    const response = await fetch('/api/stories', {
+    const response = await fetch(`${API_BASE_URL}/api/stories`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${authToken}`
@@ -71,7 +91,7 @@ const storyApi = {
     const authToken = localStorage.getItem('auth_token');
     if (!authToken) throw new Error('No authentication token');
 
-    const response = await fetch(`/api/stories/${storyId}/view`, {
+    const response = await fetch(`${API_BASE_URL}/api/stories/${storyId}/view`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${authToken}`,
@@ -96,7 +116,7 @@ const storyApi = {
     const authToken = localStorage.getItem('auth_token');
     if (!authToken) throw new Error('No authentication token');
 
-    const response = await fetch(`/api/stories/${storyId}/reactions`, {
+    const response = await fetch(`${API_BASE_URL}/api/stories/${storyId}/reactions`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${authToken}`,
@@ -121,7 +141,7 @@ const storyApi = {
     formData.append('message', message);
     if (media) formData.append('media', media);
 
-    const response = await fetch(`/api/stories/${storyId}/replies`, {
+    const response = await fetch(`${API_BASE_URL}/api/stories/${storyId}/replies`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${authToken}`
@@ -141,7 +161,7 @@ const storyApi = {
     const authToken = localStorage.getItem('auth_token');
     if (!authToken) throw new Error('No authentication token');
 
-    const response = await fetch(`/api/stories/${storyId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/stories/${storyId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${authToken}`
@@ -160,7 +180,7 @@ const storyApi = {
     const authToken = localStorage.getItem('auth_token');
     if (!authToken) throw new Error('No authentication token');
 
-    const response = await fetch(`/api/stories/${storyId}/highlight`, {
+    const response = await fetch(`${API_BASE_URL}/api/stories/${storyId}/highlight`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${authToken}`,
@@ -181,7 +201,7 @@ const storyApi = {
     const authToken = localStorage.getItem('auth_token');
     if (!authToken) throw new Error('No authentication token');
 
-    const response = await fetch(`/api/stories/${storyId}/position`, {
+    const response = await fetch(`${API_BASE_URL}/api/stories/${storyId}/position`, {
       method: 'PATCH',
       headers: {
         'Authorization': `Bearer ${authToken}`,
@@ -204,7 +224,7 @@ export const useStories = (params?: {
   centerY?: number; 
   radius?: number; 
 }): UseStoriesReturn => {
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const queryClient = useQueryClient();
   const { socket } = useSocket();
 
@@ -242,7 +262,7 @@ export const useStories = (params?: {
       setError(null);
     },
     onError: (err: Error) => {
-      setError(err.message);
+      setError(err);
     }
   });
 
@@ -485,6 +505,7 @@ export const useStories = (params?: {
     deleteStory,
     highlightStory,
     updatePosition,
+    refetch,
     refreshStories
   };
 };

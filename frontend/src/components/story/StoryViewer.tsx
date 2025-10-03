@@ -77,7 +77,12 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
         headers['Authorization'] = `Bearer ${token}`;
       }
       
-      const response = await fetch(`/api/stories/${currentStory._id}`, {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
+        (import.meta.env.MODE === 'development' 
+          ? 'http://localhost:5000' 
+          : 'https://just-solace-production.up.railway.app');
+      
+      const response = await fetch(`${API_BASE_URL}/api/stories/${currentStory._id}`, {
         method: 'DELETE',
         headers
       });
