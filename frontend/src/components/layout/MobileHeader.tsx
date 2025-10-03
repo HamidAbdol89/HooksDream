@@ -1,6 +1,6 @@
 // src/components/layout/MobileHeader.tsx
 import React, { useState, useMemo, useCallback } from 'react';
-import { Search, Bell, User } from 'lucide-react';
+import { Search, Bell, User, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
@@ -83,6 +83,10 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ className = '' }) =>
     setIsUserSheetOpen(true);
   }, []);
 
+  const handleStoriesClick = useCallback(() => {
+    navigate('/stories');
+  }, [navigate]);
+
   return (
     <>
       {/* Mobile Header - Only visible on mobile with scroll animation */}
@@ -111,6 +115,16 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ className = '' }) =>
 
           {/* Right side - Icons */}
           <div className="flex items-center space-x-3">
+            {/* Stories */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleStoriesClick}
+              className="p-2"
+            >
+              <Sparkles className="w-5 h-5 text-purple-600" />
+            </Button>
+
             {/* Search */}
             <Button
               variant="ghost"

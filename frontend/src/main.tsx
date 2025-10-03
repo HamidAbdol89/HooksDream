@@ -6,6 +6,7 @@ import './styles/globals.css'
 import "./i18n";
 import { ReactQueryProvider } from './providers/ReactQueryProvider';
 import { ToastProvider } from './components/ui/SuccessToast';
+import { Toaster } from 'sonner';
 // 🔥 BỎ UnfollowConfirmProvider ở đây vì đã có trong ProtectedApp
 
 // Register Service Worker for PWA
@@ -27,6 +28,12 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <BrowserRouter>
         <ToastProvider>
           <App />
+          <Toaster 
+            position="top-right"
+            richColors
+            closeButton
+            duration={4000}
+          />
         </ToastProvider>
       </BrowserRouter>
     </ReactQueryProvider>

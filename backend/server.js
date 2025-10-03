@@ -136,7 +136,6 @@ app.get('/api/health', (req, res) => {
   
   // Return 503 if critical services are down
   if (health.db !== 'connected') {
-    return res.status(503).json({ ...health, status: 'error' });
   }
   
   res.json(health);
@@ -147,18 +146,22 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const postRoutes = require('./routes/posts');
 const commentRoutes = require('./routes/comments');
-const searchRoutes = require('./routes/search');
-const chatRoutes = require('./routes/chat');
+const followRoutes = require('./routes/follow');
 const notificationRoutes = require('./routes/notifications');
+const chatRoutes = require('./routes/chat');
+const searchRoutes = require('./routes/search');
+const storyRoutes = require('./routes/storyRoutes');
 const friendDiscoveryRoutes = require('./routes/friendDiscovery');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/comments', commentRoutes);
-app.use('/api/search', searchRoutes);
+app.use('/api/follow', followRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/search', searchRoutes);
+app.use('/api/stories', storyRoutes);
 app.use('/api/discovery', friendDiscoveryRoutes);
 // Xử lý lỗi
 app.use((err, req, res, next) => {
@@ -182,12 +185,14 @@ const followController = require('./controllers/followController');
 const commentController = require('./controllers/commentController');
 const postController = require('./controllers/postController');
 const notificationController = require('./controllers/notificationController');
+const storyController = require('./controllers/storyController');
 
 likeController.setSocketServer(socketServer);
 followController.setSocketServer(socketServer);
 commentController.setSocketServer(socketServer);
 postController.setSocketServer(socketServer);
 notificationController.setSocketServer(socketServer);
+storyController.setSocketServer(socketServer);
 
 // Khởi động server
 const PORT = process.env.PORT || (process.env.NODE_ENV === 'development' ? 5000 : 8080);

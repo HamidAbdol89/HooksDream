@@ -8,7 +8,18 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  // Determine API target based on environment
+  const isDev = mode === 'development';
+  
+  // Allow override via environment variable
+  const apiTarget = process.env.VITE_API_URL || (isDev 
+    ? 'http://localhost:5000'  // Local backend for development
+    : 'https://just-solace-production.up.railway.app'); // Production backend
+  
+  console.log(`🔗 API Target: ${apiTarget} (mode: ${mode})`);
+
+  return {
   plugins: [
     react(),
     nodePolyfills({
@@ -246,9 +257,9 @@ export default defineConfig({
     // Thêm headers để tránh CORS issues
     proxy: {
       '/api': {
-        target: 'https://just-solace-production.up.railway.app', 
+        target: apiTarget, 
         changeOrigin: true,
-        secure: true,
+        secure: !isDev, // Only secure for production
       }
     }
   },
@@ -282,4 +293,5 @@ export default defineConfig({
     cssCodeSplit: true,
     reportCompressedSize: false
   },
+  };
 });

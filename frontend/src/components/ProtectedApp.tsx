@@ -26,6 +26,7 @@ const CreatePostPage = React.lazy(() => import("@/pages/CreatePostPage").then(mo
 const MessagesPage = React.lazy(() => import("@/pages/MessagesPage"));
 const NotificationsPage = React.lazy(() => import("@/pages/NotificationsPage"));
 const FriendPage = React.lazy(() => import("@/pages/MobileFriendPage"));
+const StoriesPage = React.lazy(() => import("@/pages/StoriesPage").then(module => ({ default: module.StoriesPage })));
 
 const ProtectedAppContent: React.FC = () => {
   const navigate = useNavigate();
@@ -78,6 +79,7 @@ const ProtectedAppContent: React.FC = () => {
   const isInChat = isMessagesPage && hasConversationId; // Individual chat = full-screen
   
   const isSearchPage = location.pathname === '/search';
+  const isStoriesPage = location.pathname === '/stories'; // Stories = full-screen
   
   // MobileHeader only shows on feed page (not on search page or in individual chats)
   const shouldShowMobileHeader = (location.pathname === '/feed' || location.pathname === '/') && !isSearchPage && !isInChat;
@@ -109,16 +111,36 @@ const ProtectedAppContent: React.FC = () => {
     <UnfollowConfirmProvider>
       <div className="min-h-screen bg-background text-foreground transition-colors duration-200">
         {/* Desktop Header */}
-        {!isEditProfilePage && !isCreatePostPage && !isSearchPage && <Header isInChat={isInChat} />}
+        {!isEditProfilePage && !isCreatePostPage && !isSearchPage && !isStoriesPage && <Header isInChat={isInChat} />}
         
         {/* Mobile Header - Only show on specific pages */}
         {shouldShowMobileHeader && <MobileHeader />}
         
         {/* Mobile Bottom Navigation - Hide on search page and in individual chats */}
-        {!isEditProfilePage && !isCreatePostPage && !isSearchPage && !isInChat && <BottomNav isInChat={isInChat} />}
+        {!isEditProfilePage && !isCreatePostPage && !isSearchPage && !isInChat && !isStoriesPage && <BottomNav isInChat={isInChat} />}
         
-        <main className={`w-full ${shouldShowMobileHeader ? 'pt-16' : ''} ${isMessagesPage || isInChat || isEditProfilePage || isCreatePostPage || isSearchPage ? 'px-0 py-0' : 'px-0 py-6'}`}>
-          {isEditProfilePage ? (
+        <main className={`w-full ${shouldShowMobileHeader ? 'pt-16' : ''} ${isMessagesPage || isInChat || isEditProfilePage || isCreatePostPage || isSearchPage || isStoriesPage ? 'px-0 py-0' : 'px-0 py-6'}`}>
+          {isStoriesPage ? (
+            // Full screen layout for Stories page
+            <div className="w-full h-screen overflow-hidden">
+              <ToastProvider>
+                <TooltipProvider>
+                  <Suspense fallback={
+                    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
+                      <div className="text-center space-y-4">
+                        <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
+                        <p className="text-white">Loading Stories...</p>
+                      </div>
+                    </div>
+                  }>
+                    <Routes>
+                      <Route path="/stories" element={<StoriesPage />} />
+                    </Routes>
+                  </Suspense>
+                </TooltipProvider>
+              </ToastProvider>
+            </div>
+          ) : isEditProfilePage ? (
             // Full width layout for Edit Profile page
             <div className="w-full">
               <ToastProvider>

@@ -64,26 +64,15 @@ html { scroll-behavior: smooth; }
   .dark .glass-card {
     @apply bg-gray-800 border-gray-700 shadow-md;
   }
-
   /* Scrollbar */
   .custom-scrollbar {
     scrollbar-width: thin;
     scrollbar-color: rgba(120,120,120,0.5) transparent;
   }
-  .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgba(120,120,120,0.5);
-    border-radius: 3px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(120,120,120,0.7);
-  }
 
-  /* Buttons */
-  .btn-primary {
-    @apply bg-gray-200 text-gray-900 font-medium px-6 py-3 rounded-lg 
-           transition-all duration-200 transform hover:bg-gray-300 hover:scale-102 focus:ring-2 focus:ring-gray-400 focus:ring-offset-2;
+  /* Custom scrollbar styles */
+  ::-webkit-scrollbar {
+    width: 6px;
   }
   .dark .btn-primary { @apply bg-gray-800 text-white hover:bg-gray-700 focus:ring-gray-600; }
 
@@ -135,7 +124,6 @@ html { scroll-behavior: smooth; }
 }
 
 
-
 .btn-primary, .btn-secondary {
   position: relative;
   overflow: hidden;
@@ -159,10 +147,12 @@ html { scroll-behavior: smooth; }
   opacity: 1;
   transition: 0s;
 }
-.card-hover:hover {
+
+.btn-primary.card-hover:hover {
   box-shadow: 0 4px 12px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.06);
   transform: translateY(-2px);
 }
+
 .toast {
   @apply fixed bottom-6 left-1/2 transform -translate-x-1/2 px-4 py-3 rounded-lg bg-gray-800 text-white opacity-0 pointer-events-none transition-all duration-500;
 }

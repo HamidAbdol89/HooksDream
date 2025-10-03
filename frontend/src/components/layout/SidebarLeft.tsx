@@ -10,7 +10,8 @@ import {
   TrendingUp,
   Hash,
   Users,
-  UserPlus
+  UserPlus,
+  Sparkles
 } from 'lucide-react';
 
 // TODO: Import your actual UI components from shadcn
@@ -147,6 +148,7 @@ const SidebarLeft: React.FC = () => {
 
   // TODO: Move to constants file or fetch from API
   const navigationItems = [
+    { id: 'stories', icon: Sparkles, label: 'Stories', badge: null, route: '/stories' },
     { id: 'trending', icon: TrendingUp, label: 'Trending', badge: null, route: '/trending' },
     { id: 'following', icon: Users, label: 'Following', badge: null, route: '/following' },
     { id: 'friends', icon: UserPlus, label: 'Gợi ý kết bạn', badge: null, route: '/friend' },
