@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { vi, enUS } from 'date-fns/locale';
+import { usePageScrollRestoration } from '@/hooks/useScrollRestoration';
 
 interface NotificationItemProps {
   notification: any;
@@ -201,6 +202,9 @@ const NotificationsPage: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation('common');
   
+  // Scroll restoration for this page
+  const { restorePageScroll, hasScrollPosition } = usePageScrollRestoration('/notifications');
+  
   // Real state for notifications
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -339,6 +343,18 @@ const NotificationsPage: React.FC = () => {
   useEffect(() => {
     loadNotifications(1);
   }, [loadNotifications]);
+
+  // Restore scroll position when data is loaded
+  useEffect(() => {
+    if (!isLoading && notifications.length > 0) {
+      // Small delay to ensure DOM is rendered
+      const timeoutId = setTimeout(() => {
+        restorePageScroll(true);
+      }, 50);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isLoading, notifications.length, restorePageScroll]);
 
   const [loadingMore, setLoadingMore] = useState(false);
 

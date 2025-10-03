@@ -9,7 +9,7 @@ import { SettingsModal } from './setting/SettingsModal';
 import { useNavItems } from './NavItems';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSocial } from '../../hooks/useSocial';
-import { useSwiper } from '@/contexts/SwiperContext';
+// Removed SwiperContext dependency
 import { Badge } from '@/components/ui/badge';
 import { UserProfileSheet } from './UserProfileSheet';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
@@ -31,12 +31,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({ isInChat = false }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { profile, user, isConnected } = useAppStore();
-  const { navigateToSlide, currentIndex } = useSwiper();
   const { isVisible } = useScrollDirection({ threshold: 10 });
   
-  // Map current index to path for active state
-  const SWIPER_PATHS = ['/feed', '/friend', '/notifications', '/messages'];
-  const activeTabFromIndex = SWIPER_PATHS[currentIndex] || location.pathname;
+  // Use location.pathname directly for active state
+  const activeTabFromIndex = location.pathname;
   
   const { logout } = useGoogleAuth();
   const typedUser = user as UserType;

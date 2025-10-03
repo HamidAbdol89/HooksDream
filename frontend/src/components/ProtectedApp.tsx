@@ -14,11 +14,10 @@ import { SidebarRight } from "@/components/layout/SidebarRight";
 import { useChatContext } from "@/contexts/ChatContext";
 import { UnfollowConfirmProvider } from "@/contexts/UnfollowConfirmContext";
 import { ChatProvider } from "@/contexts/ChatContext";
-import { SwiperProvider } from "@/contexts/SwiperContext";
 import { ToastProvider } from "@/components/ui/SuccessToast";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 // Lazy load ALL components for better performance and faster navigation
-const SwiperCarousel = React.lazy(() => import("@/components/navigation/SwiperCarousel").then(module => ({ default: module.SwiperCarousel })));
+const AnimatedRoutes = React.lazy(() => import("@/components/navigation/AnimatedRoutes"));
 const SearchPage = React.lazy(() => import("@/pages/SearchPage"));
 const ProfilePage = React.lazy(() => import("@/pages/ProfilePage"));
 const PostDetailPage = React.lazy(() => import("@/pages/PostDetailPage"));
@@ -107,9 +106,8 @@ const ProtectedAppContent: React.FC = () => {
   }
 
   return (
-    <SwiperProvider>
-      <UnfollowConfirmProvider>
-        <div className="min-h-screen bg-background text-foreground transition-colors duration-200">
+    <UnfollowConfirmProvider>
+      <div className="min-h-screen bg-background text-foreground transition-colors duration-200">
         {/* Desktop Header */}
         {!isEditProfilePage && !isCreatePostPage && !isSearchPage && <Header isInChat={isInChat} />}
         
@@ -267,15 +265,15 @@ const ProtectedAppContent: React.FC = () => {
                         </motion.div>
                       } />
                       
-                      {/* SwiperCarousel handles: /, /feed, /friend, /notifications, /messages */}
-                      {/* NO motion here - SwiperCarousel has its own swipe animations */}
+                      {/* AnimatedRoutes handles: /, /feed, /friend, /notifications, /messages */}
+                      {/* Mobile slide animations, desktop no animations */}
                       <Route path="/*" element={
                         <React.Suspense fallback={
                           <div className="flex items-center justify-center h-screen">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                           </div>
                         }>
-                          <SwiperCarousel />
+                          <AnimatedRoutes />
                         </React.Suspense>
                       } />
                     </Routes>
@@ -294,7 +292,6 @@ const ProtectedAppContent: React.FC = () => {
         </main>
         </div>
       </UnfollowConfirmProvider>
-    </SwiperProvider>
   );
 };
 

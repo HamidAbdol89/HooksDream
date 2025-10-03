@@ -18,6 +18,7 @@ import { ConversationsList, FollowingUsersList } from '@/components/chat/desktop
 import { ConversationItem } from '@/components/chat/shared/ConversationItem';
 import { useChatSocket, useChatNotifications, useSocket } from '@/hooks/useSocket';
 import { useChatPushNotifications } from '@/hooks/useChatPushNotifications';
+import { usePageScrollRestoration } from '@/hooks/useScrollRestoration';
 
 // Types
 interface User {
@@ -39,6 +40,9 @@ const MessagesPage: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<'conversations' | 'following'>('conversations');
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  
+  // Scroll restoration for this page (only for conversations list, not individual chats)
+  const { restorePageScroll, hasScrollPosition } = usePageScrollRestoration('/messages');
 
   // Auto-select conversation from URL params
   useEffect(() => {
@@ -210,6 +214,18 @@ const MessagesPage: React.FC = () => {
   // Get conversations list
   const { data: conversationsData, isLoading, error } = useConversations({ limit: 20 });
   const conversations = conversationsData?.data || [];
+
+  // Restore scroll position when data is loaded (only for conversations list, not individual chats)
+  useEffect(() => {
+    if (!isLoading && conversations.length > 0 && !conversationId) {
+      // Only restore scroll for conversations list, not individual chats
+      const timeoutId = setTimeout(() => {
+        restorePageScroll(true);
+      }, 50);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isLoading, conversations.length, conversationId, restorePageScroll]);
   
   
   // Get following users (using same pattern as FollowerListModal)

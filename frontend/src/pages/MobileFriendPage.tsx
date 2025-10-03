@@ -11,6 +11,7 @@ import { useAllUsers, usePopularUsers, useNearbyUsers, useRecommendedUsers, useT
 import { useChat } from '@/hooks/useChat';
 import SocialCard from '@/components/ui/SocialCard';
 import api from '@/services/api';
+import { usePageScrollRestoration } from '@/hooks/useScrollRestoration';
 
 // Remove duplicate interface - using MobileUser from useUsersQuery
 
@@ -21,6 +22,9 @@ const MobileFriendPage: React.FC = () => {
   
   // State Management - Simplified
   const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // Scroll restoration for this page
+  const { restorePageScroll, hasScrollPosition } = usePageScrollRestoration('/friend');
   
   // React Query Hooks - Smart Data Fetching
   const { data: recommendedUsers = [], isLoading: isLoadingRecommended, refetch: refetchRecommended } = useRecommendedUsers();
@@ -67,6 +71,21 @@ const MobileFriendPage: React.FC = () => {
   const handleProfileClick = (userId: string) => {
     navigate(`/profile/${userId}`);
   };
+
+  // Restore scroll position when data is loaded
+  useEffect(() => {
+    const hasData = recommendedUsers.length > 0 || popularUsers.length > 0 || nearbyUsers.length > 0 || newUsers.length > 0;
+    const isLoading = isLoadingRecommended || isLoadingPopular || isLoadingNearby || isLoadingNew;
+    
+    if (!isLoading && hasData) {
+      // Small delay to ensure DOM is rendered
+      const timeoutId = setTimeout(() => {
+        restorePageScroll(true);
+      }, 50);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isLoadingRecommended, isLoadingPopular, isLoadingNearby, isLoadingNew, recommendedUsers.length, popularUsers.length, nearbyUsers.length, newUsers.length, restorePageScroll]);
 
 
   return (

@@ -4,6 +4,8 @@ import { Heart, MessageSquare, MoreHorizontal, UserCheck, UserPlus } from 'lucid
 import { Button } from '../ui/Button';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/Avatar';
 import { MediaWithFallback } from './MediaWithFallback';
+import { CachedImage, useImagePreloader } from './CachedImage';
+import { CachedVideo, useVideoCache } from './CachedVideo';
 import { Post } from './types';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import { useTranslation } from 'react-i18next';
@@ -29,6 +31,10 @@ export const PostItem: React.FC<PostItemProps> = memo(({
   const [likeCount, setLikeCount] = useState(post.likeCount || 0);
   const [isExpanded, setIsExpanded] = useState(false);
 // const [commentCount, setCommentCount] = useState<number | null>(null); // Removed for performance
+
+  // Media caching hooks
+  const { preloadImages } = useImagePreloader();
+  const { preloadVideoMetadata } = useVideoCache();
 
   const hasMedia = (post.images && post.images.length > 0) || post.video;
   const contentExceedsLimit = post.content.length > 150;
@@ -62,6 +68,16 @@ export const PostItem: React.FC<PostItemProps> = memo(({
       return dateString;
     }
   };
+
+  // Preload media for better UX
+  useEffect(() => {
+    if (post.images && post.images.length > 0) {
+      preloadImages(post.images);
+    }
+    if (post.video) {
+      preloadVideoMetadata([post.video]);
+    }
+  }, [post.images, post.video, preloadImages, preloadVideoMetadata]);
 
   // Tạm thời comment out để test hiệu suất
   // useEffect(() => {
@@ -155,36 +171,34 @@ export const PostItem: React.FC<PostItemProps> = memo(({
         </div>
       )}
 
-      {/* Media */}
+      {/* Media - Enhanced with Caching */}
       {hasMedia && (
         <div className="relative">
           {post.video ? (
-            <MediaWithFallback
-              mediaPath={post.video}
-              alt="Post video"
-              className="w-full max-h-[500px] object-contain bg-black"
-              isVideo={true}
+            <CachedVideo
+              src={post.video}
+              className="w-full max-h-[500px] rounded-xl mx-4 mb-3 overflow-hidden"
+              controls={true}
+              preload="metadata"
+              muted={false}
             />
           ) : post.images && post.images.length > 0 ? (
             <div className="rounded-xl overflow-hidden bg-muted/30 mx-4 mb-3 grid grid-cols-2 gap-1">
               {post.images.slice(0, 4).map((image, index) => (
                 <div 
-                  key={index} 
+                  key={`${post._id}-image-${index}`}
                   className={`
                     relative group bg-muted/50 overflow-hidden cursor-pointer
-                    ${post.images!.length === 1 ? 'aspect-video max-h-96' : 'aspect-square'}
+                    ${post.images!.length === 1 ? 'aspect-video max-h-96 col-span-2' : 'aspect-square'}
                     ${post.images!.length === 3 && index === 0 ? 'row-span-2' : ''}
                   `}
                 >
-                  <img
+                  <CachedImage
                     src={image}
                     alt={`Post image ${index + 1}`}
                     className="w-full h-full object-cover transition-all duration-300 group-hover:scale-105 group-hover:brightness-95"
                     loading="lazy"
-                    onError={(e) => {
-                      console.log('Image failed:', image);
-                      e.currentTarget.style.display = 'none';
-                    }}
+                    decoding="async"
                   />
                   
                   {post.images!.length > 4 && index === 3 && (

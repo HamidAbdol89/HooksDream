@@ -118,7 +118,7 @@ export const useScrollRestoration = (key?: string) => {
 
 // Hook specifically for Feed page with enhanced features
 export const useFeedScrollRestoration = () => {
-  const { restoreScrollPosition, saveScrollPosition, hasScrollPosition } = useScrollRestoration('/');
+  const { restoreScrollPosition, saveScrollPosition, hasScrollPosition } = useScrollRestoration('/feed');
   const hasRestoredRef = useRef(false);
 
   // Enhanced restore for Feed with data dependency
@@ -148,5 +148,41 @@ export const useFeedScrollRestoration = () => {
     restoreFeedScroll,
     saveScrollPosition,
     hasScrollPosition: hasScrollPosition()
+  };
+};
+
+// Generic hook for any page with data dependency
+export const usePageScrollRestoration = (pageKey: string) => {
+  const { restoreScrollPosition, saveScrollPosition, hasScrollPosition } = useScrollRestoration(pageKey);
+  const hasRestoredRef = useRef(false);
+
+  // Enhanced restore with data dependency
+  const restorePageScroll = useCallback((hasData: boolean = true) => {
+    if (hasRestoredRef.current) return false;
+
+    // Only restore if we have data to avoid scrolling to empty content
+    if (hasData && hasScrollPosition()) {
+      const restored = restoreScrollPosition();
+      if (restored) {
+        hasRestoredRef.current = true;
+      }
+      return restored;
+    }
+
+    return false;
+  }, [restoreScrollPosition, hasScrollPosition]);
+
+  // Reset restoration flag when leaving page
+  useEffect(() => {
+    return () => {
+      hasRestoredRef.current = false;
+    };
+  }, []);
+
+  return {
+    restorePageScroll,
+    saveScrollPosition,
+    hasScrollPosition: hasScrollPosition(),
+    clearScrollPosition: () => scrollCache.delete(pageKey)
   };
 };

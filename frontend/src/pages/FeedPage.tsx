@@ -8,6 +8,7 @@ import { useFeedScrollRestoration } from '@/hooks/useScrollRestoration';
 import { useTranslation } from 'react-i18next';
 import { Post } from '@/types/post';
 import { SmartPrefetch } from '@/components/prefetch/SmartPrefetch';
+import { useFeedMediaCache, useFeedPerformance } from '@/hooks/useFeedMediaCache';
 
 export const Feed: React.FC = () => {
   const { isConnected, profile } = useGoogleAuth();
@@ -36,6 +37,16 @@ export const Feed: React.FC = () => {
 
   // ✅ Scroll restoration for better UX
   const { restoreFeedScroll, hasScrollPosition } = useFeedScrollRestoration();
+
+  // ✅ Media caching for better performance
+  const { preloadVisibleMedia, getCacheStats } = useFeedMediaCache(posts, {
+    preloadImages: true,
+    preloadVideos: true,
+    maxPreloadItems: 15 // Preload first 15 posts
+  });
+
+  // ✅ Performance monitoring (dev only)
+  const { startTime, measureRenderTime } = useFeedPerformance();
 
   // ✅ Restore scroll position when data is loaded
   useEffect(() => {
@@ -71,6 +82,22 @@ export const Feed: React.FC = () => {
   }, [refresh]);
 
   const currentUserHashId = localStorage.getItem('user_hash_id') || undefined;
+
+  // ✅ Performance monitoring
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development' && posts.length > 0) {
+      const renderStart = startTime();
+      
+      // Measure after next tick
+      setTimeout(() => {
+        measureRenderTime(renderStart, 'Feed with cached media');
+        
+        // Log cache stats
+        const stats = getCacheStats();
+        console.log('📊 Media Cache Stats:', stats);
+      }, 0);
+    }
+  }, [posts.length, startTime, measureRenderTime, getCacheStats]);
 
   return (
     <>

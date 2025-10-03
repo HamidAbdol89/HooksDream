@@ -1,10 +1,10 @@
 // src/components/layout/NavItems.tsx
 import { Home, Users, Bell, MessageSquare, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
 import { useAppStore } from '@/store/useAppStore';
-import { useSwiper } from '@/contexts/SwiperContext';
+// Removed SwiperContext dependency
 
 interface NavItem {
   icon: React.ReactNode;
@@ -17,27 +17,13 @@ interface NavItem {
 export const useNavItems = () => {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAppStore();
   const { unreadCount } = useUnreadCount(user?.hashId);
-  const { navigateToSlide } = useSwiper();
-
-  // Swiper pages mapping
-  const SWIPER_PAGES = [
-    { path: '/feed', index: 0 },
-    { path: '/friend', index: 1 },
-    { path: '/notifications', index: 2 },
-    { path: '/messages', index: 3 }
-  ];
 
   const handleNavigation = (path: string) => {
-    const swiperPage = SWIPER_PAGES.find(page => page.path === path);
-    if (swiperPage) {
-      // Use SwiperContext for smooth navigation
-      navigateToSlide(swiperPage.index, path);
-    } else {
-      // Use regular navigation for non-swiper pages
-      navigate(path);
-    }
+    // Use regular navigation with state for slide animations
+    navigate(path, { state: { from: location.pathname } });
   };
 
   const navItems: NavItem[] = [
