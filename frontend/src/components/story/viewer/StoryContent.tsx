@@ -1,6 +1,6 @@
-// StoryContent.tsx - Story media content display
+// StoryContent.tsx - Story media content display with React Spring
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useSpring, animated, useTransition } from '@react-spring/web';
 import { REACTION_TYPES } from '@/types/story';
 import { StoryContentProps } from './types';
 
@@ -64,13 +64,21 @@ export const StoryContent: React.FC<StoryContentProps> = ({
     }
   };
 
+  // React Spring animation for story content
+  const contentSpring = useSpring({
+    from: { scale: 0.8, opacity: 0 },
+    to: { scale: 1, opacity: 1 },
+    config: {
+      tension: 300,
+      friction: 30,
+      mass: 0.8
+    }
+  });
+
   return (
-    <motion.div
+    <animated.div
       key={story._id}
-      initial={{ scale: 0.8, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      exit={{ scale: 0.8, opacity: 0 }}
-      transition={{ duration: 0.3 }}
+      style={contentSpring}
       className="relative w-full h-full"
     >
       {/* Background Media Container */}
@@ -123,25 +131,31 @@ export const StoryContent: React.FC<StoryContentProps> = ({
         </div>
       )}
       
-      {/* Reactions Display */}
-      <AnimatePresence>
-        {story.reactions.slice(-5).map((reaction: any, index: number) => (
-          <motion.div
-            key={`${reaction._id}-${index}`}
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0, opacity: 0 }}
-            className="absolute pointer-events-none text-2xl"
-            style={{
-              left: `${reaction.position.x}%`,
-              top: `${reaction.position.y}%`,
-              transform: 'translate(-50%, -50%)'
-            }}
-          >
-            {REACTION_TYPES.find(r => r.type === reaction.type)?.emoji}
-          </motion.div>
-        ))}
-      </AnimatePresence>
-    </motion.div>
+      {/* Reactions Display with React Spring */}
+      {useTransition(story.reactions.slice(-5), {
+        from: { scale: 0, opacity: 0, transform: 'translate(-50%, -50%) rotate(180deg)' },
+        enter: { scale: 1, opacity: 1, transform: 'translate(-50%, -50%) rotate(0deg)' },
+        leave: { scale: 0, opacity: 0, transform: 'translate(-50%, -50%) rotate(-180deg)' },
+        config: {
+          tension: 400,
+          friction: 25,
+          mass: 0.5
+        }
+      })((style, reaction, _, index) => (
+        <animated.div
+          key={`${reaction._id}-${index}`}
+          style={{
+            ...style,
+            position: 'absolute',
+            left: `${reaction.position.x}%`,
+            top: `${reaction.position.y}%`,
+            pointerEvents: 'none',
+            fontSize: '1.5rem'
+          }}
+        >
+          {REACTION_TYPES.find(r => r.type === reaction.type)?.emoji}
+        </animated.div>
+      ))}
+    </animated.div>
   );
 };

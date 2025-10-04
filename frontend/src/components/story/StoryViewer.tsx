@@ -1,8 +1,8 @@
-// StoryViewer.tsx - Refactored main story viewer component
+// StoryViewer.tsx - Refactored main story viewer component with React Spring
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useSpring, animated, useTransition } from '@react-spring/web';
 import { StoryViewerProps } from './viewer/types';
-import { StoryProgressBar } from './viewer/StoryProgressBar';
+import { SpringProgressBar as StoryProgressBar } from './viewer/SpringProgressBar';
 import { StoryHeader } from './viewer/StoryHeader';
 import { StoryContent } from './viewer/StoryContent';
 import { StoryNavigation } from './viewer/StoryNavigation';
@@ -135,18 +135,25 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
     };
   }, []);
 
+  // Smooth viewer entrance animation
+  const viewerSpring = useSpring({
+    from: { opacity: 0, scale: 0.95 },
+    to: { opacity: 1, scale: 1 },
+    config: {
+      tension: 300,
+      friction: 30,
+      mass: 0.8
+    }
+  });
+
   if (!currentStory) return null;
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black z-50 flex items-center justify-center"
-        onClick={handleTap}
-        onPanEnd={handlePanEnd}
-      >
+    <animated.div
+      style={viewerSpring}
+      className="fixed inset-0 bg-black z-50 flex items-center justify-center"
+      onClick={handleTap}
+    >
         {/* Progress Bars */}
         <StoryProgressBar
           stories={stories}
@@ -172,7 +179,8 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
           isMuted={isMuted}
           onVideoLoadedMetadata={() => handleVideoLoadedMetadata(videoRef.current!)}
           onVideoTimeUpdate={() => {
-            if (videoRef.current) {
+            if (videoRef.current && !isPaused) {
+              // More frequent updates for smoother progress
               handleVideoTimeUpdate(videoRef.current.currentTime, videoRef.current.duration);
             }
           }}
@@ -220,7 +228,6 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
           onConfirm={handleDeleteStory}
           onCancel={() => setShowDeleteConfirm(false)}
         />
-      </motion.div>
-    </AnimatePresence>
+    </animated.div>
   );
 };

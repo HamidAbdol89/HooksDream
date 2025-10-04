@@ -1,6 +1,6 @@
 // StoryHeader.tsx - Story header with user info and controls
 import React from 'react';
-import { X, Volume2, VolumeX } from 'lucide-react';
+import { X, Volume2, VolumeX, Play, Pause } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
 import { StoryHeaderProps } from './types';
 
@@ -42,7 +42,7 @@ export const StoryHeader: React.FC<StoryHeaderProps> = ({
               e.stopPropagation();
               onMuteToggle();
             }}
-            className="p-2 bg-black/50 rounded-full text-white"
+            className="p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
           >
             {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
           </button>
@@ -53,9 +53,9 @@ export const StoryHeader: React.FC<StoryHeaderProps> = ({
             e.stopPropagation();
             onPauseToggle();
           }}
-          className="p-2 bg-black/50 rounded-full text-white"
+          className="p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
         >
-          {isPaused ? '▶️' : '⏸️'}
+          {isPaused ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
         </button>
         
         <button
@@ -63,7 +63,7 @@ export const StoryHeader: React.FC<StoryHeaderProps> = ({
             e.stopPropagation();
             onClose();
           }}
-          className="p-2 bg-black/50 rounded-full text-white"
+          className="p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
         >
           <X className="w-5 h-5" />
         </button>

@@ -1,4 +1,4 @@
-// useStoryProgress.ts - Progress tracking logic
+// useStoryProgress.ts - Ultra-smooth progress tracking for React Spring
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Story } from '@/types/story';
 
@@ -22,7 +22,7 @@ export const useStoryProgress = ({
   onClose
 }: UseStoryProgressProps) => {
   const [progress, setProgress] = useState(0);
-  const progressRef = useRef<NodeJS.Timeout>();
+  const animationFrameRef = useRef<number>();
 
   // Dynamic story duration based on content type
   const getStoryDuration = useCallback(() => {
@@ -39,7 +39,7 @@ export const useStoryProgress = ({
     }
   }, [currentStory]);
 
-  // Progress bar animation (only for non-video content)
+  // Ultra-smooth progress bar animation (only for non-video content)
   useEffect(() => {
     if (!currentStory || isPaused || currentStory.media.type === 'video') return;
 
@@ -58,41 +58,51 @@ export const useStoryProgress = ({
           onClose();
         }
       } else {
-        progressRef.current = setTimeout(updateProgress, 50);
+        // Use requestAnimationFrame for 60fps smooth updates
+        animationFrameRef.current = requestAnimationFrame(updateProgress);
       }
     };
 
-    progressRef.current = setTimeout(updateProgress, 50);
+    // Start with requestAnimationFrame for smoother updates
+    animationFrameRef.current = requestAnimationFrame(updateProgress);
 
     return () => {
-      if (progressRef.current) {
-        clearTimeout(progressRef.current);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
       }
     };
   }, [currentStory, isPaused, getStoryDuration, currentIndex, totalStories, onNext, onClose]);
 
-  // Handle video time update for progress
+  // Smooth video progress tracking with requestAnimationFrame
   const handleVideoTimeUpdate = useCallback((currentTime: number, duration: number) => {
     if (currentStory?.media.type === 'video' && duration > 0) {
-      const newProgress = (currentTime / duration) * 100;
-      setProgress(newProgress);
-      
-      // Auto advance when video ends
-      if (currentTime >= duration - 0.1) {
-        if (currentIndex < totalStories - 1) {
-          onNext();
-        } else {
-          onClose();
-        }
+      // Cancel previous animation frame
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
       }
+      
+      // Use requestAnimationFrame for smooth updates
+      animationFrameRef.current = requestAnimationFrame(() => {
+        const newProgress = Math.min((currentTime / duration) * 100, 100);
+        setProgress(newProgress);
+        
+        // Auto advance when video ends
+        if (currentTime >= duration - 0.1) {
+          if (currentIndex < totalStories - 1) {
+            onNext();
+          } else {
+            onClose();
+          }
+        }
+      });
     }
   }, [currentStory, currentIndex, totalStories, onNext, onClose]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (progressRef.current) {
-        clearTimeout(progressRef.current);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
       }
     };
   }, []);

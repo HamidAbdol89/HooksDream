@@ -1,6 +1,6 @@
 // Story Viewer Refactored Components
 export { StoryViewer } from '../StoryViewer';
-export { StoryProgressBar } from './StoryProgressBar';
+export { SpringProgressBar } from './SpringProgressBar';
 export { StoryHeader } from './StoryHeader';
 export { StoryContent } from './StoryContent';
 export { StoryNavigation } from './StoryNavigation';
@@ -14,3 +14,6 @@ export { useStoryProgress } from './hooks/useStoryProgress';
 export { useStoryNavigation } from './hooks/useStoryNavigation';
 export { useStoryMedia } from './hooks/useStoryMedia';
 export { useStoryInteractions } from './hooks/useStoryInteractions';
+
+// Types
+export type * from './types';
