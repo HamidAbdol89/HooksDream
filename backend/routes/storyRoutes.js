@@ -9,6 +9,9 @@ const {
     highlightStory,
     deleteStory,
     getUserHighlights,
+    getUserArchivedStories,
+    restoreArchivedStory,
+    archiveStory,
     updateStoryPosition,
     upload,
     createStoryValidation,
@@ -234,5 +237,14 @@ router.get('/user/:userId',
         }
     }
 );
+
+// 📁 Get user's archived stories
+router.get('/user/:userId/archived', authMiddleware, getUserArchivedStories);
+
+// 🗂️ Archive story manually
+router.patch('/:storyId/archive', authMiddleware, archiveStory);
+
+// 🔄 Restore archived story
+router.patch('/:storyId/restore', authMiddleware, restoreArchivedStory);
 
 module.exports = router;

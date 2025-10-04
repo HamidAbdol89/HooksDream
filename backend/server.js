@@ -205,6 +205,10 @@ function startServer() {
     console.log(`📡 Socket.IO ready for connections`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`🗄️  Database: Connected ✅`); // ⚡ Always connected when this runs
+    
+    // Start story archive service
+    const storyArchiveService = require('./services/storyArchiveService');
+    storyArchiveService.start();
   });
 }
 

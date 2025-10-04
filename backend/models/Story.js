@@ -246,11 +246,23 @@ const StorySchema = new mongoose.Schema({
         trim: true
     },
     
-    // Auto-delete after 24 hours
+    // Story expiration (24 hours) - NO AUTO DELETE
     expiresAt: {
         type: Date,
         default: () => new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-        index: { expireAfterSeconds: 0 } // MongoDB TTL index
+        index: true // Regular index, NOT TTL
+    },
+    
+    // Archive system for expired stories
+    isArchived: {
+        type: Boolean,
+        default: false,
+        index: true
+    },
+    
+    archivedAt: {
+        type: Date,
+        default: null
     },
     
     // Soft delete for highlights
@@ -278,11 +290,10 @@ const StorySchema = new mongoose.Schema({
 
 // Indexes for performance
 StorySchema.index({ userId: 1, createdAt: -1 });
-StorySchema.index({ createdAt: -1 });
-StorySchema.index({ expiresAt: 1 });
 StorySchema.index({ 'settings.visibility': 1 });
 StorySchema.index({ isDeleted: 1 });
 StorySchema.index({ isHighlighted: 1 });
+StorySchema.index({ isArchived: 1 });
 
 // Virtual for story URL
 StorySchema.virtual('storyUrl').get(function() {
@@ -379,10 +390,26 @@ StorySchema.methods.updatePosition = async function(newPosition) {
     await this.save();
 };
 
+// Method to archive expired story
+StorySchema.methods.archiveStory = async function() {
+    this.isArchived = true;
+    this.archivedAt = new Date();
+    await this.save();
+};
+
+// Method to restore archived story (make it active again)
+StorySchema.methods.restoreStory = async function() {
+    this.isArchived = false;
+    this.archivedAt = null;
+    this.expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // Reset 24h timer
+    await this.save();
+};
+
 // Static method to get active stories for feed
 StorySchema.statics.getActiveStories = function(viewerUserId, limit = 50) {
     return this.find({
         isDeleted: false,
+        isArchived: false, // Exclude archived stories
         expiresAt: { $gt: new Date() }, // Not expired
         $or: [
             { 'settings.visibility': 'public' },
@@ -409,7 +436,36 @@ StorySchema.statics.getUserHighlights = function(userId) {
         isHighlighted: true,
         isDeleted: false
     })
+    .populate('userId', 'username displayName avatar isVerified')
     .sort({ createdAt: -1 });
+};
+
+// Static method to get user's archived stories
+StorySchema.statics.getUserArchivedStories = function(userId, limit = 50) {
+    return this.find({
+        userId: userId,
+        isArchived: true,
+        isDeleted: false
+    })
+    .populate('userId', 'username displayName avatar isVerified')
+    .sort({ archivedAt: -1 })
+    .limit(limit);
+};
+
+// Static method to auto-archive expired stories (cron job)
+StorySchema.statics.archiveExpiredStories = async function() {
+    const expiredStories = await this.find({
+        expiresAt: { $lt: new Date() },
+        isArchived: false,
+        isHighlighted: false, // Don't archive highlights
+        isDeleted: false
+    });
+    
+    for (const story of expiredStories) {
+        await story.archiveStory();
+    }
+    
+    return expiredStories.length;
 };
 
 // Static method to get stories by location/proximity (for bubble positioning)

@@ -183,6 +183,7 @@ const getActiveStories = async (req, res) => {
             // Get all active stories
             stories = await Story.find({
                 isDeleted: false,
+                isArchived: false, // Exclude archived stories
                 expiresAt: { $gt: new Date() }
             })
             .populate('userId', 'username displayName avatar isVerified')
@@ -635,6 +636,138 @@ const setSocketServer = (server) => {
     socketServer = server;
 };
 
+// 📁 Get User's Archived Stories
+const getUserArchivedStories = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { limit = 50 } = req.query;
+        const requesterId = req.user.id;
+
+        // Only allow users to view their own archived stories
+        if (userId !== requesterId) {
+            return res.status(403).json({
+                success: false,
+                message: 'You can only view your own archived stories'
+            });
+        }
+
+        const archivedStories = await Story.getUserArchivedStories(userId, parseInt(limit));
+
+        res.json({
+            success: true,
+            message: 'Archived stories retrieved',
+            data: {
+                stories: archivedStories,
+                total: archivedStories.length
+            }
+        });
+
+    } catch (error) {
+        console.error('Get archived stories error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get archived stories',
+            error: error.message
+        });
+    }
+};
+
+// 🔄 Restore Archived Story
+const restoreArchivedStory = async (req, res) => {
+    try {
+        const { storyId } = req.params;
+        const userId = req.user.id;
+
+        const story = await Story.findById(storyId);
+        if (!story) {
+            return res.status(404).json({
+                success: false,
+                message: 'Story not found'
+            });
+        }
+
+        // Only story owner can restore
+        if (story.userId.toString() !== userId) {
+            return res.status(403).json({
+                success: false,
+                message: 'You can only restore your own stories'
+            });
+        }
+
+        // Check if story is archived
+        if (!story.isArchived) {
+            return res.status(400).json({
+                success: false,
+                message: 'Story is not archived'
+            });
+        }
+
+        await story.restoreStory();
+
+        res.json({
+            success: true,
+            message: 'Story restored successfully',
+            data: story
+        });
+
+    } catch (error) {
+        console.error('Restore story error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to restore story',
+            error: error.message
+        });
+    }
+};
+
+// 🗂️ Archive Story Manually
+const archiveStory = async (req, res) => {
+    try {
+        const { storyId } = req.params;
+        const userId = req.user.id;
+
+        const story = await Story.findById(storyId);
+        if (!story) {
+            return res.status(404).json({
+                success: false,
+                message: 'Story not found'
+            });
+        }
+
+        // Only story owner can archive
+        if (story.userId.toString() !== userId) {
+            return res.status(403).json({
+                success: false,
+                message: 'You can only archive your own stories'
+            });
+        }
+
+        // Check if story is already archived
+        if (story.isArchived) {
+            return res.status(400).json({
+                success: false,
+                message: 'Story is already archived'
+            });
+        }
+
+        await story.archiveStory();
+
+        res.json({
+            success: true,
+            message: 'Story archived successfully',
+            data: story
+        });
+
+    } catch (error) {
+        console.error('Archive story error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to archive story',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     createStory,
     getActiveStories,
@@ -644,6 +777,9 @@ module.exports = {
     highlightStory,
     deleteStory,
     getUserHighlights,
+    getUserArchivedStories,
+    restoreArchivedStory,
+    archiveStory,
     updateStoryPosition,
     upload,
     createStoryValidation,
