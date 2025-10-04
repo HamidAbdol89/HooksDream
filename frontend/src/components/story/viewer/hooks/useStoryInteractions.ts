@@ -51,6 +51,12 @@ export const useStoryInteractions = ({
       onReply(currentStory._id, replyMessage.trim());
       setReplyMessage('');
       setShowReplyInput(false);
+      
+      // Show success feedback
+      toast.success('Reply sent!', {
+        description: `Your message was sent to ${currentStory.userId.displayName}`,
+        duration: 3000,
+      });
     }
   }, [currentStory, replyMessage, onReply]);
 

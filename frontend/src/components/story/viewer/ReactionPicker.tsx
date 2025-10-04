@@ -16,7 +16,6 @@ export const ReactionPicker: React.FC<ReactionPickerProps> = ({
     leave: { scale: 0, opacity: 0, transform: 'translateY(20px)' },
     config: {
       tension: 400,
-      friction: 30,
       mass: 0.8
     }
   });
@@ -28,7 +27,6 @@ export const ReactionPicker: React.FC<ReactionPickerProps> = ({
       await new Promise(resolve => setTimeout(resolve, index * 50)); // Stagger delay
       await next({ scale: 1, opacity: 1, transform: 'rotate(0deg)' });
     },
-    leave: { scale: 0, opacity: 0, transform: 'rotate(-180deg)' },
     config: {
       tension: 500,
       friction: 25,
@@ -49,6 +47,7 @@ export const ReactionPicker: React.FC<ReactionPickerProps> = ({
               "w-full max-w-[99%] sm:max-w-md mx-auto",
               "overflow-x-auto no-scrollbar"
             )}
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex space-x-2 max-w-[90%] sm:max-w-md p-2">
               {buttonTransitions((buttonStyle, reaction) => (

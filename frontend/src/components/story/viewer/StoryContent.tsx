@@ -1,6 +1,6 @@
-// StoryContent.tsx - Story media content display with React Spring
+// StoryContent.tsx - Professional story content with aspect ratio handling
 import React from 'react';
-import { useSpring, animated, useTransition } from '@react-spring/web';
+import { useSpring, animated } from '@react-spring/web';
 import { REACTION_TYPES } from '@/types/story';
 import { StoryContentProps } from './types';
 
@@ -8,13 +8,16 @@ export const StoryContent: React.FC<StoryContentProps> = ({
   story,
   mediaAspectRatio,
   isMuted,
+  isPaused,
   onVideoLoadedMetadata,
   onVideoTimeUpdate,
   onImageLoad,
+  onPauseToggle,
+  onRepliesToggle,
   videoRef,
   imageRef
 }) => {
-  // Get media container classes based on aspect ratio
+  // Get media container classes based on aspect ratio (original logic)
   const getMediaContainerClasses = () => {
     const baseClasses = "flex items-center justify-center w-full h-full";
     
@@ -30,23 +33,17 @@ export const StoryContent: React.FC<StoryContentProps> = ({
     }
   };
 
-  // Get media element classes
+  // Get media element classes - video ngang không bị cắt, video dọc full screen
   const getMediaClasses = () => {
     switch (mediaAspectRatio) {
       case 'landscape':
-        return "w-full h-auto max-h-full object-contain"; // Fit width, maintain aspect ratio
+        return "w-full h-auto max-h-full object-contain"; // Video ngang: hiển thị full, không crop
       case 'portrait':
-        return "w-full h-full object-cover"; // Full screen cover for portrait
+        return "w-full h-full object-cover"; // Video dọc: full screen
       case 'square':
-        return "max-w-full max-h-full object-contain"; // Fit both dimensions
+        return "w-full h-auto max-h-full object-contain"; // Square: contain để không bị crop
       default:
-        return "w-full h-full object-cover"; // Default fallback
-    }
-  };
-
-  const handleVideoLoadedMetadata = () => {
-    if (videoRef.current) {
-      onVideoLoadedMetadata();
+        return "w-full h-auto max-h-full object-contain"; // Default: safe fallback
     }
   };
 
@@ -54,13 +51,19 @@ export const StoryContent: React.FC<StoryContentProps> = ({
     if (videoRef.current) {
       const currentTime = videoRef.current.currentTime;
       const duration = videoRef.current.duration;
-      onVideoTimeUpdate();
+      onVideoTimeUpdate(currentTime, duration);
+    }
+  };
+
+  const handleVideoLoadedMetadata = () => {
+    if (videoRef.current) {
+      onVideoLoadedMetadata(videoRef.current);
     }
   };
 
   const handleImageLoad = () => {
     if (imageRef.current) {
-      onImageLoad();
+      onImageLoad(imageRef.current);
     }
   };
 
@@ -79,7 +82,18 @@ export const StoryContent: React.FC<StoryContentProps> = ({
     <animated.div
       key={story._id}
       style={contentSpring}
-      className="relative w-full h-full"
+      className="relative w-full h-full cursor-pointer"
+      onClick={(e) => {
+        // Don't trigger pause if clicking on interactive elements
+        const target = e.target as HTMLElement;
+        if (target.closest('button, input, textarea')) return;
+        
+        // Toggle pause state
+        if (story.media.type === 'video' || story.media.type === 'image') {
+          onPauseToggle();
+          e.stopPropagation();
+        }
+      }}
     >
       {/* Background Media Container */}
       <div className={getMediaContainerClasses()}>
@@ -102,10 +116,7 @@ export const StoryContent: React.FC<StoryContentProps> = ({
             muted={isMuted}
             playsInline
             onLoadedMetadata={handleVideoLoadedMetadata}
-            onTimeUpdate={handleVideoTimeUpdate}
-            onLoadedData={() => {}}
-            onPlay={() => {}}
-            onPause={() => {}}
+            onTimeUpdate={() => handleVideoTimeUpdate()}
           />
         )}
         
@@ -131,31 +142,48 @@ export const StoryContent: React.FC<StoryContentProps> = ({
         </div>
       )}
       
-      {/* Reactions Display with React Spring */}
-      {useTransition(story.reactions.slice(-5), {
-        from: { scale: 0, opacity: 0, transform: 'translate(-50%, -50%) rotate(180deg)' },
-        enter: { scale: 1, opacity: 1, transform: 'translate(-50%, -50%) rotate(0deg)' },
-        leave: { scale: 0, opacity: 0, transform: 'translate(-50%, -50%) rotate(-180deg)' },
-        config: {
-          tension: 400,
-          friction: 25,
-          mass: 0.5
-        }
-      })((style, reaction, _, index) => (
-        <animated.div
-          key={`${reaction._id}-${index}`}
-          style={{
-            ...style,
-            position: 'absolute',
-            left: `${reaction.position.x}%`,
-            top: `${reaction.position.y}%`,
-            pointerEvents: 'none',
-            fontSize: '1.5rem'
-          }}
-        >
-          {REACTION_TYPES.find(r => r.type === reaction.type)?.emoji}
-        </animated.div>
-      ))}
+
+      {/* Reply Pill Indicator - Only show for story author when has replies */}
+      {story.replies && story.replies.length > 0 && story.isOwn && (
+        <div className="absolute top-20 right-4">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onRepliesToggle(); // Open replies dialog and pause
+            }}
+            className="flex items-center space-x-2 bg-black/70 backdrop-blur-sm rounded-full px-3 py-2 text-white hover:bg-black/80 transition-colors"
+          >
+            <div className="flex -space-x-1">
+              {(() => {
+                // Get unique users from replies (latest first)
+                const uniqueUsers = story.replies
+                  .slice()
+                  .reverse()
+                  .reduce((acc: any[], reply) => {
+                    if (!acc.find(user => user.userId._id === reply.userId._id)) {
+                      acc.push(reply);
+                    }
+                    return acc;
+                  }, [])
+                  .slice(0, 3);
+
+                return uniqueUsers.map((reply, index) => (
+                  <img
+                    key={reply.userId._id}
+                    src={reply.userId.avatar}
+                    alt={reply.userId.displayName}
+                    className="w-5 h-5 rounded-full border border-white/50"
+                    style={{ zIndex: 3 - index }}
+                  />
+                ));
+              })()}
+            </div>
+            <span className="text-xs font-medium">
+              {story.replies.length} {story.replies.length === 1 ? 'reply' : 'replies'}
+            </span>
+          </button>
+        </div>
+      )}
     </animated.div>
   );
 };

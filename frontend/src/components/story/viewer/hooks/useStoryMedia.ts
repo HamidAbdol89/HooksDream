@@ -26,6 +26,9 @@ export const useStoryMedia = ({ currentStory, isMuted }: UseStoryMediaProps) => 
 
   // Handle video metadata loaded
   const handleVideoLoadedMetadata = useCallback((videoElement: HTMLVideoElement) => {
+    // Only process if this is for the current story
+    if (!currentStory || currentStory.media.type !== 'video') return;
+    
     const duration = videoElement.duration;
     const width = videoElement.videoWidth;
     const height = videoElement.videoHeight;
@@ -36,46 +39,20 @@ export const useStoryMedia = ({ currentStory, isMuted }: UseStoryMediaProps) => 
     // Auto play and set mute state
     videoElement.muted = isMuted;
     videoElement.play().catch(console.error);
-  }, [isMuted, detectAspectRatio]);
+  }, [isMuted, detectAspectRatio, currentStory]);
 
   // Handle image load
   const handleImageLoad = useCallback((imageElement: HTMLImageElement) => {
+    // Only process if this is for the current story
+    if (!currentStory || currentStory.media.type !== 'image') return;
+    
     const width = imageElement.naturalWidth;
     const height = imageElement.naturalHeight;
-    detectAspectRatio(width, height);
-  }, [detectAspectRatio]);
-
-  // Get media container classes based on aspect ratio
-  const getMediaContainerClasses = useCallback(() => {
-    const baseClasses = "flex items-center justify-center w-full h-full";
     
-    switch (mediaAspectRatio) {
-      case 'landscape':
-        return `${baseClasses} px-0 py-8`; // Add vertical padding for landscape
-      case 'portrait':
-        return `${baseClasses}`; // Full screen for portrait - no padding
-      case 'square':
-        return `${baseClasses} p-4`; // Balanced padding for square
-      default:
-        return baseClasses;
-    }
-  }, [mediaAspectRatio]);
+    detectAspectRatio(width, height);
+  }, [detectAspectRatio, currentStory]);
 
-  // Get media element classes
-  const getMediaClasses = useCallback(() => {
-    switch (mediaAspectRatio) {
-      case 'landscape':
-        return "w-full h-auto max-h-full object-contain"; // Fit width, maintain aspect ratio
-      case 'portrait':
-        return "w-full h-full object-cover"; // Full screen cover for portrait
-      case 'square':
-        return "max-w-full max-h-full object-contain"; // Fit both dimensions
-      default:
-        return "w-full h-full object-cover"; // Default fallback
-    }
-  }, [mediaAspectRatio]);
-
-  // Reset media state when story changes
+  // Reset aspect ratio and duration when story changes
   useEffect(() => {
     if (currentStory) {
       // Set aspect ratio based on content type
@@ -96,8 +73,6 @@ export const useStoryMedia = ({ currentStory, isMuted }: UseStoryMediaProps) => 
     videoDuration,
     mediaAspectRatio,
     handleVideoLoadedMetadata,
-    handleImageLoad,
-    getMediaContainerClasses,
-    getMediaClasses
+    handleImageLoad
   };
 };

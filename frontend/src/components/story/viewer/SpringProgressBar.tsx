@@ -10,7 +10,7 @@ export const SpringProgressBar: React.FC<StoryProgressBarProps> = ({
   progress
 }) => {
   return (
-    <div className="absolute top-4 left-4 right-4 flex space-x-1 z-20">
+    <div className="absolute top-2 left-4 right-4 flex space-x-1 z-20">
       {stories.map((_: Story, index: number) => {
         const isActive = index === currentIndex;
         const isCompleted = index < currentIndex;

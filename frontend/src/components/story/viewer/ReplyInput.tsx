@@ -18,6 +18,17 @@ export const ReplyInput: React.FC<ReplyInputProps> = ({
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Prevent space key from triggering story pause
+    if (e.key === ' ') {
+      e.stopPropagation();
+    }
+    // Prevent arrow keys from changing stories
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.stopPropagation();
+    }
+  };
+
   // Smooth slide up animation
   const replyTransition = useTransition(show, {
     from: { transform: 'translateY(100%)', opacity: 0 },
@@ -46,6 +57,7 @@ export const ReplyInput: React.FC<ReplyInputProps> = ({
           <animated.div
             style={style}
             className="absolute bottom-0 left-0 right-0 bg-black/90 backdrop-blur-sm p-4 z-30"
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center space-x-3">
               <animated.input
@@ -57,6 +69,7 @@ export const ReplyInput: React.FC<ReplyInputProps> = ({
                 className="flex-1 bg-white/20 text-white placeholder-white/70 rounded-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 focus:scale-105"
                 autoFocus
                 onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyDown}
               />
               <Button
                 onClick={onSubmit}

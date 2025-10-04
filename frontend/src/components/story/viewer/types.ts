@@ -32,9 +32,12 @@ export interface StoryContentProps {
   story: Story;
   mediaAspectRatio: 'portrait' | 'landscape' | 'square';
   isMuted: boolean;
-  onVideoLoadedMetadata: () => void;
-  onVideoTimeUpdate: () => void;
-  onImageLoad: () => void;
+  isPaused: boolean;
+  onVideoLoadedMetadata: (videoElement: HTMLVideoElement) => void;
+  onVideoTimeUpdate: (currentTime: number, duration: number) => void;
+  onImageLoad: (imageElement: HTMLImageElement) => void;
+  onPauseToggle: () => void;
+  onRepliesToggle: () => void;
   videoRef: React.RefObject<HTMLVideoElement>;
   imageRef: React.RefObject<HTMLImageElement>;
 }
@@ -50,9 +53,12 @@ export interface StoryActionsProps {
   currentIndex: number;
   totalStories: number;
   isOwnStory: boolean;
+  story: Story;
   onReactionToggle: () => void;
   onReplyToggle: () => void;
   onDeleteClick: () => void;
+  onPauseToggle: () => void;
+  onReactionsClick?: () => void;
 }
 
 export interface ReactionPickerProps {

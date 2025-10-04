@@ -3,6 +3,7 @@ import React from 'react';
 import { X, Volume2, VolumeX, Play, Pause } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
 import { StoryHeaderProps } from './types';
+import { formatStoryTimeRemaining } from '@/utils/timeAgo';
 
 export const StoryHeader: React.FC<StoryHeaderProps> = ({
   story,
@@ -14,7 +15,7 @@ export const StoryHeader: React.FC<StoryHeaderProps> = ({
   isOwnStory
 }) => {
   return (
-    <div className="absolute top-8 left-4 right-4 flex items-center justify-between z-20">
+    <div className="absolute top-6 left-4 right-4 flex items-center justify-between z-20">
       <div className="flex items-center space-x-3">
         <Avatar className="w-10 h-10 border-2 border-white">
           <AvatarImage src={story.userId.avatar} alt={story.userId.displayName} />
@@ -30,7 +31,7 @@ export const StoryHeader: React.FC<StoryHeaderProps> = ({
             )}
           </div>
           <span className="text-white/70 text-sm">
-            {new Date(story.createdAt).toLocaleTimeString()}
+            {formatStoryTimeRemaining(story.createdAt)}
           </span>
         </div>
       </div>

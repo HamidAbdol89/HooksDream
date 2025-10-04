@@ -444,15 +444,35 @@ export const useStories = (params?: {
       });
     };
 
+    const handleStoryReply = (data: { storyId: string; reply: any }) => {
+      queryClient.setQueryData(queryKey, (oldData: any) => {
+        if (!oldData) return oldData;
+        
+        return {
+          ...oldData,
+          data: oldData.data.map((story: Story) =>
+            story._id === data.storyId
+              ? { 
+                  ...story, 
+                  replies: [...(story.replies || []), data.reply]
+                }
+              : story
+          )
+        };
+      });
+    };
+
     socket.on('story:created', handleStoryCreated);
     socket.on('story:deleted', handleStoryDeleted);
     socket.on('story:reaction', handleStoryReaction);
+    socket.on('story:reply', handleStoryReply);
     socket.on('story:position_update', handlePositionUpdate);
 
     return () => {
       socket.off('story:created', handleStoryCreated);
       socket.off('story:deleted', handleStoryDeleted);
       socket.off('story:reaction', handleStoryReaction);
+      socket.off('story:reply', handleStoryReply);
       socket.off('story:position_update', handlePositionUpdate);
     };
   }, [socket, queryClient, queryKey]);

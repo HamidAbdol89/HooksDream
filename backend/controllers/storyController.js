@@ -186,6 +186,8 @@ const getActiveStories = async (req, res) => {
                 expiresAt: { $gt: new Date() }
             })
             .populate('userId', 'username displayName avatar isVerified')
+            .populate('replies.userId', 'username displayName avatar')
+            .populate('reactions.userId', 'username displayName avatar')
             .sort({ createdAt: -1 })
             .limit(parseInt(limit));
         }
@@ -383,18 +385,17 @@ const replyToStory = async (req, res) => {
         // Add reply
         await story.addReply(userId, message, mediaData);
 
-        // Create a conversation/message for the reply (integrate with existing chat system)
-        // This would create a DM between the story owner and the replier
+        // Populate the updated story with user info
+        await story.populate('replies.userId', 'username displayName avatar');
+        
+        // Get the latest reply with populated user data
+        const latestReply = story.replies[story.replies.length - 1];
 
-        // Emit reply event
+        // Emit reply event with populated user data
         if (socketServer) {
-            socketServer.io.to(story.userId).emit('story:reply', {
+            socketServer.io.emit('story:reply', {
                 storyId: story._id,
-                reply: {
-                    userId: userId,
-                    message: message,
-                    media: mediaData
-                }
+                reply: latestReply
             });
         }
 
@@ -402,7 +403,8 @@ const replyToStory = async (req, res) => {
             success: true,
             message: 'Reply sent',
             data: {
-                replyCount: story.replies.length
+                replyCount: story.replies.length,
+                reply: latestReply
             }
         });
 

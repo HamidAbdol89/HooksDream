@@ -1,15 +1,19 @@
-// StoryViewer.tsx - Refactored main story viewer component with React Spring
+// StoryViewer.tsx - Professional story viewer with gesture handling
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useSpring, animated, useTransition } from '@react-spring/web';
+import { useGesture } from '@use-gesture/react';
+import { useHotkeys } from 'react-hotkeys-hook';
 import { StoryViewerProps } from './viewer/types';
 import { SpringProgressBar as StoryProgressBar } from './viewer/SpringProgressBar';
-import { StoryHeader } from './viewer/StoryHeader';
 import { StoryContent } from './viewer/StoryContent';
+import { StoryHeader } from './viewer/StoryHeader';
 import { StoryNavigation } from './viewer/StoryNavigation';
 import { StoryActions } from './viewer/StoryActions';
 import { ReactionPicker } from './viewer/ReactionPicker';
-import { ReplyInput } from './viewer/ReplyInput';
+import { ReplyModal } from './viewer/ReplyModal';
 import { DeleteConfirmDialog } from './viewer/DeleteConfirmDialog';
+import { RepliesDialog } from './viewer/RepliesDialog';
+import { ReactionsDialog } from './viewer/ReactionsDialog';
 import { useStoryProgress } from './viewer/hooks/useStoryProgress';
 import { useStoryNavigation } from './viewer/hooks/useStoryNavigation';
 import { useStoryMedia } from './viewer/hooks/useStoryMedia';
@@ -83,6 +87,39 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
     onClose
   });
 
+  // Toggle handlers for actions
+  const handleReactionToggle = () => {
+    setShowReactions(!showReactions);
+    if (!showReactions) {
+      handlePauseToggle(); // Auto pause when opening reactions
+    }
+  };
+  
+  const handleReplyToggle = () => {
+    setShowReplyInput(!showReplyInput);
+    if (!showReplyInput) {
+      handlePauseToggle(); // Auto pause when opening reply input
+    }
+  };
+  
+  // Replies dialog state
+  const [showRepliesDialog, setShowRepliesDialog] = useState(false);
+  const handleRepliesToggle = () => {
+    setShowRepliesDialog(!showRepliesDialog);
+    if (!showRepliesDialog) {
+      handlePauseToggle(); // Auto pause when opening dialog
+    }
+  };
+
+  // Reactions dialog state
+  const [showReactionsDialog, setShowReactionsDialog] = useState(false);
+  const handleReactionsToggle = () => {
+    setShowReactionsDialog(!showReactionsDialog);
+    if (!showReactionsDialog) {
+      handlePauseToggle(); // Auto pause when opening dialog
+    }
+  };
+
   const {
     videoDuration,
     mediaAspectRatio,
@@ -135,6 +172,95 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
     };
   }, []);
 
+  // Professional keyboard shortcuts - disabled when in input mode
+  const isInputMode = showReplyInput || showReactions || showRepliesDialog || showReactionsDialog || showDeleteConfirm;
+
+  useHotkeys('left, ArrowLeft', () => {
+    if (currentIndex > 0) onPrevious();
+  }, { 
+    preventDefault: true,
+    enabled: !isInputMode 
+  });
+
+  useHotkeys('right, ArrowRight', () => {
+    if (currentIndex < stories.length - 1) onNext();
+    else onClose();
+  }, { 
+    preventDefault: true,
+    enabled: !isInputMode 
+  });
+
+  useHotkeys('space', (e) => {
+    e.preventDefault();
+    handlePauseToggle();
+  }, { 
+    preventDefault: true,
+    enabled: !isInputMode 
+  });
+
+  useHotkeys('escape', () => {
+    if (showReplyInput) {
+      setShowReplyInput(false);
+    } else if (showReactions) {
+      setShowReactions(false);
+    } else if (showRepliesDialog) {
+      setShowRepliesDialog(false);
+    } else if (showReactionsDialog) {
+      setShowReactionsDialog(false);
+    } else if (showDeleteConfirm) {
+      setShowDeleteConfirm(false);
+    } else {
+      onClose();
+    }
+  }, { preventDefault: true });
+
+  useHotkeys('m', () => {
+    if (currentStory?.media.type === 'video') {
+      handleMuteToggle();
+    }
+  }, { preventDefault: true });
+
+  // Professional gesture handling
+  const bind = useGesture({
+    onDrag: ({ direction, distance, cancel, event }) => {
+      // Prevent drag on interactive elements
+      const target = event.target as HTMLElement;
+      if (target.closest('button, input, textarea')) {
+        cancel();
+        return;
+      }
+
+      const [xDir] = direction;
+      if (distance[0] > 100 || distance[1] > 100) {
+        cancel();
+        if (xDir > 0) {
+          // Swipe right - previous story
+          if (currentIndex > 0) onPrevious();
+        } else {
+          // Swipe left - next story
+          if (currentIndex < stories.length - 1) onNext();
+          else onClose();
+        }
+      }
+    },
+    onClick: ({ event }) => {
+      const target = event.target as HTMLElement;
+      // Don't handle tap on interactive elements
+      if (target.closest('button, input, textarea')) return;
+
+      const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const isLeftSide = x < rect.width / 2;
+      
+      if (isLeftSide && currentIndex > 0) {
+        onPrevious();
+      } else if (!isLeftSide) {
+        if (currentIndex < stories.length - 1) onNext();
+        else onClose();
+      }
+    }
+  });
+
   // Smooth viewer entrance animation
   const viewerSpring = useSpring({
     from: { opacity: 0, scale: 0.95 },
@@ -150,9 +276,9 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
 
   return (
     <animated.div
+      {...bind()}
       style={viewerSpring}
-      className="fixed inset-0 bg-black z-50 flex items-center justify-center"
-      onClick={handleTap}
+      className="fixed inset-0 bg-black z-50 flex items-center justify-center touch-none select-none"
     >
         {/* Progress Bars */}
         <StoryProgressBar
@@ -161,7 +287,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
           progress={progress}
         />
 
-        {/* Header */}
+        {/* Story Header */}
         <StoryHeader
           story={currentStory}
           isPaused={isPaused}
@@ -169,7 +295,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
           onPauseToggle={handlePauseToggle}
           onMuteToggle={handleMuteToggle}
           onClose={onClose}
-          isOwnStory={isOwnStory}
+          isOwnStory={currentStory?.isOwn || false}
         />
 
         {/* Story Content */}
@@ -177,17 +303,16 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
           story={currentStory}
           mediaAspectRatio={mediaAspectRatio}
           isMuted={isMuted}
-          onVideoLoadedMetadata={() => handleVideoLoadedMetadata(videoRef.current!)}
-          onVideoTimeUpdate={() => {
-            if (videoRef.current && !isPaused) {
-              // More frequent updates for smoother progress
-              handleVideoTimeUpdate(videoRef.current.currentTime, videoRef.current.duration);
-            }
-          }}
-          onImageLoad={() => handleImageLoad(imageRef.current!)}
+          isPaused={isPaused}
+          onVideoLoadedMetadata={handleVideoLoadedMetadata}
+          onVideoTimeUpdate={handleVideoTimeUpdate}
+          onImageLoad={handleImageLoad}
+          onPauseToggle={handlePauseToggle}
+          onRepliesToggle={handleRepliesToggle}
           videoRef={videoRef}
           imageRef={imageRef}
         />
+
 
         {/* Navigation Arrows */}
         <StoryNavigation
@@ -196,25 +321,26 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
           onPrevious={handlePrevious}
           onNext={handleNext}
         />
-
         {/* Bottom Actions */}
         <StoryActions
           currentIndex={currentIndex}
           totalStories={stories.length}
-          isOwnStory={isOwnStory}
-          onReactionToggle={() => setShowReactions(!showReactions)}
-          onReplyToggle={() => setShowReplyInput(true)}
+          isOwnStory={currentStory?.isOwn || false}
+          story={currentStory}
+          onReactionToggle={handleReactionToggle}
+          onReplyToggle={handleReplyToggle}
           onDeleteClick={handleDeleteClick}
+          onPauseToggle={handlePauseToggle}
+          onReactionsClick={handleReactionsToggle}
         />
-
         {/* Reaction Picker */}
         <ReactionPicker
           show={showReactions}
           onReactionClick={handleReactionClick}
         />
 
-        {/* Reply Input */}
-        <ReplyInput
+        {/* Reply Modal */}
+        <ReplyModal
           show={showReplyInput}
           message={replyMessage}
           onMessageChange={setReplyMessage}
@@ -222,12 +348,26 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
           onClose={() => setShowReplyInput(false)}
         />
 
-        {/* Delete Confirmation Dialog */}
+        {/* Delete Confirmation Modal */}
         <DeleteConfirmDialog
           show={showDeleteConfirm}
           onConfirm={handleDeleteStory}
           onCancel={() => setShowDeleteConfirm(false)}
         />
-    </animated.div>
+
+        {/* Replies Dialog */}
+        <RepliesDialog
+          show={showRepliesDialog}
+          replies={currentStory?.replies || []}
+          onClose={() => setShowRepliesDialog(false)}
+        />
+
+        {/* Reactions Dialog */}
+        <ReactionsDialog
+          show={showReactionsDialog}
+          reactions={currentStory?.reactions || []}
+          onClose={() => setShowReactionsDialog(false)}
+        />
+      </animated.div>
   );
 };
