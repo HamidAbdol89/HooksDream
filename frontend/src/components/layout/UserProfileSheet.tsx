@@ -1,6 +1,6 @@
 // src/components/layout/UserProfileSheet.tsx
 import React, { useState, useMemo } from 'react';
-import { User, LogOut, Settings, Archive, X } from 'lucide-react';
+import { User, LogOut, Settings, Archive, X, Sparkles } from 'lucide-react';
 import { useTranslation } from "react-i18next";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/Avatar";
 import { useAppStore } from "@/store/useAppStore";
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from '@/components/ui/Button';
 import { ResponsiveArchivedPosts } from '../modals/ResponsiveArchivedPosts';
+import { ArchivedStoriesModal } from '../modals/ArchivedStoriesModal';
 
 interface UserType {
   id?: string;
@@ -95,10 +96,16 @@ export const UserProfileSheet: React.FC<UserProfileSheetProps> = ({
   };
 
   const [isArchivedModalOpen, setIsArchivedModalOpen] = useState(false);
+  const [isArchivedStoriesModalOpen, setIsArchivedStoriesModalOpen] = useState(false);
 
   const handleArchivedPostsClick = () => {
     onClose(); // Close sheet first
     setIsArchivedModalOpen(true);
+  };
+
+  const handleArchivedStoriesClick = () => {
+    onClose(); // Close sheet first
+    setIsArchivedStoriesModalOpen(true);
   };
 
   return (
@@ -165,6 +172,18 @@ export const UserProfileSheet: React.FC<UserProfileSheetProps> = ({
 
             <Button
               variant="ghost"
+              onClick={handleArchivedStoriesClick}
+              className="w-full justify-start h-10 sm:h-12 px-3 sm:px-4"
+            >
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 flex-shrink-0" />
+              <div className="text-left min-w-0">
+                <div className="font-medium text-sm sm:text-base">Lưu trữ Stories</div>
+                <div className="text-xs text-muted-foreground hidden sm:block">Xem lại stories đã lưu trữ</div>
+              </div>
+            </Button>
+
+            <Button
+              variant="ghost"
               onClick={handleSettingsClick}
               className="w-full justify-start h-10 sm:h-12 px-3 sm:px-4"
             >
@@ -197,6 +216,12 @@ export const UserProfileSheet: React.FC<UserProfileSheetProps> = ({
       <ResponsiveArchivedPosts
         isOpen={isArchivedModalOpen}
         onClose={() => setIsArchivedModalOpen(false)}
+      />
+
+      {/* Archived Stories Modal */}
+      <ArchivedStoriesModal
+        isOpen={isArchivedStoriesModalOpen}
+        onClose={() => setIsArchivedStoriesModalOpen(false)}
       />
     </Sheet>
   );

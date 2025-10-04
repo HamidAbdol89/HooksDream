@@ -10,6 +10,7 @@ import { StoryViewer } from '@/components/story/StoryViewer';
 import { StoryCreator } from '@/components/story/StoryCreator';
 import { useStories } from '@/hooks/useStories';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { useStoryArchive } from '@/hooks/useStoryArchive';
 
 export const StoriesPage: React.FC = () => {
   const navigate = useNavigate();
@@ -38,6 +39,9 @@ export const StoriesPage: React.FC = () => {
     addReaction,
     replyToStory,
   } = useStories({ limit: 50 });
+
+  // Archive functionality
+  const { archiveStory, isArchiving } = useStoryArchive();
 
   // Enhance stories with particle effects for demo
   const enhancedStories = useMemo(() => {
@@ -119,6 +123,15 @@ export const StoriesPage: React.FC = () => {
   const handleCloseViewer = useCallback(() => {
     setSelectedStory(null);
   }, []);
+
+  // Archive handler
+  const handleArchiveStory = useCallback(async (storyId: string) => {
+    const result = await archiveStory(storyId);
+    if (result.success) {
+      // Close viewer after successful archive
+      handleCloseViewer();
+    }
+  }, [archiveStory, handleCloseViewer]);
 
   const handleNextStory = useCallback(() => {
     if (selectedStoryIndex < userStories.length - 1) {
@@ -288,6 +301,7 @@ export const StoriesPage: React.FC = () => {
             onReaction={handleReaction}
             onReply={handleReply}
             onView={(storyId: string, duration: number) => viewStory(storyId, duration)}
+            onArchive={handleArchiveStory}
           />
         )}
       </AnimatePresence>

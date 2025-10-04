@@ -27,7 +27,8 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
   onPrevious,
   onReaction,
   onReply,
-  onView
+  onView,
+  onArchive
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -296,6 +297,8 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
           onMuteToggle={handleMuteToggle}
           onClose={onClose}
           isOwnStory={currentStory?.isOwn || false}
+          onArchive={onArchive}
+          onPause={(paused) => setIsPaused(paused)}
         />
 
         {/* Story Content */}

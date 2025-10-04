@@ -10,6 +10,7 @@ export interface StoryViewerProps {
   onReaction: (storyId: string, reactionType: string, position?: { x: number; y: number }) => void;
   onReply: (storyId: string, message: string) => void;
   onView: (storyId: string, duration: number) => void;
+  onArchive?: (storyId: string) => void;
 }
 
 export interface StoryProgressBarProps {
@@ -26,6 +27,8 @@ export interface StoryHeaderProps {
   onMuteToggle: () => void;
   onClose: () => void;
   isOwnStory: boolean;
+  onArchive?: (storyId: string) => void;
+  onPause?: (paused: boolean) => void;
 }
 
 export interface StoryContentProps {

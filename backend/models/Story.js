@@ -265,6 +265,12 @@ const StorySchema = new mongoose.Schema({
         default: null
     },
     
+    archiveType: {
+        type: String,
+        enum: ['manual', 'auto'],
+        default: null
+    },
+    
     // Soft delete for highlights
     isDeleted: {
         type: Boolean,
@@ -390,18 +396,37 @@ StorySchema.methods.updatePosition = async function(newPosition) {
     await this.save();
 };
 
-// Method to archive expired story
+// Method to archive story manually (by user)
 StorySchema.methods.archiveStory = async function() {
     this.isArchived = true;
     this.archivedAt = new Date();
+    this.archiveType = 'manual'; // Mark as manual archive
+    await this.save();
+};
+
+// Method to auto-archive expired story (by system)
+StorySchema.methods.autoArchiveExpired = async function() {
+    this.isArchived = true;
+    this.archivedAt = new Date();
+    this.archiveType = 'auto'; // Mark as auto archive
     await this.save();
 };
 
 // Method to restore archived story (make it active again)
 StorySchema.methods.restoreStory = async function() {
+    // Only allow restore if story hasn't actually expired yet
+    const now = new Date();
+    const originalExpiry = this.expiresAt;
+    
+    // If story was auto-archived (expired), don't allow restore
+    if (originalExpiry && now > originalExpiry) {
+        throw new Error('Cannot restore expired story. Story has passed its 24-hour limit.');
+    }
+    
+    // If manually archived within 24h, allow restore without resetting timer
     this.isArchived = false;
     this.archivedAt = null;
-    this.expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // Reset 24h timer
+    // Keep original expiresAt - don't reset timer
     await this.save();
 };
 
@@ -462,7 +487,7 @@ StorySchema.statics.archiveExpiredStories = async function() {
     });
     
     for (const story of expiredStories) {
-        await story.archiveStory();
+        await story.autoArchiveExpired(); // Use auto-archive method
     }
     
     return expiredStories.length;
