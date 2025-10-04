@@ -14,16 +14,6 @@ import {
   Sparkles
 } from 'lucide-react';
 
-// TODO: Import your actual UI components from shadcn
-// import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
-// import { Button } from '../ui/Button';
-// import { Avatar } from '../ui/Avatar';
-// import { Badge } from '../ui/Badge';
-
-// TODO: Import your store
-// import { useAppStore } from '@/store/useAppStore';
-
-// Temporary mock components - replace with your actual shadcn components
 const Card = ({ children, className = "" }: any) => (
   <div className={`bg-card border rounded-lg shadow-sm ${className}`}>
     {children}
@@ -133,19 +123,7 @@ const SidebarLeft: React.FC = () => {
   const [activeItem, setActiveItem] = useState('home');
   const navigate = useNavigate();
 
-  // TODO: Get real user profile from your store
-  // const { profile, isConnected } = useAppStore();
-  
-  // Mock data - replace with real data from your store
-  const mockUserProfile = {
-    name: "John Doe",
-    handle: "@johndoe", 
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
-    followers: 1247,
-    following: 892,
-    posts: 156
-  };
-
+ 
   // TODO: Move to constants file or fetch from API
   const navigationItems = [
     { id: 'stories', icon: Sparkles, label: 'Stories', badge: null, route: '/stories' },
@@ -183,47 +161,7 @@ const SidebarLeft: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col p-4 space-y-4 overflow-y-auto">
-      {/* User Profile Card */}
-      {/* TODO: Create separate UserProfileCard component for reusability */}
-      <Card className="p-4">
-        <div className="flex items-center space-x-3">
-          <Avatar 
-            src={mockUserProfile.avatar}
-            alt={mockUserProfile.name}
-            fallback={mockUserProfile.name.split(' ').map(n => n[0]).join('')}
-          />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">
-              {mockUserProfile.name}
-            </p>
-            <p className="text-sm text-muted-foreground truncate">
-              {mockUserProfile.handle}
-            </p>
-          </div>
-        </div>
-        
-        {/* User Stats */}
-        <div className="flex justify-around mt-4 pt-4 border-t border-border">
-          <div className="text-center">
-            <div className="text-sm font-semibold text-foreground">
-              {formatNumber(mockUserProfile.posts)}
-            </div>
-            <div className="text-xs text-muted-foreground">Posts</div>
-          </div>
-          <div className="text-center">
-            <div className="text-sm font-semibold text-foreground">
-              {formatNumber(mockUserProfile.following)}
-            </div>
-            <div className="text-xs text-muted-foreground">Following</div>
-          </div>
-          <div className="text-center">
-            <div className="text-sm font-semibold text-foreground">
-              {formatNumber(mockUserProfile.followers)}
-            </div>
-            <div className="text-xs text-muted-foreground">Followers</div>
-          </div>
-        </div>
-      </Card>
+   
 
  {/* Navigation Menu */}
 <Card className="w-full max-h-[400px]">

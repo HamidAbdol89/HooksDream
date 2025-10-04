@@ -46,7 +46,11 @@ export const FloatingBubbleCanvas: React.FC<FloatingBubbleCanvasProps> = ({
 
   // Handle drag start
   const handleDragStart = useCallback((storyId: string, event: React.MouseEvent | React.TouchEvent) => {
-    event.preventDefault();
+    // Only prevent default for mouse events, not touch events
+    if (!('touches' in event)) {
+      event.preventDefault();
+    }
+    
     setIsDragging(storyId);
     
     const clientX = 'touches' in event ? event.touches[0].clientX : event.clientX;
@@ -107,7 +111,10 @@ export const FloatingBubbleCanvas: React.FC<FloatingBubbleCanvasProps> = ({
     if (isDragging) {
       const handleMouseMove = (e: MouseEvent) => handleDrag(e);
       const handleTouchMove = (e: TouchEvent) => {
-        e.preventDefault();
+        // Only prevent default if we can (not during active scroll)
+        if (e.cancelable) {
+          e.preventDefault();
+        }
         handleDrag(e);
       };
       

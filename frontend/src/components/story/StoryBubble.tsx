@@ -23,18 +23,19 @@ export const StoryBubble: React.FC<StoryBubbleProps> = ({
   isActive = false,
   isDragging = false,
   onClick,
-  onDragStart = () => {},
+  onDragStart,
   className = '',
   style = {},
   storyCount = 1
 }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [videoMuted, setVideoMuted] = useState(true);
+  const [isHovered, setIsHovered] = useState(false);
   const [currentContentIndex, setCurrentContentIndex] = useState(0);
-  const [badgePosition, setBadgePosition] = useState({ x: 0, y: 0 });
+  const [videoMuted, setVideoMuted] = useState(true);
+  const [touchStartTime, setTouchStartTime] = useState(0);
+  const [touchStartPos, setTouchStartPos] = useState({ x: 0, y: 0 });
   const bubbleRef = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<NodeJS.Timeout>();
-
 
   // Calculate bubble size based on story engagement and recency
   const calculateBubbleSize = () => {
@@ -146,22 +147,11 @@ export const StoryBubble: React.FC<StoryBubbleProps> = ({
       customStyle.background = `linear-gradient(135deg, ${colorTheme.primary}, ${colorTheme.secondary})`;
     } else if (story.visualEffects.bubbleStyle === 'neon') {
       customStyle.borderColor = colorTheme.accent;
-      customStyle.boxShadow = `0 0 20px ${colorTheme.accent}, inset 0 0 20px ${colorTheme.accent}20`;
     }
     
     return customStyle;
   };
 
-  // Calculate badge position based on bubble position - much closer to bubble
-  useEffect(() => {
-    if (bubbleRef.current && storyCount > 1) {
-      const rect = bubbleRef.current.getBoundingClientRect();
-      setBadgePosition({
-        x: rect.right - 12, // Much closer - more overlap
-        y: rect.top - 12    // Much closer - more overlap
-      });
-    }
-  }, [storyCount, bubbleSize, isActive]); // Remove bubbleRef from dependencies
 
   const dominantReaction = getDominantReaction();
 
@@ -205,21 +195,66 @@ export const StoryBubble: React.FC<StoryBubbleProps> = ({
         // Only start drag on long press or when dragging is intended
         const startTime = Date.now();
         const startDrag = () => {
-          if (Date.now() - startTime > 150) { // 150ms delay for drag
+          if (Date.now() - startTime > 150 && onDragStart) { // 150ms delay for drag
             onDragStart(e);
           }
         };
         setTimeout(startDrag, 150);
       }}
       onTouchStart={(e) => {
-        // Touch drag with delay
+        // Record touch start for gesture detection
+        const touch = e.touches[0];
         const startTime = Date.now();
-        const startDrag = () => {
-          if (Date.now() - startTime > 150) {
+        const startPos = { x: touch.clientX, y: touch.clientY };
+        
+        setTouchStartTime(startTime);
+        setTouchStartPos(startPos);
+        
+        // Don't prevent default - let browser handle scrolling
+        // Use a ref to track if we should start dragging
+        let shouldStartDrag = true;
+        
+        const dragTimeout = setTimeout(() => {
+          if (shouldStartDrag && onDragStart) {
             onDragStart(e);
           }
+        }, 150);
+        
+        // Store timeout ID to clear it if needed
+        const timeoutId = dragTimeout;
+        
+        // Clear timeout on touch end/cancel
+        const cleanup = () => {
+          clearTimeout(timeoutId);
+          shouldStartDrag = false;
         };
-        setTimeout(startDrag, 150);
+        
+        // Add temporary listeners to detect scroll gestures
+        const handleTouchMove = (moveEvent: TouchEvent) => {
+          const currentTouch = moveEvent.touches[0];
+          if (currentTouch) {
+            const deltaX = Math.abs(currentTouch.clientX - startPos.x);
+            const deltaY = Math.abs(currentTouch.clientY - startPos.y);
+            const timeDelta = Date.now() - startTime;
+            
+            // If significant movement (especially vertical) in short time, cancel drag
+            if ((deltaY > 15 || deltaX > 15) && timeDelta < 200) {
+              shouldStartDrag = false;
+              clearTimeout(timeoutId);
+            }
+          }
+        };
+        
+        const handleTouchEnd = () => {
+          cleanup();
+          document.removeEventListener('touchmove', handleTouchMove);
+          document.removeEventListener('touchend', handleTouchEnd);
+          document.removeEventListener('touchcancel', handleTouchEnd);
+        };
+        
+        document.addEventListener('touchmove', handleTouchMove, { passive: true });
+        document.addEventListener('touchend', handleTouchEnd, { passive: true });
+        document.addEventListener('touchcancel', handleTouchEnd, { passive: true });
       }}
     >
       {/* Story Content */}
@@ -329,6 +364,29 @@ export const StoryBubble: React.FC<StoryBubbleProps> = ({
             transition={{ duration: 0.2 }}
           />
         )}
+        
+        {/* Story Count Badge - Inside Bubble */}
+        {storyCount > 1 && (
+          <motion.div
+            className="absolute top-1 right-1 rounded-full px-1.5 py-0.5 min-w-[18px] h-[18px] flex items-center justify-center shadow-lg"
+            style={{
+              backgroundColor: getBadgeColor(),
+            }}
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            transition={{
+              type: "spring",
+              stiffness: 500,
+              damping: 15,
+              duration: 0.3
+            }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <span className="text-white text-xs font-bold leading-none">{storyCount}</span>
+          </motion.div>
+        )}
       </div>
       
       
@@ -369,30 +427,6 @@ export const StoryBubble: React.FC<StoryBubbleProps> = ({
       </AnimatePresence>
     </motion.div>
     
-    {/* Fixed Badge - Escapes overflow with motion */}
-    {storyCount > 1 && (
-      <motion.div
-        className="fixed rounded-full px-1.5 py-0.5 min-w-[18px] h-[18px] flex items-center justify-center z-[9999] shadow-lg pointer-events-none"
-        style={{
-          left: `${badgePosition.x}px`,
-          top: `${badgePosition.y}px`,
-          backgroundColor: getBadgeColor(),
-        }}
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0, opacity: 0 }}
-        transition={{
-          type: "spring",
-          stiffness: 500,
-          damping: 15,
-          duration: 0.3
-        }}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
-      >
-        <span className="text-white text-xs font-bold leading-none">{storyCount}</span>
-      </motion.div>
-    )}
   </>
   );
 };

@@ -636,7 +636,6 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
                     e.stopPropagation();
                     handleDeleteClick();
                   }}
-                  className="p-3 bg-red-600 hover:bg-red-700 rounded-full text-white transition-colors"
                 >
                   <Trash2 className="w-6 h-6" />
                 </button>

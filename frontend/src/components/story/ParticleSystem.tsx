@@ -242,12 +242,7 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
         ))}
       </AnimatePresence>
       
-      {/* Debug info (development only) */}
-      {process.env.NODE_ENV === 'development' && false && (
-        <div className="absolute top-0 left-0 bg-black/50 text-white text-xs p-1 rounded">
-          {type}: {particles.length}/{config.count}
-        </div>
-      )}
+     
     </div>
   );
 };

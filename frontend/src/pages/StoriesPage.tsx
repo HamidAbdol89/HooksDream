@@ -39,11 +39,34 @@ export const StoriesPage: React.FC = () => {
     replyToStory,
   } = useStories({ limit: 50 });
 
+  // Enhance stories with particle effects for demo
+  const enhancedStories = useMemo(() => {
+    return stories.map((story, index) => {
+      // Add particle effects to make stories more visually appealing
+      const particleTypes: Array<'sparkles' | 'bubbles' | 'stars' | 'hearts' | 'fire'> = 
+        ['sparkles', 'bubbles', 'stars', 'hearts', 'fire'];
+      
+      const enhancedStory = {
+        ...story,
+        visualEffects: {
+          ...story.visualEffects,
+          particles: {
+            enabled: true, // Enable particles for all stories
+            type: particleTypes[index % particleTypes.length], // Rotate through types
+            intensity: Math.floor(Math.random() * 5) + 3 // Random intensity 3-7
+          }
+        }
+      };
+      
+      return enhancedStory;
+    });
+  }, [stories]);
+
   // Group stories by user
   const groupedStories = useMemo(() => {
     const groups = new Map<string, Story[]>();
     
-    stories.forEach(story => {
+    enhancedStories.forEach(story => {
       const userId = story.userId._id;
       if (!groups.has(userId)) {
         groups.set(userId, []);
@@ -184,9 +207,17 @@ export const StoriesPage: React.FC = () => {
 
       {/* Main Canvas - Full Screen */}
       <FloatingBubbleCanvas
-        stories={groupedStories.map(group => ({
+        stories={groupedStories.map((group, index) => ({
           ...group.latestStory,
-          storyCount: group.totalStories
+          storyCount: group.totalStories,
+          // Ensure proper positioning for demo
+          position: {
+            x: 20 + (index * 25) % 60, // Spread horizontally
+            y: 20 + (index * 20) % 60, // Spread vertically  
+            z: Math.random() * 5,
+            velocity: { x: 0, y: 0 },
+            scale: 1
+          }
         }))}
         onStoryClick={handleUserBubbleClick}
         onPositionUpdate={() => {}} // Empty handler for now
