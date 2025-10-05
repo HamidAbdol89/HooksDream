@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 from services.unsplash_service import UnsplashService
 from services.bot_service import BotService
 from routers import bot_router, unsplash_router
-from config import settings
+from config import settings, get_host, get_port
 
 # Load environment variables
 load_dotenv()
@@ -57,7 +57,7 @@ app = FastAPI(
     title="HooksDream Python Backend",
     description="AI-powered social media automation and tools",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=Lifecycle
 )
 
 # CORS middleware
@@ -98,7 +98,7 @@ if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
         "main:app",
-        host=settings.HOST,
-        port=settings.PORT,
-        reload=settings.DEBUG
+        host=get_host(),
+        port=get_port(),
+        reload=settings.ENVIRONMENT == "development"
     )
