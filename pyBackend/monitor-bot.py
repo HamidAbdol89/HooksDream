@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Bot Monitoring Script
-Monitor your deployed bot on Render
+Monitor your deployed bot on Fly.io
 """
 
 import requests
@@ -10,7 +10,7 @@ import json
 from datetime import datetime
 import sys
 
-BOT_URL = "https://bothooksdream.onrender.com"
+BOT_URL = "https://hooksdream.fly.dev"
 BACKEND_URL = "https://just-solace-production.up.railway.app"
 
 def colored_print(message, color="white"):

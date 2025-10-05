@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Test Bot Deployment Script
-# Test your deployed bot on Render
+# Test your deployed bot on Fly.io
 
-BOT_URL="https://bothooksdream.onrender.com"
+BOT_URL="https://hooksdream.fly.dev"
 
-echo "🤖 Testing HooksDream Bot on Render"
+echo "🤖 Testing HooksDream Bot on Fly.io"
 echo "=================================="
 echo "🔗 Bot URL: $BOT_URL"
 echo ""

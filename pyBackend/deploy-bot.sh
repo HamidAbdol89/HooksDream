@@ -52,7 +52,25 @@ deploy_railway() {
     echo "🌍 Environment: production"
 }
 
-# Function to deploy to Render
+# Function to deploy to Fly.io
+deploy_flyio() {
+    echo "🚀 Deploying Python Bot to Fly.io..."
+    echo "📋 Steps for Fly.io deployment:"
+    echo "1. Install flyctl: curl -L https://fly.io/install.sh | sh"
+    echo "2. Login: flyctl auth login"
+    echo "3. Launch app: flyctl launch"
+    echo "4. Set environment variables:"
+    echo "   flyctl secrets set NODE_BACKEND_URL=$NODE_BACKEND_URL"
+    echo "   flyctl secrets set UNSPLASH_ACCESS_KEY=$UNSPLASH_ACCESS_KEY"
+    echo "   flyctl secrets set BOT_ENABLED=true"
+    echo "   flyctl secrets set BOT_INTERVAL_MINUTES=30"
+    echo "   flyctl secrets set BOT_POSTS_PER_RUN=3"
+    echo "5. Deploy: flyctl deploy"
+    echo ""
+    echo "✅ Your bot will be available at: https://your-app-name.fly.dev"
+}
+
+# Function to deploy to Render (legacy)
 deploy_render() {
     echo "🎨 Deploying Python Bot to Render..."
     echo "📋 Manual steps for Render:"
@@ -139,18 +157,19 @@ show_menu() {
     echo "Choose deployment option:"
     echo "1) Test connection to existing backend"
     echo "2) Run bot locally with Docker"
-    echo "3) Deploy to Railway (Recommended for bots)"
-    echo "4) Deploy to Render"
-    echo "5) Deploy to Heroku"
-    echo "6) Stop local bot"
-    echo "7) Exit"
+    echo "3) Deploy to Fly.io (Recommended)"
+    echo "4) Deploy to Railway"
+    echo "5) Deploy to Render (Legacy)"
+    echo "6) Deploy to Heroku"
+    echo "7) Stop local bot"
+    echo "8) Exit"
     echo ""
 }
 
 # Main menu
 while true; do
     show_menu
-    read -p "Enter your choice (1-7): " choice
+    read -p "Enter your choice (1-8): " choice
     
     case $choice in
         1)
@@ -161,26 +180,30 @@ while true; do
             break
             ;;
         3)
-            deploy_railway
+            deploy_flyio
             break
             ;;
         4)
-            deploy_render
+            deploy_railway
             break
             ;;
         5)
-            deploy_heroku
+            deploy_render
             break
             ;;
         6)
-            stop_local
+            deploy_heroku
+            break
             ;;
         7)
+            stop_local
+            ;;
+        8)
             echo "👋 Goodbye!"
             exit 0
             ;;
         *)
-            echo "❌ Invalid option. Please choose 1-7."
+            echo "❌ Invalid option. Please choose 1-8."
             ;;
     esac
 done
