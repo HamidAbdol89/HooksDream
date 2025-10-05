@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     # Unsplash API
     UNSPLASH_ACCESS_KEY: str = ""
     
+    # Google Gemini API (free tier)
+    GEMINI_API_KEY: str = ""  # Get free API key from https://makersuite.google.com/app/apikey
+    AI_ENABLED: bool = True  # Always enabled with free alternatives
+    
     # Bot configuration
     BOT_ENABLED: bool = True
     BOT_INTERVAL_MINUTES: int = 30

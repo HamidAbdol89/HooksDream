@@ -8,25 +8,34 @@ import asyncio
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 import json
-import os
-from dataclasses import dataclass, asdict
 import uuid
+from dataclasses import dataclass, field, asdict
 
 @dataclass
 class BotProfile:
-    """Bot profile with personality and history"""
     id: str
-    username: str
     name: str
+    username: str
+    personality_type: str  # Photographer, traveler, artist, lifestyle, tech, foodie
     bio: str
-    specialty: str
-    personality_type: str
     avatar_style: str
+    interests: List[str]
+    posting_style: str
     created_at: datetime
-    last_post_at: Optional[datetime] = None
-    post_count: int = 0
     engagement_score: float = 0.0
+    post_count: int = 0
+    last_post_at: Optional[datetime] = None
     is_active: bool = True
+    
+    # GPT-enhanced personality traits
+    writing_tone: str = field(default="friendly")
+    content_focus: List[str] = field(default_factory=list)
+    emoji_style: str = field(default="moderate")  # minimal, moderate, expressive
+    hashtag_strategy: str = field(default="relevant")  # minimal, relevant, trending
+    
+    def __post_init__(self):
+        if not self.content_focus:
+            self.content_focus = self.interests[:3]  # Top 3 interests
     
     def to_dict(self) -> Dict:
         data = asdict(self)

@@ -6,16 +6,16 @@ Handles intelligent content creation with multiple images and advanced strategie
 import random
 import asyncio
 from typing import Dict, List, Optional, Tuple
-from datetime import datetime
-import pytz
-from services.ai_bot_manager import BotProfile
+from services.unsplash_service import UnsplashService
+from services.ai_bot_manager import BotProfile, AIBotManager
+from services.gpt_service import GPTService
 
 class SmartContentGenerator:
     """Advanced content generation with multi-image support"""
     
-    def __init__(self, unsplash_service):
+    def __init__(self, unsplash_service: UnsplashService):
         self.unsplash_service = unsplash_service
-        
+        self.gpt_service = GPTService()
     async def generate_smart_post(self, bot_profile: BotProfile, topic: str = None) -> Dict:
         """Generate intelligent post with multiple images"""
         
@@ -274,7 +274,23 @@ class SmartContentGenerator:
         return additions
     
     async def _generate_smart_caption(self, photo: Dict, topic: str, bot_profile: BotProfile) -> str:
-        """Generate smart single-image caption"""
+        """Generate smart single-image caption using GPT or fallback"""
+        
+        # Try GPT first for intelligent captions
+        gpt_caption = await self.gpt_service.generate_smart_caption(
+            bot_profile, photo, topic
+        )
+        
+        if gpt_caption:
+            print(f"✨ GPT caption generated for {bot_profile.name}: {gpt_caption[:50]}...")
+            return gpt_caption
+        
+        # Fallback to template-based captions
+        print(f"⚠️ Using fallback caption for {bot_profile.name}")
+        return self._generate_fallback_caption(photo, topic, bot_profile)
+    
+    def _generate_fallback_caption(self, photo: Dict, topic: str, bot_profile: BotProfile) -> str:
+        """Generate fallback caption using templates"""
         
         # Analyze image for context
         analysis = self._analyze_image_context(photo)
