@@ -11,6 +11,9 @@ from services.unsplash_service import UnsplashService
 from services.bot_profile import BotProfile  # Simple bot profile for AI captions
 from services.gpt_service import GPTService
 from services.image_tracker import global_image_tracker
+from services.mood_context_service import mood_context_service
+from services.event_aware_service import event_aware_service
+from services.bot_memory_service import bot_memory_service
 
 class SmartContentGenerator:
     
@@ -83,23 +86,53 @@ class SmartContentGenerator:
             return None
     
     async def _generate_text_only_post(self, bot_account: Dict, topic: str) -> Dict:
-        """Generate text-only post using AI for natural, engaging content"""
+        """Generate text-only post using AI with advanced context awareness"""
         try:
-            # Generate AI-powered text content
-            text_content = await self.gpt_service.generate_text_only_post(bot_account, topic)
+            bot_id = bot_account.get('_id', 'unknown')
+            
+            # Get current context (time, mood, events)
+            context = mood_context_service.get_current_context()
+            
+            # Check memory for thought continuation
+            memory = bot_memory_service.get_bot_memory(bot_id)
+            
+            # Generate enhanced prompt with all context layers
+            base_prompt = mood_context_service.generate_mood_based_prompt(bot_account, topic, context)
+            event_enhanced_prompt = event_aware_service.enhance_prompt_with_events(base_prompt, bot_account)
+            final_prompt = bot_memory_service.enhance_prompt_with_memory(bot_id, topic, event_enhanced_prompt)
+            
+            # Generate AI-powered text content with enhanced context
+            text_content = await self.gpt_service.generate_enhanced_text_post(
+                bot_account, topic, final_prompt, context
+            )
             
             if not text_content:
-                # Fallback to template-based text
-                text_content = self._generate_template_text_post(bot_account, topic)
+                # Fallback to template-based text with context
+                text_content = self._generate_context_aware_template(bot_account, topic, context)
             
-            # Return text-only post data
-            return {
+            # Check for repetition before finalizing
+            if not bot_memory_service.should_allow_post(bot_id, text_content):
+                print(f"🔄 Content too similar to recent posts, regenerating...")
+                # Try template fallback
+                text_content = self._generate_context_aware_template(bot_account, topic, context)
+            
+            # Create post data with enhanced metadata
+            post_data = {
                 "content": text_content,
                 "images": [],  # No images for text-only posts
                 "bot_account": bot_account,
                 "topic": topic,
-                "post_type": "text_only"
+                "post_type": "text_only",
+                "mood": context.get('mood', 'balanced'),
+                "time_context": context['time_context'].value,
+                "day_context": context['day_context'].value,
+                "events_referenced": event_aware_service.get_current_events()
             }
+            
+            # Add to bot memory
+            bot_memory_service.add_post_to_memory(bot_id, post_data)
+            
+            return post_data
             
         except Exception as e:
             print(f"❌ Error generating text-only post for {bot_account.get('displayName', 'Unknown')}: {str(e)}")
@@ -171,6 +204,82 @@ class SmartContentGenerator:
         hashtags = self._generate_text_post_hashtags(bot_type, topic, interests)
         
         return f"{base_text}\n\n{hashtags}"
+    
+    def _generate_context_aware_template(self, bot_account: Dict, topic: str, context: Dict) -> str:
+        """Generate context-aware template with time/mood/event awareness"""
+        
+        bot_type = bot_account.get('botType', 'lifestyle')
+        display_name = bot_account.get('displayName', 'AI Creator')
+        time_context = context['time_context'].value
+        is_weekend = context['is_weekend']
+        
+        # Time-aware templates
+        time_templates = {
+            'early_morning': [
+                f"🌅 Early morning thoughts about {topic}... There's something peaceful about starting the day with clarity.",
+                f"☕ 5am reflections: {topic} hits different when the world is still quiet.",
+                f"🌄 Dawn inspiration about {topic}. The best ideas come when your mind is fresh."
+            ],
+            'morning': [
+                f"🌞 Good morning! Starting the day thinking about {topic}. Ready to make things happen!",
+                f"☕ Morning energy is real! {topic} is exactly what I needed to focus on today.",
+                f"🚀 Monday motivation: {topic} is going to be a game-changer this week!"
+            ],
+            'evening': [
+                f"🌅 Evening reflection: {topic} taught me something important today.",
+                f"🍷 Winding down with thoughts about {topic}. Grateful for today's insights.",
+                f"🌙 Tonight I'm thinking about {topic} and how it connects to everything else."
+            ],
+            'late_night': [
+                f"🌙 2am thoughts: {topic} is keeping me up, but in the best way possible.",
+                f"⭐ Late night creativity hitting different. {topic} just sparked something amazing.",
+                f"🌌 Can't sleep because {topic} opened up a whole new perspective."
+            ]
+        }
+        
+        # Weekend vs weekday adjustment
+        if is_weekend:
+            weekend_templates = [
+                f"🌿 Weekend vibes: {topic} feels more relaxed and inspiring today.",
+                f"😌 Saturday thoughts about {topic}. Love having time to really think deeply.",
+                f"🏖️ Sunday reflection: {topic} hits different when you're not rushing."
+            ]
+            time_templates[time_context].extend(weekend_templates)
+        
+        # Get appropriate templates
+        templates = time_templates.get(time_context, time_templates['morning'])
+        base_text = random.choice(templates)
+        
+        # Add context-aware hashtags
+        hashtags = self._generate_context_hashtags(bot_type, topic, context)
+        
+        return f"{base_text}\n\n{hashtags}"
+    
+    def _generate_context_hashtags(self, bot_type: str, topic: str, context: Dict) -> str:
+        """Generate hashtags based on context"""
+        
+        base_tags = self._generate_text_post_hashtags(bot_type, topic, [])
+        
+        # Add time-based hashtags
+        time_context = context['time_context'].value
+        time_hashtags = {
+            'early_morning': ['#EarlyBird', '#MorningThoughts'],
+            'morning': ['#MondayMotivation', '#MorningEnergy'],
+            'evening': ['#EveningReflection', '#Grateful'],
+            'late_night': ['#LateNightThoughts', '#Insomnia']
+        }
+        
+        # Add weekend hashtags
+        if context['is_weekend']:
+            time_hashtags[time_context] = time_hashtags.get(time_context, []) + ['#WeekendVibes', '#ChillMode']
+        
+        # Combine hashtags
+        context_tags = time_hashtags.get(time_context, [])
+        if context_tags:
+            selected_context_tags = random.sample(context_tags, min(2, len(context_tags)))
+            base_tags += ' ' + ' '.join(selected_context_tags)
+        
+        return base_tags
     
     def _generate_text_post_hashtags(self, bot_type: str, topic: str, interests: list) -> str:
         """Generate hashtags for text-only posts"""

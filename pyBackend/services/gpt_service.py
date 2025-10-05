@@ -215,8 +215,24 @@ Requirements:
         
         return ' '.join(selected_tags)
     
+    async def generate_enhanced_text_post(self, bot_account: Dict, topic: str, enhanced_prompt: str, context: Dict) -> Optional[str]:
+        """Generate AI-powered text-only post with enhanced context"""
+        
+        try:
+            if self.groq_key:
+                ai_text = await self._try_groq_enhanced_text_post(enhanced_prompt, context)
+                if ai_text:
+                    return ai_text
+            
+            # Fallback handled by smart_content_generator
+            return None
+            
+        except Exception as e:
+            print(f"⚠️ Error generating enhanced text post: {e}")
+            return None
+    
     async def generate_text_only_post(self, bot_account: Dict, topic: str) -> Optional[str]:
-        """Generate AI-powered text-only post using Groq"""
+        """Generate AI-powered text-only post using Groq (legacy method)"""
         
         try:
             if self.groq_key:
@@ -308,6 +324,78 @@ Examples of good text posts:
             print(f"⚠️ Groq text generation unavailable: {e}")
         
         return None
+    
+    async def _try_groq_enhanced_text_post(self, enhanced_prompt: str, context: Dict) -> Optional[str]:
+        """Generate enhanced text post using Groq AI with full context"""
+        try:
+            # Use the enhanced prompt directly (already contains all context)
+            payload = {
+                "model": "llama-3.1-8b-instant",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": enhanced_prompt
+                    }
+                ],
+                "temperature": 0.85,  # Higher creativity for context-aware posts
+                "max_tokens": 250,    # Slightly more tokens for richer content
+                "top_p": 0.9
+            }
+            
+            # Call Groq API
+            async with httpx.AsyncClient(timeout=12.0) as client:
+                response = await client.post(
+                    self.groq_api_url,
+                    json=payload,
+                    headers={
+                        "Authorization": f"Bearer {self.groq_key}",
+                        "Content-Type": "application/json"
+                    }
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    
+                    if 'choices' in result and len(result['choices']) > 0:
+                        choice = result['choices'][0]
+                        if 'message' in choice and 'content' in choice['message']:
+                            generated_text = choice['message']['content'].strip()
+                            
+                            if generated_text:
+                                text_post = self._clean_enhanced_text_post(generated_text, context)
+                                print(f"✨ Enhanced Groq AI text post generated: {text_post[:50]}...")
+                                return text_post
+                else:
+                    print(f"⚠️ Groq API error: {response.status_code} - {response.text}")
+                
+        except Exception as e:
+            print(f"⚠️ Enhanced Groq text generation unavailable: {e}")
+        
+        return None
+    
+    def _clean_enhanced_text_post(self, text: str, context: Dict) -> str:
+        """Clean and format enhanced Groq-generated text post"""
+        
+        # Standard cleaning
+        text = self._clean_text_post(text)
+        
+        # Add context-aware enhancements if missing
+        time_context = context.get('time_context')
+        if time_context and not any(emoji in text for emoji in ['🌅', '☕', '🌙', '⭐', '🌞']):
+            # Add time-appropriate emoji if missing
+            time_emojis = {
+                'early_morning': '🌅',
+                'morning': '☕',
+                'evening': '🌅',
+                'late_night': '🌙'
+            }
+            
+            if hasattr(time_context, 'value'):
+                emoji = time_emojis.get(time_context.value, '')
+                if emoji and not text.startswith(emoji):
+                    text = f"{emoji} {text}"
+        
+        return text
     
     def _clean_text_post(self, text: str) -> str:
         """Clean and format Groq-generated text post"""
