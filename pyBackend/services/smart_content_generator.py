@@ -125,7 +125,8 @@ class SmartContentGenerator:
                 "post_type": f"image_post_{num_images}_images",
                 "mood": "creative",
                 "time_context": "general",
-                "events_referenced": []
+                "events_referenced": [],
+                "bot_account": bot_account  # Add bot_account for backend processing
             }
             
         except Exception as e:
@@ -229,6 +230,9 @@ class SmartContentGenerator:
             multimedia_content = await multimedia_expansion_service.enhance_post_with_media(bot_account, topic, text_content)
             if multimedia_content:
                 post_data["multimedia"] = multimedia_content
+            
+            # Add bot_account back to post_data for backend processing
+            post_data["bot_account"] = bot_account
             
             # Add to bot memory
             bot_memory_service.add_post_to_memory(bot_id, post_data)
