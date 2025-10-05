@@ -5,6 +5,7 @@ FastAPI server for social media automation and AI features
 
 import os
 import asyncio
+from datetime import datetime
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -93,21 +94,24 @@ app.include_router(unsplash_router.router, prefix="/api/unsplash", tags=["Unspla
 @app.get("/")
 async def root():
     """Health check endpoint"""
-    return {
-        "message": "HooksDream Python Backend",
-        "status": "running",
-        "version": "1.0.0",
-        "bot_enabled": settings.BOT_ENABLED
-    }
+    return {"message": "HooksDream Python Backend is running!", "status": "healthy"}
 
 @app.get("/health")
 async def health_check():
-    """Detailed health check"""
+    """Health check endpoint to prevent Fly.io autostop"""
+    global bot_service, hybrid_image_service
+    
+    bot_status = "running" if bot_service and bot_service.is_running else "stopped"
+    
     return {
         "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "bot_service": bot_status,
+        "hybrid_images": "available" if hybrid_image_service else "unavailable",
         "services": {
-            "unsplash": unsplash_service is not None,
-            "bot": bot_service is not None and settings.BOT_ENABLED
+            "unsplash": "available" if unsplash_service else "unavailable",
+            "pexels": "available",
+            "bot_scheduler": bot_status
         }
     }
 

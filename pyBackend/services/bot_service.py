@@ -695,18 +695,25 @@ class BotService:
         """Get bots that should be active at the current hour"""
         active_bots = []
         
+        # Default active hours (peak social media times)
+        default_hours = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
+        
         for bot in all_bots:
-            # Get bot's preferred posting hours
+            # Get bot's preferred posting hours (fallback to default if not set)
             schedule = bot.get('schedule', {})
-            preferred_hours = schedule.get('preferredHours', [9, 12, 15, 18, 21])
+            preferred_hours = schedule.get('preferredHours', default_hours)
             
             # Check if current hour is in bot's preferred hours
             if current_hour in preferred_hours:
                 # Additional randomness - bot might not post every preferred hour
-                activity_level = bot.get('personality', {}).get('activityLevel', 0.5)
+                personality = bot.get('personality', {})
+                activity_level = personality.get('activityLevel', 0.7)  # Higher default for more posts
+                
                 if random.random() < activity_level:
                     active_bots.append(bot)
+                    print(f"🤖 {bot.get('displayName', 'Bot')} is active at hour {current_hour}")
         
+        print(f"📊 {len(active_bots)}/{len(all_bots)} bots active at hour {current_hour}")
         return active_bots
     
     def _calculate_smart_interval(self) -> int:
