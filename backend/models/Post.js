@@ -172,6 +172,27 @@ const PostSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    // Bot-generated content
+    isBot: {
+        type: Boolean,
+        default: false,
+        index: true
+    },
+    botMetadata: {
+        createdBy: {
+            type: String, // 'python_bot', 'ai_assistant', etc.
+        },
+        topic: {
+            type: String, // 'nature', 'technology', etc.
+        },
+        photoData: {
+            type: mongoose.Schema.Types.Mixed, // Unsplash photo metadata
+        },
+        createdAt: {
+            type: Date,
+            default: Date.now
+        }
+    },
     createdAt: {
         type: Date,
         default: Date.now

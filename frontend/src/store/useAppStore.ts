@@ -63,6 +63,13 @@ export type Profile = {
   createdAt?: string | Date;
   updatedAt?: string | Date;
   lastLoginAt?: string | Date;
+  // Special badge for bot users
+  specialBadge?: {
+    type: string;
+    icon: string;
+    color: string;
+    label: string;
+  };
 };
 
 export type User = {

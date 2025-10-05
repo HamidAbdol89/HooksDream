@@ -1,0 +1,54 @@
+"""
+Configuration settings for HooksDream Python Backend
+"""
+
+import os
+from pydantic_settings import BaseSettings
+from typing import Optional
+
+class Settings(BaseSettings):
+    # Environment
+    ENVIRONMENT: str = "development"
+    
+    # Node.js backend URL
+    NODE_BACKEND_URL: str = "http://localhost:5000"
+    
+    # Unsplash API
+    UNSPLASH_ACCESS_KEY: str = ""
+    
+    # Bot configuration
+    BOT_ENABLED: bool = True
+    BOT_INTERVAL_MINUTES: int = 30
+    BOT_POSTS_PER_RUN: int = 3
+    
+    # Server configuration
+    LOCAL_PORT: int = 8001
+    LOCAL_HOST: str = "0.0.0.0"
+    PORT: int = 8001
+    
+    class Config:
+        # Load different env files based on environment
+        env_file = ".env"
+        
+    def __init__(self, **kwargs):
+        # Check if we're in production and load appropriate env file
+        env = os.getenv("ENVIRONMENT", "development")
+        if env == "production" and os.path.exists(".env.production"):
+            self.Config.env_file = ".env.production"
+        super().__init__(**kwargs)
+
+settings = Settings()
+
+# Helper function to get the correct port
+def get_port():
+    """Get port based on environment"""
+    if settings.ENVIRONMENT == "production":
+        return int(os.getenv("PORT", settings.PORT))
+    return settings.LOCAL_PORT
+
+# Helper function to get the correct host
+def get_host():
+    """Get host based on environment"""
+    if settings.ENVIRONMENT == "production":
+        return "0.0.0.0"
+    return settings.LOCAL_HOST

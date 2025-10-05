@@ -88,6 +88,20 @@ phone: {
         type: Boolean,
         default: false
     },
+    isBot: {
+        type: Boolean,
+        default: false,
+        index: true
+    },
+    specialBadge: {
+        type: {
+            type: String,
+            enum: ['creator', 'explorer', 'artist', 'influencer', 'innovator', 'expert', 'pioneer']
+        },
+        icon: String,
+        color: String,
+        label: String
+    },
     followerCount: {
         type: Number,
         default: 0

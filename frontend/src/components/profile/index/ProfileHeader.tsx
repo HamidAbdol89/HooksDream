@@ -81,17 +81,31 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           </div>
         )}
 
-        {/* Display Name & Verified - Primary */}
+        {/* Display Name & Badges - Primary */}
         <div className="flex items-center gap-2 mb-1">
           <h1 className="text-xl sm:text-2xl font-bold text-foreground">
             {user.displayName || user.username}
           </h1>
+          {/* Verified badge for real users */}
           {user.isVerified && (
             <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
               <span className="text-white text-xs font-bold">✓</span>
             </div>
           )}
         </div>
+        
+        {/* Special badge for bot users */}
+        {user.specialBadge && (
+          <div className="mb-2">
+            <span 
+              className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full text-white font-medium shadow-lg"
+              style={{ backgroundColor: user.specialBadge.color }}
+            >
+              <span className="text-base">{user.specialBadge.icon}</span>
+              <span>{user.specialBadge.label}</span>
+            </span>
+          </div>
+        )}
 
         {/* Username - Subtle */}
         <p className="text-sm text-muted-foreground mb-4 text-center font-medium">

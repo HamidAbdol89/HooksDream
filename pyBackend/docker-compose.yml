@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  # Python AI Bot Backend only
+  python-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hooksdream-python-bot
+    restart: unless-stopped
+    environment:
+      NODE_BACKEND_URL: ${NODE_BACKEND_URL:-http://your-existing-backend.com}
+      UNSPLASH_ACCESS_KEY: ${UNSPLASH_ACCESS_KEY}
+      BOT_ENABLED: "true"
+      BOT_INTERVAL_MINUTES: 30
+      BOT_POSTS_PER_RUN: 3
+    ports:
+      - "8001:8001"
+    volumes:
+      - bot_data:/app/data
+    networks:
+      - bot-network
+
+volumes:
+  bot_data:
+    driver: local
+
+networks:
+  bot-network:
+    driver: bridge

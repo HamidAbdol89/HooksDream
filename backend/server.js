@@ -152,6 +152,7 @@ const chatRoutes = require('./routes/chat');
 const searchRoutes = require('./routes/search');
 const storyRoutes = require('./routes/storyRoutes');
 const friendDiscoveryRoutes = require('./routes/friendDiscovery');
+const botRoutes = require('./routes/botRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -163,6 +164,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/stories', storyRoutes);
 app.use('/api/discovery', friendDiscoveryRoutes);
+app.use('/api/bot', botRoutes);
 // Xử lý lỗi
 app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Something went wrong!' });
@@ -186,6 +188,7 @@ const commentController = require('./controllers/commentController');
 const postController = require('./controllers/postController');
 const notificationController = require('./controllers/notificationController');
 const storyController = require('./controllers/storyController');
+const botController = require('./controllers/botController');
 
 likeController.setSocketServer(socketServer);
 followController.setSocketServer(socketServer);
@@ -193,6 +196,7 @@ commentController.setSocketServer(socketServer);
 postController.setSocketServer(socketServer);
 notificationController.setSocketServer(socketServer);
 storyController.setSocketServer(socketServer);
+botController.setSocketServer(socketServer);
 
 // Khởi động server
 const PORT = process.env.PORT || (process.env.NODE_ENV === 'development' ? 5000 : 8080);

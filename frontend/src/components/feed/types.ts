@@ -1,8 +1,6 @@
 // src/components/feed/types.ts
 import { UserProfile } from '@/hooks/useSocial';
 
-// src/components/feed/types.ts
-
 // ĐẢM BẢO CẤU TRÚC KHỚP VỚI @/types/post
 export interface Post {
   _id: string;
@@ -12,6 +10,7 @@ export interface Post {
     displayName: string;
     avatar: string;
     isFollowing?: boolean;
+    isVerified?: boolean;
     // THÊM CÁC FIELD KHÁC NẾU CẦN ĐỂ KHỚP VỚI @/types/post
     bio?: string;
     location?: string;
@@ -28,6 +27,13 @@ export interface Post {
     createdAt?: string;
     updatedAt?: string;
     lastLoginAt?: string;
+    // Special badge for bot users
+    specialBadge?: {
+      type: string;
+      icon: string;
+      color: string;
+      label: string;
+    };
   };
   content: string;
   likeCount: number;
