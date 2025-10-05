@@ -35,9 +35,14 @@ class SmartContentGenerator:
         """Generate post content for real user"""
         try:
             # Get images from Unsplash
-            photos = await self.unsplash_service.search_photos(topic, per_page=num_images)
+            search_result = await self.unsplash_service.search_photos(topic, per_page=num_images)
+            photos = search_result.get('results', []) if search_result else []
+            
             if not photos:
-                return None
+                # Fallback to random photos if search fails
+                photos = await self.unsplash_service.get_random_photos(count=num_images, query=topic)
+                if not photos:
+                    return None
             
             # Create bot profile using bot account data
             bot_profile = BotProfile(
@@ -69,7 +74,8 @@ class SmartContentGenerator:
             }
             
         except Exception as e:
-            print(f"❌ Error generating post for real user: {e}")
+            print(f"❌ Error generating post for bot account {bot_account.get('displayName', 'Unknown')}: {str(e)}")
+            print(f"   Topic: {topic}, Images requested: {num_images}")
             return None
     
     def _select_random_topic(self) -> str:
