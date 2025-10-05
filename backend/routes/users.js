@@ -40,7 +40,19 @@ router.put('/profile/:hashId', updateLimiter, upload.fields([
     { name: 'avatar', maxCount: 1 },
     { name: 'coverImage', maxCount: 1 }
 ]), userController.updateProfile);
-router.post('/:userId/follow', authMiddleware, followController.followUser); // ✅ THÊM authMiddleware
+// Bot-aware middleware for follow actions
+const botAwareAuth = (req, res, next) => {
+    // Check if this is a bot request with X-Bot-ID header
+    if (req.headers['x-bot-id']) {
+        // Skip auth for bot requests
+        req.userId = req.headers['x-bot-id']; // Set userId from bot header
+        return next();
+    }
+    // Use normal auth for regular users
+    return authMiddleware(req, res, next);
+};
+
+router.post('/:userId/follow', botAwareAuth, followController.followUser); // ✅ Bot-aware auth
 router.get('/:userId/follow/status', authMiddleware, followController.checkFollowStatus); // ✅ THÊM route mới
 router.get('/:userId/stats', userController.getUserStats);
 router.get('/:userId/following', optionalAuth, followController.getFollowing); // ✅ THÊM optionalAuth

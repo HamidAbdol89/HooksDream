@@ -21,7 +21,18 @@ router.get('/trending', optionalAuth, postController.getTrendingPosts); // MOVED
 router.get('/search', optionalAuth, postController.searchPosts); // MOVED UP
 router.get('/user/:userId', optionalAuth, postController.getUserPosts); // MOVED UP
 
-router.post('/', authMiddleware, async (req, res, next) => {
+// Bot-aware middleware for post creation
+const botAwareAuth = (req, res, next) => {
+    // Check if this is a bot request with userId in body
+    if (req.body.userId && req.body.bot_metadata) {
+        // Skip auth for bot requests, but validate userId exists
+        return next();
+    }
+    // Use normal auth for regular users
+    return authMiddleware(req, res, next);
+};
+
+router.post('/', botAwareAuth, async (req, res, next) => {
     try {
         // Call original createPost controller
         await postController.createPost(req, res, next);
@@ -41,8 +52,20 @@ router.get('/:id/likes', optionalAuth, postController.getPostLikes);
 // Repost route
 router.post('/:id/repost', authMiddleware, postController.repostPost);
 
+// Bot-aware middleware for likes (reuse from above)
+const botAwareLikeAuth = (req, res, next) => {
+    // Check if this is a bot request with X-Bot-ID header
+    if (req.headers['x-bot-id']) {
+        // Skip auth for bot requests
+        req.userId = req.headers['x-bot-id']; // Set userId from bot header
+        return next();
+    }
+    // Use normal auth for regular users
+    return authMiddleware(req, res, next);
+};
+
 // Like routes with Socket.IO
-router.post('/:id/like', authMiddleware, async (req, res, next) => {
+router.post('/:id/like', botAwareLikeAuth, async (req, res, next) => {
     try {
         // Call original like controller
         await likeController.toggleLike(req, res, () => {
@@ -74,7 +97,7 @@ router.post('/:id/like', authMiddleware, async (req, res, next) => {
 
 // Comment routes
 router.get('/:id/comments', optionalAuth, commentController.getComments);
-router.post('/:id/comments', authMiddleware, commentController.createComment);
+router.post('/:id/comments', botAwareLikeAuth, commentController.createComment); // Use same bot-aware auth
 
 // Comment action routes
 router.post('/:postId/comments/:commentId/like', authMiddleware, async (req, res) => {
