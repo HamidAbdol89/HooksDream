@@ -177,8 +177,12 @@ async function createBotAccounts() {
 
             // Create new bot account
             const botUser = new User({
+                _id: `bot_${botData.username}_${Date.now()}`, // Required custom _id
+                googleId: `bot_google_${botData.username}_${Date.now()}`, // Required googleId for bots
                 ...botData,
+                isBot: true, // Mark as bot account
                 isVerified: true, // Mark as verified
+                isSetupComplete: true, // Setup complete
                 followerCount: Math.floor(Math.random() * 1000) + 100, // Random followers 100-1100
                 followingCount: Math.floor(Math.random() * 200) + 50,   // Random following 50-250
                 postCount: 0, // Will be updated as bot posts

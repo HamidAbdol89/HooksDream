@@ -22,35 +22,46 @@ class GPTService:
         else:
             print("⚠️ No Groq API key found, using enhanced templates only")
     
-    async def generate_smart_caption(
-        self, 
-        bot_profile: BotProfile, 
-        photo_data: Dict, 
-        topic: str
-    ) -> Optional[str]:
-        """Generate intelligent caption using Groq AI or enhanced templates"""
+    async def generate_professional_caption(self, bot_account: Dict, topic: str, photo_data: Optional[Dict] = None) -> str:
+        """Generate professional caption based on bot's expertise"""
         
         try:
             # Try Groq API first (fastest)
             if self.groq_key:
-                ai_caption = await self._try_groq_caption(bot_profile, photo_data, topic)
+                ai_caption = await self._try_groq_caption(bot_account, topic, photo_data)
                 if ai_caption:
                     return ai_caption
             
             # Fallback to enhanced smart templates
-            return self._generate_enhanced_caption(bot_profile, photo_data, topic)
-                
+            return self._generate_professional_template_caption(bot_account, topic)
+            
         except Exception as e:
-            print(f"❌ AI caption generation failed: {e}")
-            return self._fallback_caption(bot_profile, topic)
+            print(f"⚠️ Error generating caption: {e}")
+            return self._fallback_caption(bot_account, topic)
     
-    async def _try_groq_caption(self, bot_profile: BotProfile, photo_data: Dict, topic: str) -> Optional[str]:
+    async def _try_groq_caption(self, bot_account: Dict, topic: str, photo_data: Optional[Dict] = None) -> Optional[str]:
         """Try Groq API for caption generation (OpenAI-compatible)"""
         try:
-            # Create simple prompt for Groq
-            prompt = f"Write a {bot_profile.personality_type} style Instagram caption about {topic}. Include emojis and hashtags. Keep it under 280 characters."
+            # Create professional prompt based on bot's expertise
+            bot_type = bot_account.get('botType', 'lifestyle')
+            display_name = bot_account.get('displayName', 'AI Creator')
+            bio = bot_account.get('bio', '')
+            interests = bot_account.get('interests', [])
             
-            # Groq API payload (OpenAI format)
+            # Create context-aware prompt
+            prompt = f"""You are {display_name}, a {bot_type} expert. {bio}
+            
+Create an Instagram caption about {topic} in your professional style.
+Interests: {', '.join(interests) if interests else 'general'}
+
+Requirements:
+- Write in first person as {display_name}
+- Show your {bot_type} expertise
+- Include relevant emojis
+- Add 3-5 relevant hashtags
+- Keep under 280 characters
+- Be authentic and engaging"""
+            
             payload = {
                 "model": "llama-3.1-8b-instant",  # Fast Groq model
                 "messages": [
@@ -96,6 +107,56 @@ class GPTService:
         
         return None
     
+    def _generate_professional_template_caption(self, bot_account: Dict, topic: str) -> str:
+        """Generate professional caption using templates based on bot expertise"""
+        
+        bot_type = bot_account.get('botType', 'lifestyle')
+        display_name = bot_account.get('displayName', 'AI Creator')
+        interests = bot_account.get('interests', [])
+        
+        # Professional templates by bot type
+        templates = {
+            'tech': [
+                f"🚀 Excited to share insights about {topic}! Innovation never stops amazing me.",
+                f"💻 Working on {topic} projects that could change everything. The future is now!",
+                f"⚡ {topic} is revolutionizing how we think about technology. What's your take?"
+            ],
+            'photographer': [
+                f"📸 Captured this incredible {topic} moment. Light and composition came together perfectly!",
+                f"🌅 {topic} photography session today. Every frame tells a story worth sharing.",
+                f"✨ When {topic} meets the golden hour magic. This is why I love what I do!"
+            ],
+            'artist': [
+                f"🎨 Creating art inspired by {topic}. Every brushstroke carries emotion and meaning.",
+                f"✨ {topic} sparked my creativity today. Art is how we make sense of the world.",
+                f"🌈 Exploring {topic} through colors and textures. Art speaks what words cannot."
+            ],
+            'traveler': [
+                f"✈️ Discovering {topic} in this amazing destination. Travel opens minds and hearts!",
+                f"🌍 {topic} adventure today! Every journey teaches us something new about ourselves.",
+                f"🗺️ Found this incredible {topic} spot off the beaten path. Hidden gems everywhere!"
+            ],
+            'lifestyle': [
+                f"🌱 Embracing {topic} as part of mindful living. Small changes, big impact!",
+                f"✨ {topic} moments like these remind me what truly matters in life.",
+                f"💫 Finding balance through {topic}. Wellness is a journey, not a destination."
+            ],
+            'nature': [
+                f"🌿 Witnessed incredible {topic} in the wild today. Nature never ceases to amaze!",
+                f"🦋 {topic} conservation is so important. Every small action makes a difference.",
+                f"🌊 {topic} reminds us of our connection to the natural world. Protect what we love!"
+            ]
+        }
+        
+        # Get templates for bot type
+        bot_templates = templates.get(bot_type, templates['lifestyle'])
+        base_caption = random.choice(bot_templates)
+        
+        # Add relevant hashtags
+        hashtags = self._generate_professional_hashtags(bot_type, topic, interests)
+        
+        return f"{base_caption}\n\n{hashtags}"
+    
     def _clean_groq_caption(self, text: str) -> str:
         """Clean and format Groq-generated caption"""
         
@@ -121,6 +182,43 @@ class GPTService:
             text += basic_hashtags
         
         return text
+    
+    def _generate_professional_hashtags(self, bot_type: str, topic: str, interests: list) -> str:
+        """Generate professional hashtags based on bot expertise"""
+        
+        # Base hashtags by bot type
+        type_hashtags = {
+            'tech': ['#technology', '#innovation', '#coding', '#AI', '#startup', '#developer'],
+            'photographer': ['#photography', '#photooftheday', '#capture', '#moment', '#art', '#visual'],
+            'artist': ['#art', '#creative', '#design', '#inspiration', '#artistic', '#creativity'],
+            'traveler': ['#travel', '#adventure', '#explore', '#wanderlust', '#journey', '#discover'],
+            'lifestyle': ['#lifestyle', '#wellness', '#mindful', '#balance', '#selfcare', '#healthy'],
+            'nature': ['#nature', '#wildlife', '#conservation', '#earth', '#natural', '#environment']
+        }
+        
+        # Get base hashtags
+        base_tags = type_hashtags.get(bot_type, ['#inspiration', '#life'])
+        
+        # Add topic-specific hashtags
+        topic_tag = f"#{topic.replace(' ', '').lower()}"
+        if topic_tag not in base_tags:
+            base_tags.append(topic_tag)
+        
+        # Add interest-based hashtags
+        for interest in interests[:2]:  # Limit to 2 interests
+            interest_tag = f"#{interest.replace(' ', '').lower()}"
+            if interest_tag not in base_tags and len(base_tags) < 8:
+                base_tags.append(interest_tag)
+        
+        # Select 5-7 hashtags
+        selected_tags = base_tags[:random.randint(5, 7)]
+        
+        return ' '.join(selected_tags)
+    
+    def _fallback_caption(self, bot_account: Dict, topic: str) -> str:
+        """Generate simple fallback caption"""
+        display_name = bot_account.get('displayName', 'AI Creator')
+        return f"Beautiful {topic} moment ✨ Sharing some inspiration today! #{topic} #beautiful #inspiration"
     
     def _generate_enhanced_caption(self, bot_profile: BotProfile, photo_data: Dict, topic: str) -> str:
         """Generate enhanced captions using smart templates"""
