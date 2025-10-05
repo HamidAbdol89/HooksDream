@@ -6,12 +6,11 @@ Creates posts with Unsplash images and sends to Node.js backend
 import asyncio
 import random
 import httpx
-from datetime import datetime
-from typing import List, Dict, Optional
-from config import settings
+from datetime import datetime, timedelta
+from typing import List, Dict, Optional, Tuple
 from services.unsplash_service import UnsplashService
-# Removed AIBotManager - using real users now
 from services.smart_content_generator import SmartContentGenerator
+from config import settings
 from services.bot_interaction_service import BotInteractionService
 
 class BotService:
@@ -603,18 +602,8 @@ class BotService:
             
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.post(
-                    f"{self.node_backend_url}/api/posts",  # Use regular posts endpoint
-                    json={
-                        "content": post_data["content"],
-                        "images": post_data["images"],
-                        "userId": bot_account["_id"],  # Use bot account ID
-                        "bot_metadata": {
-                            "generated_by": "python_bot",
-                            "topic": post_data["topic"],
-                            "post_type": post_data.get("post_type", "single_image"),
-                            "bot_type": bot_account.get("botType", "lifestyle")
-                        }
-                    },
+                    f"{self.node_backend_url}/api/bot/create-post",  # Use bot-specific endpoint
+                    json=post_data,  # Send the entire post_data as formatted by smart_content_generator
                     headers={
                         "Content-Type": "application/json"
                     }
@@ -627,31 +616,81 @@ class BotService:
             print(f"❌ Error sending post to backend: {e}")
             return None
     
-    async def _get_random_bot_account(self) -> Optional[Dict]:
-        """Get a random BOT account (not real user) from Node.js backend database"""
+    async def _get_all_bot_accounts(self) -> List[Dict]:
+        """Get all bot accounts from Node.js backend"""
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
                 response = await client.get(
-                    f"{self.node_backend_url}/api/users?isBot=true&limit=1&random=true",
+                    f"{self.node_backend_url}/api/users?isBot=true&limit=50",
                     headers={"Content-Type": "application/json"}
                 )
                 
                 if response.status_code == 200:
                     result = response.json()
                     if result.get('success') and result.get('data'):
-                        bot_data = result['data']
-                        print(f"🤖 Selected bot account: {bot_data.get('displayName', 'Unknown')} (@{bot_data.get('username', 'unknown')})")
-                        return bot_data
+                        bot_accounts = result['data']
+                        print(f"🤖 Found {len(bot_accounts)} bot accounts")
+                        return bot_accounts
                     else:
-                        print(f"⚠️ No bot account data in response")
-                        return None
+                        print(f"⚠️ No bot accounts found, using fallback")
+                        return self._get_fallback_bot_accounts()
                 else:
-                    print(f"⚠️ Failed to get bot account: {response.status_code}")
-                    return None
+                    print(f"⚠️ Failed to get bot accounts: {response.status_code}, using fallback")
+                    return self._get_fallback_bot_accounts()
                     
         except Exception as e:
-            print(f"❌ Error fetching bot account: {e}")
-            return None
+            print(f"❌ Error getting bot accounts: {e}, using fallback")
+            return self._get_fallback_bot_accounts()
+    
+    def _get_fallback_bot_accounts(self) -> List[Dict]:
+        """Fallback bot accounts if backend is unavailable"""
+        return [
+            {
+                "_id": "bot_sarah_chen",
+                "username": "sarah_chen_ai",
+                "displayName": "Sarah Chen",
+                "bio": "Software Engineer passionate about AI",
+                "botType": "tech",
+                "interests": ["technology", "coding", "innovation"],
+                "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=sarah"
+            },
+            {
+                "_id": "bot_james_photo",
+                "username": "james_photographer",
+                "displayName": "James Thompson",
+                "bio": "Professional Photographer capturing life's moments",
+                "botType": "photographer", 
+                "interests": ["photography", "art", "travel"],
+                "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=james"
+            },
+            {
+                "_id": "bot_maya_lifestyle",
+                "username": "maya_wellness",
+                "displayName": "Maya Patel",
+                "bio": "Wellness coach and mindfulness advocate",
+                "botType": "lifestyle",
+                "interests": ["wellness", "mindfulness", "health"],
+                "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=maya"
+            },
+            {
+                "_id": "bot_ahmed_ai",
+                "username": "ahmed_hassan_ai",
+                "displayName": "Ahmed Hassan",
+                "bio": "AI Researcher passionate about machine learning",
+                "botType": "tech",
+                "interests": ["artificial intelligence", "research", "ethics"],
+                "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=ahmed"
+            },
+            {
+                "_id": "bot_halima_community",
+                "username": "halima_said_community",
+                "displayName": "Halima Said",
+                "bio": "Community leader and social advocate",
+                "botType": "lifestyle",
+                "interests": ["community", "leadership", "social justice"],
+                "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=halima"
+            }
+        ]
     
     def _get_active_bots_for_hour(self, all_bots: List[Dict], current_hour: int) -> List[Dict]:
         """Get bots that should be active at the current hour"""
@@ -671,20 +710,11 @@ class BotService:
         
         return active_bots
     
-    async def _get_all_bot_accounts(self) -> List[Dict]:
-        """Get all bot accounts from backend"""
-        try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                response = await client.get(
-                    f"{self.node_backend_url}/api/users?isBot=true&limit=50",
-                    headers={"Content-Type": "application/json"}
-                )
-                
-                if response.status_code == 200:
-                    result = response.json()
-                    return result.get('data', [])
-                return []
-                
-        except Exception as e:
-            print(f"❌ Error fetching all bot accounts: {e}")
-            return []
+    def _calculate_smart_interval(self) -> int:
+        """Calculate smart interval between checks"""
+        # For testing, use shorter intervals
+        base_interval = settings.BOT_INTERVAL_MINUTES * 60  # Convert to seconds
+        
+        # Add some randomness (±20%)
+        variation = int(base_interval * 0.2)
+        return base_interval + random.randint(-variation, variation)

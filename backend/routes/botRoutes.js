@@ -9,7 +9,8 @@ const {
   createBotPost, 
   getBotStats, 
   deleteBotPost, 
-  updateBotUser 
+  updateBotUser,
+  getBotHealthDashboard
 } = require('../controllers/botController');
 
 // Create post from Python bot
@@ -23,5 +24,8 @@ router.delete('/posts/:postId', deleteBotPost);
 
 // Update bot user profile
 router.put('/users/:username', updateBotUser);
+
+// Get bot health dashboard
+router.get('/health-dashboard', getBotHealthDashboard);
 
 module.exports = router;

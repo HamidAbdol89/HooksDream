@@ -14,6 +14,11 @@ from services.image_tracker import global_image_tracker
 from services.mood_context_service import mood_context_service
 from services.event_aware_service import event_aware_service
 from services.bot_memory_service import bot_memory_service
+from services.personality_evolution_service import personality_evolution_service
+from services.social_graph_service import social_graph_service
+from services.multimedia_expansion_service import multimedia_expansion_service
+from services.engagement_strategy_service import engagement_strategy_service
+from services.health_monitoring_service import health_monitoring_service
 
 class SmartContentGenerator:
     
@@ -21,29 +26,57 @@ class SmartContentGenerator:
         self.unsplash_service = unsplash_service
         self.gpt_service = GPTService()
         
+        # Initialize multimedia service with Unsplash key
+        if hasattr(unsplash_service, 'access_key'):
+            multimedia_expansion_service.set_unsplash_key(unsplash_service.access_key)
+        
     async def generate_smart_post_for_bot_account(self, bot_account: Dict) -> Optional[Dict]:
-        """Generate smart post content for bot account based on their expertise"""
-        # Select topic based on bot's expertise and interests
-        topic = self._select_smart_topic_for_bot(bot_account)
+        """Generate smart post content for bot account with full ecosystem integration"""
         
-        # Decide post type: 70% with images, 30% text-only for natural variety
-        post_type_chance = random.random()
+        bot_id = bot_account.get('_id', 'unknown')
+        start_time = datetime.now()
         
-        if post_type_chance < 0.3:  # 30% chance for text-only posts
-            print(f"📝 Generating text-only post for {bot_account.get('displayName')}")
-            return await self._generate_text_only_post(bot_account, topic)
-        else:  # 70% chance for image posts
-            # Determine number of images based on bot type
-            bot_type = bot_account.get('botType', 'lifestyle')
-            if bot_type == 'photographer':
-                num_images = random.randint(1, 4)  # Photographers post more images
-            elif bot_type == 'artist':
-                num_images = random.randint(1, 3)  # Artists showcase their work
-            else:
-                num_images = random.randint(1, 2)  # Others post fewer images
+        try:
+            # Register bot in social graph and health monitoring
+            social_graph_service.register_bot(bot_account)
+            health_monitoring_service.record_bot_post(bot_id)
             
-            print(f"📸 Generating image post for {bot_account.get('displayName')}")
-            return await self._generate_post_for_bot_account(bot_account, topic, num_images)
+            # Select topic based on bot's expertise and interests
+            topic = self._select_smart_topic_for_bot(bot_account)
+            
+            # Decide post type: 70% with images, 30% text-only for natural variety
+            post_type_chance = random.random()
+            
+            if post_type_chance < 0.3:  # 30% chance for text-only posts
+                print(f"📝 Generating text-only post for {bot_account.get('displayName')}")
+                post_result = await self._generate_text_only_post(bot_account, topic)
+            else:  # 70% chance for image posts
+                # Determine number of images based on bot type
+                bot_type = bot_account.get('botType', 'lifestyle')
+                if bot_type == 'photographer':
+                    num_images = random.randint(1, 4)  # Photographers post more images
+                elif bot_type == 'artist':
+                    num_images = random.randint(1, 3)  # Artists showcase their work
+                else:
+                    num_images = random.randint(1, 2)  # Others post fewer images
+                
+                print(f"📸 Generating image post for {bot_account.get('displayName')}")
+                post_result = await self._generate_post_for_bot_account(bot_account, topic, num_images)
+            
+            # Record API call metrics
+            response_time = (datetime.now() - start_time).total_seconds() * 1000
+            health_monitoring_service.record_api_call(bot_id, response_time, post_result is not None)
+            
+            return post_result
+            
+        except Exception as e:
+            # Record failed API call
+            response_time = (datetime.now() - start_time).total_seconds() * 1000
+            health_monitoring_service.record_api_call(bot_id, response_time, False)
+            health_monitoring_service.create_alert('error', f"Post generation failed for {bot_account.get('displayName')}: {str(e)}", bot_id)
+            
+            print(f"❌ Error generating post for {bot_account.get('displayName')}: {str(e)}")
+            return None
     
     async def _generate_post_for_bot_account(self, bot_account: Dict, topic: str, num_images: int) -> Dict:
         try:
@@ -72,12 +105,24 @@ class SmartContentGenerator:
                 photos[0] if photos else None
             )
             
-            # Return post data
+            # Return post data in format expected by Node.js backend
             return {
-                "content": caption or f" Beautiful {topic} moment ✨ #{topic} #photography",
-                "bot_account": bot_account,
-                "topic": topic,
-                "post_type": f"bot_account_{num_images}_images"
+                "content": caption or f"Beautiful {topic} moment ✨ #{topic} #photography",
+                "images": [photo.get('urls', {}).get('regular', '') for photo in photos],
+                "bot_metadata": {
+                    "bot_user": {
+                        "username": bot_account.get('username', 'bot'),
+                        "name": bot_account.get('displayName', 'Bot'),
+                        "bio": bot_account.get('bio', 'AI Content Creator'),
+                        "avatar": bot_account.get('avatar', '')
+                    },
+                    "topic": topic,
+                    "photo_data": photos
+                },
+                "post_type": f"image_post_{num_images}_images",
+                "mood": "creative",
+                "time_context": "general",
+                "events_referenced": []
             }
             
         except Exception as e:
@@ -86,20 +131,47 @@ class SmartContentGenerator:
             return None
     
     async def _generate_text_only_post(self, bot_account: Dict, topic: str) -> Dict:
-        """Generate text-only post using AI with advanced context awareness"""
+        """Generate text-only post using AI with advanced context awareness and personality evolution"""
         try:
             bot_id = bot_account.get('_id', 'unknown')
+            bot_type = bot_account.get('botType', 'lifestyle')
+            interests = bot_account.get('interests', [])
+            
+            # Initialize or get personality evolution
+            personality = personality_evolution_service.get_bot_personality(bot_id, bot_type, interests)
             
             # Get current context (time, mood, events)
             context = mood_context_service.get_current_context()
             
-            # Check memory for thought continuation
+            # Check memory for thought continuation and gather evolution data
             memory = bot_memory_service.get_bot_memory(bot_id)
             
-            # Generate enhanced prompt with all context layers
+            # Prepare evolution trigger data
+            recent_posts = memory.get_recent_posts(10)
+            recent_topics = [post['topic'] for post in recent_posts]
+            
+            evolution_trigger_data = {
+                'recent_topics': recent_topics,
+                'engagement_data': {
+                    'avg_likes': random.randint(2, 15),  # Simulated for now
+                    'avg_comments': random.randint(0, 5),
+                    'follower_growth': random.randint(-2, 8)
+                }
+            }
+            
+            # Trigger personality evolution
+            evolution_result = personality_evolution_service.evolve_bot_personality(bot_id, evolution_trigger_data)
+            if evolution_result:
+                print(f"🧬 {bot_account.get('displayName')} evolved: {', '.join(evolution_result['reasons'])}")
+            
+            # Generate enhanced prompt with all context layers including personality
             base_prompt = mood_context_service.generate_mood_based_prompt(bot_account, topic, context)
             event_enhanced_prompt = event_aware_service.enhance_prompt_with_events(base_prompt, bot_account)
-            final_prompt = bot_memory_service.enhance_prompt_with_memory(bot_id, topic, event_enhanced_prompt)
+            memory_enhanced_prompt = bot_memory_service.enhance_prompt_with_memory(bot_id, topic, event_enhanced_prompt)
+            
+            # Add personality evolution context
+            personality_context = personality_evolution_service.get_personality_prompt_enhancement(bot_id)
+            final_prompt = f"{memory_enhanced_prompt}\n\nPERSONALITY CONTEXT:\n{personality_context}"
             
             # Generate AI-powered text content with enhanced context
             text_content = await self.gpt_service.generate_enhanced_text_post(
@@ -116,18 +188,44 @@ class SmartContentGenerator:
                 # Try template fallback
                 text_content = self._generate_context_aware_template(bot_account, topic, context)
             
-            # Create post data with enhanced metadata
+            # Create post data in format expected by Node.js backend
             post_data = {
                 "content": text_content,
                 "images": [],  # No images for text-only posts
-                "bot_account": bot_account,
-                "topic": topic,
+                "bot_metadata": {
+                    "bot_user": {
+                        "username": bot_account.get('username', 'bot'),
+                        "name": bot_account.get('displayName', 'Bot'),
+                        "bio": bot_account.get('bio', 'AI Content Creator'),
+                        "avatar": bot_account.get('avatar', '')
+                    },
+                    "topic": topic,
+                    "photo_data": []
+                },
                 "post_type": "text_only",
                 "mood": context.get('mood', 'balanced'),
                 "time_context": context['time_context'].value,
                 "day_context": context['day_context'].value,
                 "events_referenced": event_aware_service.get_current_events()
             }
+            
+            # Add social context if available
+            social_context = social_graph_service.enhance_post_with_social_context(bot_id, topic, text_content)
+            if social_context != text_content:
+                text_content = social_context
+                post_data["content"] = text_content
+                print(f"🤝 Added social context for {bot_account.get('displayName')}")
+            
+            # Add engagement hooks
+            enhanced_content = engagement_strategy_service.enhance_post_with_engagement(bot_account, topic, text_content)
+            if enhanced_content != text_content:
+                text_content = enhanced_content
+                post_data["content"] = text_content
+            
+            # Try to generate multimedia content
+            multimedia_content = await multimedia_expansion_service.enhance_post_with_media(bot_account, topic, text_content)
+            if multimedia_content:
+                post_data["multimedia"] = multimedia_content
             
             # Add to bot memory
             bot_memory_service.add_post_to_memory(bot_id, post_data)
