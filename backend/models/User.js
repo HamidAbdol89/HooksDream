@@ -93,6 +93,11 @@ phone: {
         default: false,
         index: true
     },
+    botType: {
+        type: String,
+        enum: ['photographer', 'traveler', 'tech', 'lifestyle', 'nature', 'artist'],
+        required: function() { return this.isBot; }
+    },
     specialBadge: {
         type: {
             type: String,

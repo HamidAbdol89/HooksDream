@@ -10,8 +10,9 @@ from datetime import datetime
 from typing import List, Dict, Optional
 from config import settings
 from services.unsplash_service import UnsplashService
-from services.ai_bot_manager import AIBotManager
+# Removed AIBotManager - using real users now
 from services.smart_content_generator import SmartContentGenerator
+from services.bot_interaction_service import BotInteractionService
 
 class BotService:
     def __init__(self, unsplash_service: UnsplashService):
@@ -20,9 +21,9 @@ class BotService:
         self.is_running = False
         self.scheduler_task = None
         
-        # Initialize AI systems
-        self.bot_manager = AIBotManager()
+        # Initialize services
         self.content_generator = SmartContentGenerator(unsplash_service)
+        self.interaction_service = BotInteractionService(self.node_backend_url)
     
     async def start_scheduler(self):
         """Start the automated posting scheduler"""
@@ -31,7 +32,12 @@ class BotService:
         
         self.is_running = True
         self.scheduler_task = asyncio.create_task(self._scheduler_loop())
+        
+        # Start interaction service
+        asyncio.create_task(self.interaction_service.start_interaction_scheduler())
+        
         print(f"🤖 Bot scheduler started - posting every {settings.BOT_INTERVAL_MINUTES} minutes")
+        print(f"🤝 Bot interaction service started")
     
     async def stop_scheduler(self):
         """Stop the automated posting scheduler"""
@@ -69,42 +75,36 @@ class BotService:
                 await asyncio.sleep(60)  # Wait 1 minute before retry
     
     async def create_automated_posts(self) -> List[Dict]:
-        """Create automated posts with AI-powered content generation"""
+        """Create automated posts with smart time distribution"""
         try:
-            # Check if we should create new bots
-            if self.bot_manager.should_create_new_bot():
-                new_bot = self.bot_manager.create_new_bot()
-                print(f"🆕 Created new bot: {new_bot.name} (@{new_bot.username})")
+            # Get all bot accounts for smart scheduling
+            all_bots = await self._get_all_bot_accounts()
+            if not all_bots:
+                print("⚠️ No bot accounts available")
+                return []
             
-            # Smart posting: 1-3 posts per run with different bots
-            num_posts = random.randint(1, min(3, settings.BOT_POSTS_PER_RUN))
-            print(f"🤖 Creating {num_posts} AI-powered posts...")
+            # Smart posting based on time and bot schedules
+            current_hour = datetime.now().hour
+            active_bots = self._get_active_bots_for_hour(all_bots, current_hour)
+            
+            if not active_bots:
+                print(f"⏰ No bots scheduled to post at hour {current_hour}")
+                return []
+            
+            # Limit posts per cycle to avoid spam (max 5 posts per 30min)
+            max_posts = min(5, len(active_bots))
+            selected_bots = random.sample(active_bots, min(max_posts, len(active_bots)))
+            
+            print(f"🤖 Creating posts with {len(selected_bots)} bot accounts at hour {current_hour}")
             
             created_posts = []
-            used_bots = set()  # Track used bots to avoid duplicates
             
-            for i in range(num_posts):
-                # Select bot for posting (avoid recently used bots)
-                available_bots = [bot for bot in self.bot_manager.get_active_bots() 
-                                if bot.id not in used_bots]
-                
-                if not available_bots:
-                    # If all bots used, create new one or use any bot
-                    if len(used_bots) < 5:  # Create new if we have few bots
-                        bot_profile = self.bot_manager.create_new_bot()
-                    else:
-                        bot_profile = self.bot_manager.select_bot_for_posting()
-                else:
-                    # Select from available bots
-                    bot_profile = random.choice(available_bots)
-                
-                used_bots.add(bot_profile.id)
-                
-                # Generate smart content with multiple images
-                post_data = await self.content_generator.generate_smart_post(bot_profile)
+            for i, bot_account in enumerate(selected_bots):
+                # Generate smart content for bot account
+                post_data = await self.content_generator.generate_smart_post_for_bot_account(bot_account)
                 
                 if not post_data:
-                    print(f"⚠️ Failed to generate content for {bot_profile.name}")
+                    print(f"⚠️ Failed to generate content for {bot_account.get('displayName', 'Bot')}")
                     continue
                 
                 # Send to Node.js backend
@@ -112,26 +112,23 @@ class BotService:
                 
                 if result:
                     created_posts.append(result)
-                    self.bot_manager.update_bot_activity(bot_profile.id, True)
                     
                     image_count = len(post_data.get('images', []))
-                    print(f"✅ {bot_profile.name}: {image_count} image(s) - {post_data['content'][:50]}...")
+                    bot_name = bot_account.get('displayName', 'Bot')
+                    print(f"✅ {bot_name}: {image_count} image(s) - {post_data['content'][:50]}...")
                 else:
-                    print(f"❌ Failed to create post for {bot_profile.name}")
-                    self.bot_manager.update_bot_activity(bot_profile.id, False)
+                    print(f"❌ Failed to create post for {bot_account.get('displayName', 'Bot')}")
                 
-                # Smart delay between posts (1-3 minutes for different bots)
+                # Smart delay between posts (1-3 minutes)
                 delay = random.randint(60, 180)
                 print(f"⏱️ Waiting {delay} seconds before next post...")
                 await asyncio.sleep(delay)
             
-            # Cleanup inactive bots occasionally
-            if random.random() < 0.1:  # 10% chance
-                self.bot_manager.cleanup_inactive_bots()
-            
             # Print statistics
-            stats = self.bot_manager.get_stats()
-            print(f"🎉 Created {len(created_posts)} posts | Active bots: {stats['active_bots']} | Total posts: {stats['total_posts']}")
+            print(f"🎉 Created {len(created_posts)} posts using bot accounts")
+            
+            # Cleanup old interaction history
+            self.interaction_service.cleanup_old_interactions()
             
             return created_posts
             
@@ -596,12 +593,12 @@ class BotService:
         return color_map.get(hex_color.upper())
     
     async def _send_post_to_backend(self, post_data: Dict) -> Optional[Dict]:
-        """Send generated post to Node.js backend using REAL USER"""
+        """Send generated post to Node.js backend using real user"""
         try:
-            # Get a random real user from database instead of fake bot
-            real_user = await self._get_random_real_user()
-            if not real_user:
-                print("❌ No real users found in database")
+            # Extract bot account from post_data
+            bot_account = post_data.get("bot_account")
+            if not bot_account:
+                print("❌ No bot account data in post_data")
                 return None
             
             async with httpx.AsyncClient(timeout=30.0) as client:
@@ -610,17 +607,16 @@ class BotService:
                     json={
                         "content": post_data["content"],
                         "images": post_data["images"],
-                        "userId": real_user["_id"],  # Use real user ID
+                        "userId": bot_account["_id"],  # Use bot account ID
                         "bot_metadata": {
                             "generated_by": "python_bot",
                             "topic": post_data["topic"],
                             "post_type": post_data.get("post_type", "single_image"),
-                            "photo_data": post_data.get("photo_data", {})
+                            "bot_type": bot_account.get("botType", "lifestyle")
                         }
                     },
                     headers={
-                        "Content-Type": "application/json",
-                        "Authorization": f"Bearer {real_user.get('token', '')}"  # If needed
+                        "Content-Type": "application/json"
                     }
                 )
                 
@@ -631,8 +627,8 @@ class BotService:
             print(f"❌ Error sending post to backend: {e}")
             return None
     
-    async def _get_random_real_user(self) -> Optional[Dict]:
-        """Get a random real user from Node.js backend database"""
+    async def _get_random_bot_account(self) -> Optional[Dict]:
+        """Get a random bot account from Node.js backend database"""
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
                 response = await client.get(
@@ -641,43 +637,54 @@ class BotService:
                 )
                 
                 if response.status_code == 200:
-                    user_data = response.json()
-                    print(f"🎯 Selected real user: {user_data.get('displayName', 'Unknown')} (@{user_data.get('username', 'unknown')})")
-                    return user_data
+                    result = response.json()
+                    if result.get('success') and result.get('data'):
+                        bot_data = result['data']
+                        print(f"🤖 Selected bot account: {bot_data.get('displayName', 'Unknown')} (@{bot_data.get('username', 'unknown')})")
+                        return bot_data
+                    else:
+                        print(f"⚠️ No bot account data in response")
+                        return None
                 else:
-                    print(f"⚠️ Failed to get random user: {response.status_code}")
+                    print(f"⚠️ Failed to get bot account: {response.status_code}")
                     return None
                     
         except Exception as e:
-            print(f"❌ Error fetching random user: {e}")
+            print(f"❌ Error fetching bot account: {e}")
             return None
     
-    async def create_single_post(self, topic: Optional[str] = None) -> Optional[Dict]:
-        """Create a single post manually (for testing or manual triggers)"""
+    def _get_active_bots_for_hour(self, all_bots: List[Dict], current_hour: int) -> List[Dict]:
+        """Get bots that should be active at the current hour"""
+        active_bots = []
+        
+        for bot in all_bots:
+            # Get bot's preferred posting hours
+            schedule = bot.get('schedule', {})
+            preferred_hours = schedule.get('preferredHours', [9, 12, 15, 18, 21])
+            
+            # Check if current hour is in bot's preferred hours
+            if current_hour in preferred_hours:
+                # Additional randomness - bot might not post every preferred hour
+                activity_level = bot.get('personality', {}).get('activityLevel', 0.5)
+                if random.random() < activity_level:
+                    active_bots.append(bot)
+        
+        return active_bots
+    
+    async def _get_all_bot_accounts(self) -> List[Dict]:
+        """Get all bot accounts from backend"""
         try:
-            # Select or create bot using AI bot manager
-            bot_profile = self.bot_manager.select_bot_for_posting(topic)
-            if not bot_profile:
-                bot_profile = self.bot_manager.create_new_bot()
-            
-            # Generate smart content using AI content generator
-            post_data = await self.content_generator.generate_smart_post(bot_profile, topic)
-            
-            if not post_data:
-                print(f"⚠️ Failed to generate content for {bot_profile.name}")
-                return None
-            
-            # Send to Node.js backend
-            result = await self._send_post_to_backend(post_data)
-            
-            if result:
-                self.bot_manager.update_bot_activity(bot_profile.id, True)
-                print(f"✅ Manual post created by {bot_profile.name}")
-                return result
-            else:
-                print(f"❌ Failed to create manual post for {bot_profile.name}")
-                return None
-            
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(
+                    f"{self.node_backend_url}/api/users?isBot=true&limit=50",
+                    headers={"Content-Type": "application/json"}
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    return result.get('data', [])
+                return []
+                
         except Exception as e:
-            print(f"❌ Error creating single post: {e}")
-            return None
+            print(f"❌ Error fetching all bot accounts: {e}")
+            return []

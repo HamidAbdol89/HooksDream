@@ -441,13 +441,14 @@ exports.deleteUser = async (req, res) => {
     }
 };
 
-// Get random user for bot posting
+// Get random bot account for automated posting
 exports.getRandomUserForBot = async (req, res) => {
     try {
-        // Get random active user from database
-        const randomUser = await User.aggregate([
+        // Get random bot account (not real users)
+        const randomBot = await User.aggregate([
             { 
                 $match: { 
+                    isBot: true,  // Only bot accounts
                     isDeleted: { $ne: true },
                     $or: [
                         { isDeleted: { $exists: false } },
@@ -458,28 +459,30 @@ exports.getRandomUserForBot = async (req, res) => {
             { $sample: { size: 1 } }
         ]);
         
-        if (randomUser.length === 0) {
+        if (randomBot.length === 0) {
             return res.status(404).json(
-                createResponse(false, 'No users found for bot posting', null, null, 404)
+                createResponse(false, 'No bot accounts found for posting', null, null, 404)
             );
         }
         
-        const user = randomUser[0];
+        const botUser = randomBot[0];
         
-        // Return user data needed for bot posting
+        // Return bot account data needed for posting
         const botUserData = {
-            _id: user._id,
-            username: user.username,
-            displayName: user.displayName,
-            email: user.email,
-            avatar: user.avatar,
-            isActive: !user.isDeleted
+            _id: botUser._id,
+            username: botUser.username,
+            displayName: botUser.displayName,
+            email: botUser.email,
+            avatar: botUser.avatar,
+            botType: botUser.botType,
+            isBot: true,
+            isActive: !botUser.isDeleted
         };
         
-        res.json(createResponse(true, 'Random user selected for bot posting', botUserData));
+        res.json(createResponse(true, 'Random bot account selected for posting', botUserData));
         
     } catch (error) {
-        console.error('Error getting random user for bot:', error);
+        console.error('Error getting random bot account:', error);
         res.status(500).json(
             createResponse(false, 'Internal server error', null, null, 500)
         );

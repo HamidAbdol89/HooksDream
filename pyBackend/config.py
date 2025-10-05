@@ -16,9 +16,9 @@ class Settings(BaseSettings):
     # Unsplash API
     UNSPLASH_ACCESS_KEY: str = ""
     
-    # Google Gemini API (free tier)
-    GEMINI_API_KEY: str = ""  # Get free API key from https://makersuite.google.com/app/apikey
-    AI_ENABLED: bool = True  # Always enabled with free alternatives
+    # Groq AI API (fast inference)
+    GROQ_API_KEY: str = ""  # Get free API key from https://console.groq.com (100 req/day)
+    AI_ENABLED: bool = True  # Always enabled with Groq + templatesives
     
     # Bot configuration
     BOT_ENABLED: bool = True
