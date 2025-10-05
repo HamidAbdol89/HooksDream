@@ -35,8 +35,9 @@ async def run_bot_interactions():
     except Exception as e:
         print(f"❌ Error running interactions: {e}")
     
-    print("\n📊 Check your Railway backend to see bot likes/comments!")
-    print("🔗 https://just-solace-production.up.railway.app")
+    print("\n📊 Check your backend to see bot likes/comments!")
+    print("🔗 Node.js Backend:", node_backend_url)
+    print("🔗 Python Backend: https://hooks-dream-bot.vercel.app")
 
 async def main():
     """Main function"""
