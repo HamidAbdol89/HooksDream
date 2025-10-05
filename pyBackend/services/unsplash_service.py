@@ -5,6 +5,7 @@ Handles fetching images from Unsplash API
 
 import httpx
 import random
+import asyncio
 from typing import List, Dict, Optional
 from config import settings
 
@@ -16,6 +17,25 @@ class UnsplashService:
             "Authorization": f"Client-ID {self.access_key}",
             "Accept-Version": "v1"
         }
+        self.rate_limit_reset_time = None
+        self.consecutive_errors = 0
+    
+    async def _handle_rate_limit(self, response: httpx.Response) -> bool:
+        """Handle rate limit response and implement backoff"""
+        if response.status_code == 403:
+            self.consecutive_errors += 1
+            
+            # Exponential backoff: 2^errors seconds, max 300 seconds (5 minutes)
+            backoff_time = min(2 ** self.consecutive_errors, 300)
+            
+            print(f"🚨 Unsplash API rate limited. Backing off for {backoff_time} seconds...")
+            await asyncio.sleep(backoff_time)
+            return True
+        elif response.status_code == 200:
+            self.consecutive_errors = 0  # Reset on success
+            return False
+        
+        return False
     
     async def get_random_photos(self, count: int = 1, query: Optional[str] = None) -> List[Dict]:
         """

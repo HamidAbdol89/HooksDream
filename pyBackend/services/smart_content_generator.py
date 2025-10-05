@@ -44,13 +44,13 @@ class SmartContentGenerator:
             # Select topic based on bot's expertise and interests
             topic = self._select_smart_topic_for_bot(bot_account)
             
-            # Decide post type: 70% with images, 30% text-only for natural variety
+            # Decide post type: Due to Unsplash rate limits, increase text-only posts
             post_type_chance = random.random()
             
-            if post_type_chance < 0.3:  # 30% chance for text-only posts
+            if post_type_chance < 0.7:  # 70% chance for text-only posts (reduced API calls)
                 print(f"📝 Generating text-only post for {bot_account.get('displayName')}")
                 post_result = await self._generate_text_only_post(bot_account, topic)
-            else:  # 70% chance for image posts
+            else:  # 30% chance for image posts
                 # Determine number of images based on bot type
                 bot_type = bot_account.get('botType', 'lifestyle')
                 if bot_type == 'photographer':
@@ -84,7 +84,9 @@ class SmartContentGenerator:
             photos = await self._get_unique_images(topic, num_images, bot_account)
             
             if not photos:
-                return None
+                # Fallback to text-only post if no images available (API rate limit)
+                print(f"⚠️ No images available for {bot_account.get('displayName')}, switching to text-only post")
+                return await self._generate_text_only_post(bot_account, topic)
             
             # Create bot profile using bot account data
             bot_profile = BotProfile(
@@ -93,6 +95,7 @@ class SmartContentGenerator:
                 username=bot_account.get('username', 'bot'),
                 personality_type=bot_account.get('botType', 'lifestyle'),  # Use bot's personality
                 bio=bot_account.get('bio', 'AI Content Creator'),
+                avatar_style="modern",  # Add required avatar_style field
                 interests=[topic],
                 posting_style="creative",
                 created_at=datetime.now()
