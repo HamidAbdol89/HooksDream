@@ -111,6 +111,21 @@ async def run_bot_now(background_tasks: BackgroundTasks):
         "posts_to_create": main.settings.BOT_POSTS_PER_RUN
     }
 
+@router.get("/stats")
+async def get_bot_stats():
+    """Get bot statistics and analytics"""
+    bot_service = main.bot_service
+    
+    if not bot_service:
+        raise HTTPException(status_code=503, detail="Bot service not initialized")
+    
+    try:
+        # Get stats from AI bot manager
+        stats = bot_service.bot_manager.get_stats()
+        return stats
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting stats: {str(e)}")
+
 @router.get("/users")
 async def get_bot_users():
     """Get list of available bot users"""
@@ -119,7 +134,16 @@ async def get_bot_users():
     if not bot_service:
         raise HTTPException(status_code=503, detail="Bot service not initialized")
     
-    return {
-        "bot_users": bot_service.bot_users,
-        "total": len(bot_service.bot_users)
-    }
+    try:
+        # Get active bots from AI bot manager
+        active_bots = bot_service.bot_manager.get_active_bots()
+        return {
+            "active_bots": [bot_service.bot_manager.get_bot_for_api(bot) for bot in active_bots],
+            "total_active": len(active_bots),
+            "total_bots": len(bot_service.bot_manager.bot_profiles)
+        }
+    except Exception as e:
+        return {
+            "bot_users": getattr(bot_service, 'bot_users', []),
+            "total": len(getattr(bot_service, 'bot_users', []))
+        }

@@ -681,21 +681,28 @@ class BotService:
     async def create_single_post(self, topic: Optional[str] = None) -> Optional[Dict]:
         """Create a single post manually (for testing or manual triggers)"""
         try:
-            if not topic:
-                topics = await self.unsplash_service.get_trending_topics()
-                topic = random.choice(topics)
+            # Select or create bot using AI bot manager
+            bot_profile = self.bot_manager.select_bot_for_posting(topic)
+            if not bot_profile:
+                bot_profile = self.bot_manager.create_new_bot()
             
-            bot_user = random.choice(self.bot_users)
-            photos = await self.unsplash_service.get_random_photos(count=1, query=topic)
+            # Generate smart content using AI content generator
+            post_data = await self.content_generator.generate_smart_post(bot_profile, topic)
             
-            if not photos:
+            if not post_data:
+                print(f"⚠️ Failed to generate content for {bot_profile.name}")
                 return None
             
-            photo = photos[0]
-            post_data = await self._generate_post_content(photo, topic, bot_user)
+            # Send to Node.js backend
             result = await self._send_post_to_backend(post_data)
             
-            return result
+            if result:
+                self.bot_manager.update_bot_activity(bot_profile.id, True)
+                print(f"✅ Manual post created by {bot_profile.name}")
+                return result
+            else:
+                print(f"❌ Failed to create manual post for {bot_profile.name}")
+                return None
             
         except Exception as e:
             print(f"❌ Error creating single post: {e}")
