@@ -39,8 +39,8 @@ app.use(cors({
       'http://localhost:5173',
       'https://hooksdream.vercel.app',
       'https://hooksdream.netlify.app',
-      'https://hooksdream.fly.dev',
-      'https://just-solace-production.up.railway.app'
+      'https://just-solace-production.up.railway.app',
+      'https://hooks-dream-bot.vercel.app'
     ];
     
     const allowedPatterns = [
