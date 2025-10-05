@@ -215,6 +215,124 @@ Requirements:
         
         return ' '.join(selected_tags)
     
+    async def generate_text_only_post(self, bot_account: Dict, topic: str) -> Optional[str]:
+        """Generate AI-powered text-only post using Groq"""
+        
+        try:
+            if self.groq_key:
+                ai_text = await self._try_groq_text_post(bot_account, topic)
+                if ai_text:
+                    return ai_text
+            
+            # Fallback handled by smart_content_generator
+            return None
+            
+        except Exception as e:
+            print(f"⚠️ Error generating text post: {e}")
+            return None
+    
+    async def _try_groq_text_post(self, bot_account: Dict, topic: str) -> Optional[str]:
+        """Generate text-only post using Groq AI"""
+        try:
+            bot_type = bot_account.get('botType', 'lifestyle')
+            display_name = bot_account.get('displayName', 'AI Creator')
+            bio = bot_account.get('bio', '')
+            interests = bot_account.get('interests', [])
+            
+            # Create context-aware prompt for text posts
+            prompt = f"""You are {display_name}, a {bot_type} expert. {bio}
+
+Create a natural, engaging social media text post about {topic}.
+
+Your personality: {bot_type} professional
+Your interests: {', '.join(interests) if interests else 'general'}
+
+Requirements:
+- Write in first person as {display_name}
+- Be authentic and conversational
+- Share a personal thought, insight, or experience
+- Include relevant emojis naturally
+- Add 3-4 relevant hashtags at the end
+- Keep under 280 characters
+- Sound human and relatable
+- NO images mentioned (text-only post)
+
+Examples of good text posts:
+- Personal reflections
+- Professional insights
+- Questions to followers
+- Behind-the-scenes thoughts
+- Tips or advice
+- Current mood/feelings"""
+            
+            payload = {
+                "model": "llama-3.1-8b-instant",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                "temperature": 0.8,  # Higher creativity for text posts
+                "max_tokens": 200,
+                "top_p": 0.9
+            }
+            
+            # Call Groq API
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.post(
+                    self.groq_api_url,
+                    json=payload,
+                    headers={
+                        "Authorization": f"Bearer {self.groq_key}",
+                        "Content-Type": "application/json"
+                    }
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    
+                    if 'choices' in result and len(result['choices']) > 0:
+                        choice = result['choices'][0]
+                        if 'message' in choice and 'content' in choice['message']:
+                            generated_text = choice['message']['content'].strip()
+                            
+                            if generated_text:
+                                text_post = self._clean_text_post(generated_text)
+                                print(f"✨ Groq AI text post generated: {text_post[:50]}...")
+                                return text_post
+                else:
+                    print(f"⚠️ Groq API error: {response.status_code} - {response.text}")
+                
+        except Exception as e:
+            print(f"⚠️ Groq text generation unavailable: {e}")
+        
+        return None
+    
+    def _clean_text_post(self, text: str) -> str:
+        """Clean and format Groq-generated text post"""
+        
+        # Remove common prefixes/suffixes
+        text = text.strip()
+        
+        # Remove quotes if present
+        if text.startswith('"') and text.endswith('"'):
+            text = text[1:-1]
+        
+        # Remove "Post:" prefix if present
+        if text.lower().startswith('post:'):
+            text = text[5:].strip()
+        
+        # Ensure reasonable length
+        if len(text) > 350:
+            text = text[:350] + "..."
+        
+        # Ensure it has some hashtags
+        if '#' not in text:
+            text += " #inspiration #life #thoughts"
+        
+        return text
+    
     def _fallback_caption(self, bot_account: Dict, topic: str) -> str:
         """Generate simple fallback caption"""
         display_name = bot_account.get('displayName', 'AI Creator')

@@ -23,17 +23,24 @@ class SmartContentGenerator:
         # Select topic based on bot's expertise and interests
         topic = self._select_smart_topic_for_bot(bot_account)
         
-        # Determine number of images based on bot type
-        bot_type = bot_account.get('botType', 'lifestyle')
-        if bot_type == 'photographer':
-            num_images = random.randint(1, 4)  # Photographers post more images
-        elif bot_type == 'artist':
-            num_images = random.randint(1, 3)  # Artists showcase their work
-        else:
-            num_images = random.randint(1, 2)  # Others post fewer images
+        # Decide post type: 70% with images, 30% text-only for natural variety
+        post_type_chance = random.random()
         
-        # Generate content for bot account
-        return await self._generate_post_for_bot_account(bot_account, topic, num_images)
+        if post_type_chance < 0.3:  # 30% chance for text-only posts
+            print(f"📝 Generating text-only post for {bot_account.get('displayName')}")
+            return await self._generate_text_only_post(bot_account, topic)
+        else:  # 70% chance for image posts
+            # Determine number of images based on bot type
+            bot_type = bot_account.get('botType', 'lifestyle')
+            if bot_type == 'photographer':
+                num_images = random.randint(1, 4)  # Photographers post more images
+            elif bot_type == 'artist':
+                num_images = random.randint(1, 3)  # Artists showcase their work
+            else:
+                num_images = random.randint(1, 2)  # Others post fewer images
+            
+            print(f"📸 Generating image post for {bot_account.get('displayName')}")
+            return await self._generate_post_for_bot_account(bot_account, topic, num_images)
     
     async def _generate_post_for_bot_account(self, bot_account: Dict, topic: str, num_images: int) -> Dict:
         try:
@@ -74,6 +81,120 @@ class SmartContentGenerator:
             print(f"❌ Error generating post for bot account {bot_account.get('displayName', 'Unknown')}: {str(e)}")
             print(f"   Topic: {topic}, Images requested: {num_images}")
             return None
+    
+    async def _generate_text_only_post(self, bot_account: Dict, topic: str) -> Dict:
+        """Generate text-only post using AI for natural, engaging content"""
+        try:
+            # Generate AI-powered text content
+            text_content = await self.gpt_service.generate_text_only_post(bot_account, topic)
+            
+            if not text_content:
+                # Fallback to template-based text
+                text_content = self._generate_template_text_post(bot_account, topic)
+            
+            # Return text-only post data
+            return {
+                "content": text_content,
+                "images": [],  # No images for text-only posts
+                "bot_account": bot_account,
+                "topic": topic,
+                "post_type": "text_only"
+            }
+            
+        except Exception as e:
+            print(f"❌ Error generating text-only post for {bot_account.get('displayName', 'Unknown')}: {str(e)}")
+            return None
+    
+    def _generate_template_text_post(self, bot_account: Dict, topic: str) -> str:
+        """Generate template-based text post as fallback"""
+        bot_type = bot_account.get('botType', 'lifestyle')
+        display_name = bot_account.get('displayName', 'AI Creator')
+        interests = bot_account.get('interests', [])
+        
+        # Natural text templates by bot type
+        text_templates = {
+            'tech': [
+                f"💭 Been thinking about {topic} lately... The possibilities are endless when you combine creativity with technology!",
+                f"🚀 Quick thought: {topic} is reshaping our industry faster than we imagined. What's your take on this?",
+                f"💡 Working late tonight on some {topic} concepts. Sometimes the best ideas come when the world is quiet.",
+                f"🤔 Question for my fellow tech enthusiasts: How do you see {topic} evolving in the next 5 years?",
+                f"⚡ Just had an 'aha!' moment about {topic}. It's amazing how one insight can change everything.",
+                f"🔮 Prediction: {topic} will be the game-changer we've all been waiting for. Mark my words!"
+            ],
+            'photographer': [
+                f"📸 Today's mood: chasing the perfect {topic} shot. Sometimes the best photos happen when you're not even trying.",
+                f"🌅 Woke up thinking about {topic} photography. There's something magical about capturing fleeting moments.",
+                f"✨ Hot take: {topic} isn't just about technique - it's about feeling the moment and letting it guide you.",
+                f"📷 Been experimenting with {topic} compositions. Every frame teaches you something new about seeing.",
+                f"🎯 Photography tip: When shooting {topic}, patience is your best friend. Wait for the magic to happen.",
+                f"💫 That moment when {topic} and perfect light align... Pure photographer's bliss!"
+            ],
+            'artist': [
+                f"🎨 Inspiration struck at 3am: {topic} but with a twist. Sometimes creativity doesn't follow a schedule.",
+                f"✨ Been sketching {topic} concepts all morning. Art is how we make sense of the beautiful chaos around us.",
+                f"🌈 Color theory meets {topic}... The combinations are endless when you let your imagination run wild.",
+                f"🖌️ Working on a new {topic} piece. Every brushstroke is a conversation between intention and spontaneity.",
+                f"💭 Art thought: {topic} represents so much more than what meets the eye. What do you see?",
+                f"🎭 Creative block? Never heard of it. {topic} just gave me 10 new ideas to explore!"
+            ],
+            'traveler': [
+                f"✈️ Missing those {topic} adventures... Nothing beats the feeling of discovering something completely unexpected.",
+                f"🌍 Travel memory: That time {topic} led me to the most incredible hidden spot. Serendipity is the best guide.",
+                f"🗺️ Planning my next {topic} expedition. The world is full of stories waiting to be discovered.",
+                f"🎒 Travel wisdom: {topic} experiences teach you more about yourself than any classroom ever could.",
+                f"🌅 Sunrise thoughts: Every {topic} journey changes you in ways you never expected. That's the magic of travel.",
+                f"📍 Been dreaming about {topic} destinations lately. Where should I explore next?"
+            ],
+            'lifestyle': [
+                f"🌱 Morning reflection: {topic} reminds me to slow down and appreciate the simple moments.",
+                f"☕ Coffee thoughts: How {topic} became part of my daily mindfulness practice. Small changes, big impact.",
+                f"✨ Grateful for {topic} moments like these. Life's beauty is often found in the ordinary.",
+                f"💫 Weekend vibes: {topic} and complete presence. Sometimes the best plans are no plans at all.",
+                f"🧘‍♀️ Mindful moment: {topic} taught me that wellness isn't a destination, it's a daily choice.",
+                f"🌸 Self-care reminder: {topic} is not selfish - you can't pour from an empty cup."
+            ],
+            'nature': [
+                f"🌿 Nature observation: {topic} in its natural habitat is pure poetry in motion.",
+                f"🦋 Witnessed something incredible today - {topic} reminding me why conservation matters so much.",
+                f"🌊 Ocean thoughts: {topic} and the rhythm of waves have a way of putting everything in perspective.",
+                f"🏔️ Mountain wisdom: {topic} teaches us that the most beautiful views come after the hardest climbs.",
+                f"🌳 Forest bathing with {topic} vibes. Nature is the ultimate therapist and teacher.",
+                f"⭐ Under the stars thinking about {topic}... The universe has a way of making our problems feel smaller."
+            ]
+        }
+        
+        # Get templates for bot type
+        templates = text_templates.get(bot_type, text_templates['lifestyle'])
+        base_text = random.choice(templates)
+        
+        # Add relevant hashtags for text posts
+        hashtags = self._generate_text_post_hashtags(bot_type, topic, interests)
+        
+        return f"{base_text}\n\n{hashtags}"
+    
+    def _generate_text_post_hashtags(self, bot_type: str, topic: str, interests: list) -> str:
+        """Generate hashtags for text-only posts"""
+        # Lighter hashtag usage for text posts (3-5 hashtags)
+        type_hashtags = {
+            'tech': ['#TechThoughts', '#Innovation', '#FutureTech'],
+            'photographer': ['#PhotographyLife', '#CreativeVision', '#LensLove'],
+            'artist': ['#ArtisticJourney', '#CreativeProcess', '#ArtLife'],
+            'traveler': ['#TravelThoughts', '#Wanderlust', '#ExploreMore'],
+            'lifestyle': ['#MindfulLiving', '#LifeReflections', '#WellnessJourney'],
+            'nature': ['#NatureLovers', '#EcoThoughts', '#WildlifeWisdom']
+        }
+        
+        base_tags = type_hashtags.get(bot_type, ['#Thoughts', '#Life'])
+        
+        # Add topic hashtag
+        topic_tag = f"#{topic.replace(' ', '').title()}"
+        if topic_tag not in base_tags:
+            base_tags.append(topic_tag)
+        
+        # Select 3-4 hashtags for text posts (less cluttered)
+        selected_tags = base_tags[:random.randint(3, 4)]
+        
+        return ' '.join(selected_tags)
     
     def _select_smart_topic_for_bot(self, bot_account: Dict) -> str:
         """Select topic based on bot's expertise and interests"""
@@ -128,18 +249,45 @@ class SmartContentGenerator:
         photos = []
         
         try:
-            # Strategy 1: Try search with random page to get different results
-            random_page = random.randint(1, 5)  # Random page 1-5
+            # Strategy 1: Advanced search with multiple randomization layers
+            
+            # Layer 1: Random page from deeper pages (avoid popular results)
+            random_page = random.randint(3, 15)  # Pages 3-15 for more unique content
+            
+            # Layer 2: Random order parameter
+            order_options = ['latest', 'oldest', 'popular']
+            random_order = random.choice(order_options)
+            
+            # Layer 3: Use original topic (seed was causing no results)
+            print(f"🔍 Searching: '{topic}' | Page: {random_page} | Order: {random_order}")
+            
             search_result = await self.unsplash_service.search_photos(
                 topic, 
-                per_page=min(30, num_images * 3),  # Get more photos to choose from
+                per_page=min(30, num_images * 5),  # Get even more photos
                 page=random_page
             )
+            
+            # If no results from deep pages, try shallower pages
+            if not search_result or not search_result.get('results'):
+                print(f"🔄 No results from page {random_page}, trying page 1-3...")
+                random_page = random.randint(1, 3)
+                search_result = await self.unsplash_service.search_photos(
+                    topic, 
+                    per_page=min(30, num_images * 5),
+                    page=random_page
+                )
             
             if search_result and search_result.get('results'):
                 available_photos = search_result['results']
                 
-                # Randomly select from available photos (check global uniqueness)
+                # EXTREME RANDOMIZATION: Shuffle and skip random amount
+                random.shuffle(available_photos)  # Shuffle the entire list
+                skip_amount = random.randint(0, max(0, len(available_photos) // 3))  # Skip 0-33% of photos
+                available_photos = available_photos[skip_amount:]  # Skip some photos
+                
+                print(f"📊 Found {len(available_photos)} photos, skipped {skip_amount} for uniqueness")
+                
+                # Select unique photos with global tracking
                 unique_photos = []
                 for photo in available_photos:
                     photo_id = photo.get('id')
@@ -155,21 +303,54 @@ class SmartContentGenerator:
                 
                 photos = unique_photos
             
-            # Strategy 2: If not enough photos, try random photos with variations
+            # Strategy 2: If not enough photos, try MULTIPLE search strategies
             if len(photos) < num_images:
                 remaining_needed = num_images - len(photos)
+                print(f"🔄 Need {remaining_needed} more photos, trying variations...")
                 
-                # Add topic variations for more diversity
+                # Sub-strategy 2A: Topic variations with different pages
                 topic_variations = self._get_topic_variations(topic, bot_account)
                 
                 for variation in topic_variations:
                     if len(photos) >= num_images:
                         break
+                    
+                    # Try multiple pages for each variation
+                    for page_num in [random.randint(1, 5), random.randint(6, 10)]:
+                        if len(photos) >= num_images:
+                            break
+                            
+                        print(f"🔍 Trying variation: '{variation}' page {page_num}")
+                        search_result = await self.unsplash_service.search_photos(
+                            variation, 
+                            per_page=20,
+                            page=page_num
+                        )
                         
-                    random_photos = await self.unsplash_service.get_random_photos(
-                        count=remaining_needed, 
-                        query=variation
-                    )
+                        if search_result and search_result.get('results'):
+                            for photo in search_result['results']:
+                                if len(photos) >= num_images:
+                                    break
+                                    
+                                photo_id = photo.get('id')
+                                photo_url = photo.get('urls', {}).get('regular', '')
+                                
+                                if not global_image_tracker.is_image_used(photo_id, photo_url):
+                                    photos.append(photo)
+                                    global_image_tracker.mark_image_used(photo_id, photo_url)
+                
+                # Sub-strategy 2B: Random photos with variations
+                if len(photos) < num_images:
+                    remaining_needed = num_images - len(photos)
+                    
+                    for variation in topic_variations[:3]:  # Try top 3 variations
+                        if len(photos) >= num_images:
+                            break
+                            
+                        random_photos = await self.unsplash_service.get_random_photos(
+                            count=remaining_needed * 2,  # Get more than needed
+                            query=variation
+                        )
                     
                     if random_photos:
                         # Add unique photos (avoid duplicates by ID and global tracking)
@@ -188,10 +369,13 @@ class SmartContentGenerator:
                                 # Mark as used globally
                                 global_image_tracker.mark_image_used(photo_id, photo_url)
             
-            # Strategy 3: Final fallback - completely random photos
+            # Strategy 3: EXTREME FALLBACK - Multiple random approaches
             if len(photos) < num_images:
                 remaining_needed = num_images - len(photos)
-                fallback_photos = await self.unsplash_service.get_random_photos(count=remaining_needed)
+                print(f"🚨 Still need {remaining_needed} photos, using extreme fallback...")
+                
+                # Approach 3A: Completely random photos (no query)
+                fallback_photos = await self.unsplash_service.get_random_photos(count=remaining_needed * 3)
                 
                 if fallback_photos:
                     existing_ids = {p.get('id') for p in photos}
@@ -199,13 +383,40 @@ class SmartContentGenerator:
                         photo_id = photo.get('id')
                         photo_url = photo.get('urls', {}).get('regular', '')
                         
-                        # Final check for global uniqueness
                         if (photo_id not in existing_ids and 
                             len(photos) < num_images and
                             not global_image_tracker.is_image_used(photo_id, photo_url)):
                             
                             photos.append(photo)
                             global_image_tracker.mark_image_used(photo_id, photo_url)
+                
+                # Approach 3B: If still not enough, try generic terms
+                if len(photos) < num_images:
+                    generic_terms = ['beautiful', 'nature', 'abstract', 'minimal', 'colorful', 'peaceful']
+                    
+                    for term in generic_terms:
+                        if len(photos) >= num_images:
+                            break
+                            
+                        # Try random pages for generic terms
+                        random_page = random.randint(1, 20)
+                        search_result = await self.unsplash_service.search_photos(
+                            term, 
+                            per_page=10,
+                            page=random_page
+                        )
+                        
+                        if search_result and search_result.get('results'):
+                            for photo in search_result['results']:
+                                if len(photos) >= num_images:
+                                    break
+                                    
+                                photo_id = photo.get('id')
+                                photo_url = photo.get('urls', {}).get('regular', '')
+                                
+                                if not global_image_tracker.is_image_used(photo_id, photo_url):
+                                    photos.append(photo)
+                                    global_image_tracker.mark_image_used(photo_id, photo_url)
             
             # Log statistics
             stats = global_image_tracker.get_stats()
