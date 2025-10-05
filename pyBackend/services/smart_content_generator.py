@@ -12,22 +12,20 @@ from services.bot_profile import BotProfile  # Simple bot profile for AI caption
 from services.gpt_service import GPTService
 from services.image_tracker import global_image_tracker
 from services.mood_context_service import mood_context_service
-from services.event_aware_service import event_aware_service
 from services.bot_memory_service import bot_memory_service
 from services.personality_evolution_service import personality_evolution_service
 from services.social_graph_service import social_graph_service
 from services.multimedia_expansion_service import multimedia_expansion_service
 from services.engagement_strategy_service import engagement_strategy_service
-from services.health_monitoring_service import health_monitoring_service
+from services.unsplash_service import UnsplashService
 
 class SmartContentGenerator:
-    
-    def __init__(self, unsplash_service: UnsplashService):
-        self.unsplash_service = unsplash_service
+    def __init__(self, image_service):
+        self.image_service = image_service  # Will be HybridImageService
         self.gpt_service = GPTService()
         
         # Initialize multimedia service with Unsplash key
-        if hasattr(unsplash_service, 'access_key'):
+        if hasattr(image_service, 'access_key'):
             multimedia_expansion_service.set_unsplash_key(unsplash_service.access_key)
         
     async def generate_smart_post_for_bot_account(self, bot_account: Dict) -> Optional[Dict]:
@@ -44,13 +42,13 @@ class SmartContentGenerator:
             # Select topic based on bot's expertise and interests
             topic = self._select_smart_topic_for_bot(bot_account)
             
-            # Decide post type: Due to Unsplash rate limits, increase text-only posts
+            # Decide post type: 60% image posts, 40% text-only (hybrid system supports this)
             post_type_chance = random.random()
             
-            if post_type_chance < 0.7:  # 70% chance for text-only posts (reduced API calls)
+            if post_type_chance < 0.4:  # 40% chance for text-only posts
                 print(f"📝 Generating text-only post for {bot_account.get('displayName')}")
                 post_result = await self._generate_text_only_post(bot_account, topic)
-            else:  # 30% chance for image posts
+            else:  # 60% chance for image posts
                 # Determine number of images based on bot type
                 bot_type = bot_account.get('botType', 'lifestyle')
                 if bot_type == 'photographer':
@@ -80,8 +78,8 @@ class SmartContentGenerator:
     
     async def _generate_post_for_bot_account(self, bot_account: Dict, topic: str, num_images: int) -> Dict:
         try:
-            # Get unique images from Unsplash with randomization
-            photos = await self._get_unique_images(topic, num_images, bot_account)
+            # Get unique images using hybrid service (Unsplash + Pexels)
+            photos = await self.image_service.search_photos_hybrid(topic, num_images)
             
             if not photos:
                 # Fallback to text-only post if no images available (API rate limit)

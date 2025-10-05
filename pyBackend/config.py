@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     # Unsplash API
     UNSPLASH_ACCESS_KEY: str = ""
     
+    # Pexels API
+    PEXELS_API_KEY: str = ""
+    
     # Groq AI API (fast inference)
     GROQ_API_KEY: str = ""  # Get free API key from https://console.groq.com (100 req/day)
     AI_ENABLED: bool = True  # Always enabled with Groq + templatesives

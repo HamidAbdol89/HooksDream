@@ -2,7 +2,6 @@
 Bot Service for automated content generation
 Creates posts with Unsplash images and sends to Node.js backend
 """
-
 import asyncio
 import random
 import httpx
@@ -10,18 +9,18 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Tuple
 from services.unsplash_service import UnsplashService
 from services.smart_content_generator import SmartContentGenerator
-from config import settings
 from services.bot_interaction_service import BotInteractionService
+from config import settings
 
 class BotService:
-    def __init__(self, unsplash_service: UnsplashService):
-        self.unsplash_service = unsplash_service
+    def __init__(self, image_service):
+        self.image_service = image_service  # HybridImageService
         self.node_backend_url = settings.NODE_BACKEND_URL
         self.is_running = False
         self.scheduler_task = None
         
         # Initialize services
-        self.content_generator = SmartContentGenerator(unsplash_service)
+        self.content_generator = SmartContentGenerator(image_service)
         self.interaction_service = BotInteractionService(self.node_backend_url)
     
     async def start_scheduler(self):

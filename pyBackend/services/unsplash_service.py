@@ -77,7 +77,7 @@ class UnsplashService:
             print(f"❌ Error fetching Unsplash photos: {e}")
             return []
     
-    async def search_photos(self, query: str, per_page: int = 10, page: int = 1) -> Dict:
+    async def search_photos(self, query: str, per_page: int = 10, page: int = 1, order_by: str = 'relevant') -> Dict:
         """
         Search for photos on Unsplash
         
@@ -85,6 +85,7 @@ class UnsplashService:
             query: Search query
             per_page: Number of results per page (max 30)
             page: Page number
+            order_by: Sort order ('latest', 'oldest', 'popular', 'relevant')
             
         Returns:
             Search results with photos and metadata
@@ -95,7 +96,7 @@ class UnsplashService:
                     "query": query,
                     "per_page": min(per_page, 30),
                     "page": page,
-                    "order_by": "relevant"
+                    "order_by": order_by
                 }
                 
                 response = await client.get(

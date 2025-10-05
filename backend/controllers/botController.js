@@ -7,6 +7,7 @@
 const Post = require('../models/Post');
 const User = require('../models/User');
 const { cloudinary } = require('../utils/cloudinary');
+const axios = require('axios');
 
 // Socket server instance
 let socketServer = null;
@@ -66,7 +67,7 @@ const createBotPost = async (req, res) => {
         isBot: true,
         isVerified: false, // Bot không dùng verified tick xanh
         isSetupComplete: true,
-        avatar: botUserData.avatar || _getBotAvatar(botUserData.username),
+        avatar: botUserData.avatar || await _getSmartBotAvatar(botUserData),
         // Badge system cho bot users
         specialBadge: _getBotBadge(botUserData.username)
       });
@@ -307,7 +308,37 @@ const updateBotUser = async (req, res) => {
 };
 
 /**
- * Get realistic avatar for bot user
+ * Get smart realistic avatar from Python service
+ */
+const _getSmartBotAvatar = async (botUserData) => {
+  try {
+    // Call Python service to get smart avatar
+    const response = await axios.post(`${process.env.PYTHON_BACKEND_URL || 'https://hooksdream.fly.dev'}/api/bot/smart-avatar`, {
+      bot_account: {
+        username: botUserData.username,
+        displayName: botUserData.name,
+        bio: botUserData.bio,
+        botType: botUserData.botType || 'lifestyle'
+      }
+    }, {
+      timeout: 10000,
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    if (response.data && response.data.avatar_url) {
+      console.log(`👤 Smart avatar assigned to ${botUserData.name}: ${response.data.query}`);
+      return response.data.avatar_url;
+    }
+  } catch (error) {
+    console.log(`⚠️ Smart avatar failed for ${botUserData.name}, using fallback: ${error.message}`);
+  }
+
+  // Fallback to original system
+  return _getBotAvatar(botUserData.username);
+};
+
+/**
+ * Get bot avatar based on username (fallback)
  */
 const _getBotAvatar = (username) => {
   const avatars = {

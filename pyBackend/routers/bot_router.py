@@ -5,13 +5,15 @@ Endpoints for managing automated content generation
 
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel
-from typing import List, Dict, Optional
+from typing import Optional
+from services.bot_service import BotService
+from services.unsplash_service import UnsplashService
+from services.smart_avatar_service import smart_avatar_service
 import main
 
 router = APIRouter()
 
 class CreatePostRequest(BaseModel):
-    topic: Optional[str] = None
     count: int = 1
 
 class BotStatusResponse(BaseModel):
@@ -147,3 +149,87 @@ async def get_bot_users():
             "bot_users": getattr(bot_service, 'bot_users', []),
             "total": len(getattr(bot_service, 'bot_users', []))
         }
+
+@router.post("/smart-avatar")
+async def get_smart_avatar(request: dict):
+    """Get smart realistic avatar for bot"""
+    try:
+        bot_account = request.get('bot_account', {})
+        
+        if not bot_account:
+            raise HTTPException(status_code=400, detail="bot_account is required")
+        
+        # Initialize smart avatar service if needed
+        if smart_avatar_service.image_service is None:
+            smart_avatar_service.image_service = main.hybrid_image_service
+        
+        # Get smart avatar
+        avatar_url = await smart_avatar_service.get_smart_avatar_for_bot(bot_account)
+        
+        if avatar_url:
+            return {
+                "success": True,
+                "avatar_url": avatar_url,
+                "query": smart_avatar_service._generate_targeted_query(
+                    bot_account.get('botType', 'lifestyle'),
+                    bot_account.get('displayName', 'Bot'),
+                    bot_account.get('bio', '')
+                )
+            }
+        else:
+            raise HTTPException(status_code=404, detail="Could not generate smart avatar")
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating smart avatar: {str(e)}")
+
+@router.get("/avatar-stats")
+async def get_avatar_stats():
+    """Get avatar usage statistics"""
+    try:
+        stats = smart_avatar_service.get_avatar_stats()
+        return {
+            "success": True,
+            "stats": stats
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting avatar stats: {str(e)}")
+
+@router.get("/hybrid-stats")
+async def get_hybrid_image_stats():
+    """Get hybrid image service statistics"""
+    try:
+        hybrid_service = main.hybrid_image_service
+        if not hybrid_service:
+            raise HTTPException(status_code=503, detail="Hybrid image service not initialized")
+        
+        stats = hybrid_service.get_service_stats()
+        
+        return {
+            "success": True,
+            "hybrid_stats": stats,
+            "services": {
+                "unsplash": {
+                    "consecutive_errors": main.unsplash_service.consecutive_errors if main.unsplash_service else 0
+                },
+                "pexels": {
+                    "consecutive_errors": main.pexels_service.consecutive_errors if hasattr(main, 'pexels_service') else 0
+                }
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting hybrid stats: {str(e)}")
+
+@router.post("/reset-rate-limits")
+async def reset_service_rate_limits():
+    """Reset rate limits for all image services"""
+    try:
+        hybrid_service = main.hybrid_image_service
+        if hybrid_service:
+            hybrid_service.reset_rate_limits()
+        
+        return {
+            "success": True,
+            "message": "Rate limits reset for all image services"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error resetting rate limits: {str(e)}")

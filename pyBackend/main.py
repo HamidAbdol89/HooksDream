@@ -11,7 +11,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
 from services.unsplash_service import UnsplashService
+from services.pexels_service import pexels_service
+from services.hybrid_image_service import HybridImageService
 from services.bot_service import BotService
+from services.smart_avatar_service import smart_avatar_service
 from routers import bot_router, unsplash_router
 from config import settings, get_host, get_port
 
@@ -20,23 +23,37 @@ load_dotenv()
 
 # Global services
 unsplash_service = None
+hybrid_image_service = None
 bot_service = None
 
 @asynccontextmanager
 async def Lifecycle(app: FastAPI):
     """Application Lifecycle management"""
-    global unsplash_service, bot_service
+    global unsplash_service, hybrid_image_service, bot_service
     
     # Startup
-    print("Starting HooksDream Python Backend...")
-    print(f"Environment: {settings.ENVIRONMENT}")
-    print(f"Server will run on {get_host()}:{get_port()}")
-    print(f"Backend URL: {settings.NODE_BACKEND_URL}")
-    print(f"Bot enabled: {settings.BOT_ENABLED}")
+    print("🚀 Starting HooksDream Python Backend...")
+    print(f"📊 Environment: {settings.ENVIRONMENT}")
+    print(f"🌐 Server will run on {get_host()}:{get_port()}")
+    print(f"🔗 Backend URL: {settings.NODE_BACKEND_URL}")
     
     # Initialize services
+    print("🔧 Initializing image services...")
     unsplash_service = UnsplashService()
-    bot_service = BotService(unsplash_service)
+    print("✅ Unsplash service initialized")
+    print("✅ Pexels service initialized")
+    
+    # Initialize hybrid image service
+    hybrid_image_service = HybridImageService(unsplash_service)
+    print("🎯 Hybrid image service initialized (Unsplash + Pexels)")
+    
+    # Initialize bot service with hybrid images
+    bot_service = BotService(hybrid_image_service)
+    print("🤖 Bot service initialized")
+    
+    # Initialize smart avatar service with hybrid images
+    smart_avatar_service.image_service = hybrid_image_service
+    print("👤 Smart avatar service initialized")
     
     # Start bot if enabled
     if settings.BOT_ENABLED:

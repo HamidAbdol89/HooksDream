@@ -14,13 +14,17 @@ print(f"BOT_ENABLED: {settings.BOT_ENABLED}")
 print(f"BOT_INTERVAL_MINUTES: {settings.BOT_INTERVAL_MINUTES}")
 print(f"BOT_POSTS_PER_RUN: {settings.BOT_POSTS_PER_RUN}")
 print(f"PORT: {settings.PORT}")
-print(f"UNSPLASH_ACCESS_KEY: {'***' + settings.UNSPLASH_ACCESS_KEY[-4:] if settings.UNSPLASH_ACCESS_KEY else 'NOT SET'}")
+print(f"UNSPLASH_ACCESS_KEY: {'✅ Set' if settings.UNSPLASH_ACCESS_KEY else '❌ Missing'}")
+print(f"PEXELS_API_KEY: {'✅ Set' if settings.PEXELS_API_KEY else '❌ Missing'}")
+print(f"GROQ_API_KEY: {'✅ Set' if settings.GROQ_API_KEY else '❌ Missing'}")
 
 print("\n🌍 Environment Variables:")
 env_vars = [
     "ENVIRONMENT",
     "NODE_BACKEND_URL", 
     "UNSPLASH_ACCESS_KEY",
+    "PEXELS_API_KEY",
+    "GROQ_API_KEY",
     "BOT_ENABLED",
     "BOT_INTERVAL_MINUTES",
     "BOT_POSTS_PER_RUN",
@@ -40,3 +44,5 @@ if settings.NODE_BACKEND_URL == "http://localhost:5000":
     print("⚠️  Update NODE_BACKEND_URL to your deployed backend")
 if not settings.UNSPLASH_ACCESS_KEY:
     print("⚠️  Set UNSPLASH_ACCESS_KEY for bot functionality")
+if not settings.PEXELS_API_KEY:
+    print("⚠️  Set PEXELS_API_KEY for hybrid image service")

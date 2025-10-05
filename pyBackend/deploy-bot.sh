@@ -62,6 +62,7 @@ deploy_flyio() {
     echo "4. Set environment variables:"
     echo "   flyctl secrets set NODE_BACKEND_URL=$NODE_BACKEND_URL"
     echo "   flyctl secrets set UNSPLASH_ACCESS_KEY=$UNSPLASH_ACCESS_KEY"
+    echo "   flyctl secrets set PEXELS_API_KEY=$PEXELS_API_KEY"
     echo "   flyctl secrets set BOT_ENABLED=true"
     echo "   flyctl secrets set BOT_INTERVAL_MINUTES=30"
     echo "   flyctl secrets set BOT_POSTS_PER_RUN=3"
@@ -81,6 +82,7 @@ deploy_render() {
     echo "5. Set environment variables:"
     echo "   - NODE_BACKEND_URL: $NODE_BACKEND_URL"
     echo "   - UNSPLASH_ACCESS_KEY: $UNSPLASH_ACCESS_KEY"
+    echo "   - PEXELS_API_KEY: $PEXELS_API_KEY"
     echo "   - BOT_ENABLED: true"
     echo "   - BOT_INTERVAL_MINUTES: 30"
     echo "   - BOT_POSTS_PER_RUN: 3"
@@ -106,6 +108,7 @@ deploy_heroku() {
     # Set environment variables
     heroku config:set NODE_BACKEND_URL="$NODE_BACKEND_URL"
     heroku config:set UNSPLASH_ACCESS_KEY="$UNSPLASH_ACCESS_KEY"
+    heroku config:set PEXELS_API_KEY="$PEXELS_API_KEY"
     heroku config:set BOT_ENABLED="$BOT_ENABLED"
     heroku config:set BOT_INTERVAL_MINUTES="$BOT_INTERVAL_MINUTES"
     heroku config:set BOT_POSTS_PER_RUN="$BOT_POSTS_PER_RUN"
