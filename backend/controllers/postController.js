@@ -18,7 +18,7 @@ const getNotificationHelper = () => {
 // Lấy danh sách posts (public feed)
 exports.getPosts = async (req, res) => {
     try {
-        const { page = 1, limit = 10, sort = 'latest' } = req.query;
+        const { page = 1, limit = 10, sort = 'latest', isBot } = req.query;
         
         let query = { 
             isDeleted: false, 
@@ -28,6 +28,11 @@ exports.getPosts = async (req, res) => {
             ],
             visibility: 'public' 
         };
+        
+        // Filter by bot status if specified
+        if (isBot !== undefined) {
+            query.isBot = isBot === 'true';
+        }
         let sortOption = { createdAt: -1 };
         
         switch (sort) {

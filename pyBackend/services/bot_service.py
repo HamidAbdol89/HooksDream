@@ -628,11 +628,11 @@ class BotService:
             return None
     
     async def _get_random_bot_account(self) -> Optional[Dict]:
-        """Get a random bot account from Node.js backend database"""
+        """Get a random BOT account (not real user) from Node.js backend database"""
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
                 response = await client.get(
-                    f"{self.node_backend_url}/api/users/random-for-bot",
+                    f"{self.node_backend_url}/api/users?isBot=true&limit=1&random=true",
                     headers={"Content-Type": "application/json"}
                 )
                 

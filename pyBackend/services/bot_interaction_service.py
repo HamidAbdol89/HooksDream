@@ -113,25 +113,16 @@ class BotInteractionService:
             if len(following_ids) >= 100:
                 return
             
-            # 70% chance to follow other bots, 30% chance to follow real users
-            if random.random() < 0.7:
-                # Follow other bots
-                available_bots = [b for b in all_bots if b['_id'] != bot['_id'] and b['_id'] not in following_ids]
-                if available_bots:
-                    target_bot = random.choice(available_bots)
-                    success = await self._perform_follow_action(bot['_id'], target_bot['_id'])
-                    if success:
-                        print(f"👥 {bot['displayName']} followed {target_bot['displayName']}")
-            else:
-                # Follow real users (limited to avoid spam)
-                real_users = await self._get_popular_real_users(limit=10)
-                if real_users:
-                    available_users = [u for u in real_users if u['_id'] not in following_ids]
-                    if available_users:
-                        target_user = random.choice(available_users)
-                        success = await self._perform_follow_action(bot['_id'], target_user['_id'])
-                        if success:
-                            print(f"👥 {bot['displayName']} followed real user {target_user['displayName']}")
+            # ONLY follow other bots - NO real users
+            # Follow other bots only
+            available_bots = [b for b in all_bots if b['_id'] != bot['_id'] and b['_id'] not in following_ids]
+            if available_bots:
+                target_bot = random.choice(available_bots)
+                success = await self._perform_follow_action(bot['_id'], target_bot['_id'])
+                if success:
+                    print(f"👥 {bot['displayName']} followed {target_bot['displayName']}")
+            
+            # NOTE: Removed real user following to respect privacy
                             
         except Exception as e:
             print(f"❌ Error in bot follow action: {e}")
@@ -190,9 +181,12 @@ class BotInteractionService:
                 if topic in content:
                     score += 2
             
-            # Avoid interacting with own posts
-            if post.get('author', {}).get('_id') == bot['_id']:
-                score = 0
+            # ONLY interact with bot posts - avoid real user posts
+            author = post.get('author', {})
+            if author.get('_id') == bot['_id']:
+                score = 0  # Don't interact with own posts
+            elif not author.get('isBot', False):
+                score = 0  # Don't interact with real user posts - PRIVACY PROTECTION
             
             # Personality-based scoring
             if personality.get('socialness', 0.5) > 0.6:
@@ -279,11 +273,11 @@ class BotInteractionService:
             return []
     
     async def _get_recent_posts(self, limit: int = 20) -> List[Dict]:
-        """Get recent posts for interaction"""
+        """Get recent BOT posts only for interaction (protect real user privacy)"""
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
                 response = await client.get(
-                    f"{self.node_backend_url}/api/posts?limit={limit}&sort=createdAt",
+                    f"{self.node_backend_url}/api/posts?limit={limit}&sort=createdAt&isBot=true",
                     headers={"Content-Type": "application/json"}
                 )
                 
@@ -296,23 +290,8 @@ class BotInteractionService:
             print(f"❌ Error fetching recent posts: {e}")
             return []
     
-    async def _get_popular_real_users(self, limit: int = 10) -> List[Dict]:
-        """Get popular real users (not bots) for following"""
-        try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                response = await client.get(
-                    f"{self.node_backend_url}/api/users?isBot=false&limit={limit}&sort=followerCount",
-                    headers={"Content-Type": "application/json"}
-                )
-                
-                if response.status_code == 200:
-                    result = response.json()
-                    return result.get('data', [])
-                return []
-                
-        except Exception as e:
-            print(f"❌ Error fetching real users: {e}")
-            return []
+    # REMOVED: _get_popular_real_users method to protect user privacy
+    # Bots should only interact with other bots, not real users
     
     async def _perform_like_action(self, bot_id: str, post_id: str) -> bool:
         """Perform like action via API"""
