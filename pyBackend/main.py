@@ -131,6 +131,9 @@ async def health_check():
         }
     }
 
+# For Vercel deployment
+app.mount_path = ""
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
