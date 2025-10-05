@@ -104,7 +104,17 @@ exports.getPosts = async (req, res) => {
 // Tạo post mới
 exports.createPost = async (req, res) => {
     try {
-        const { content, images, video, visibility = 'public' } = req.body;
+        const { content, images, video, visibility = 'public', userId, bot_metadata } = req.body;
+
+        // Support bot posting with userId in body
+        const postUserId = userId || req.userId;
+        
+        if (!postUserId) {
+            return res.status(400).json({
+                success: false,
+                message: 'User ID is required'
+            });
+        }
 
         // Cập nhật validation để hỗ trợ video
         if ((!content || content.trim().length === 0) && 
@@ -117,28 +127,30 @@ exports.createPost = async (req, res) => {
         }
 
         const post = new Post({
-            userId: req.userId,
+            userId: postUserId,
             content: content ? content.trim() : '',
             images: images || [],
             video: video || '',
-            visibility
+            visibility,
+            botMetadata: bot_metadata || null,  // Store bot metadata if provided
+            isBot: !!bot_metadata  // Mark as bot post if metadata provided
         });
 
         await post.save();
         await post.populate('userId', 'username displayName avatar isVerified');
-        await User.findByIdAndUpdate(req.userId, { $inc: { postCount: 1 } });
+        await User.findByIdAndUpdate(postUserId, { $inc: { postCount: 1 } });
 
         // Send notification to followers about new post
         const notificationHelper = getNotificationHelper();
         if (notificationHelper) {
-            await notificationHelper.handleNewPostFromFollowing(post._id, req.userId);
+            await notificationHelper.handleNewPostFromFollowing(post._id, postUserId);
         }
 
         // Emit real-time event for new post
         if (global.socketServer) {
             const postData = {
                 post: post.toObject(),
-                userId: req.userId,
+                userId: postUserId,
                 timestamp: new Date().toISOString()
             };
             
@@ -146,7 +158,7 @@ exports.createPost = async (req, res) => {
             global.socketServer.io.to('feed:global').emit('post:created', postData);
             
             // Broadcast to user's followers
-            global.socketServer.io.to(`user:${req.userId}:posts`).emit('post:created', postData);
+            global.socketServer.io.to(`user:${postUserId}:posts`).emit('post:created', postData);
             
             }
 

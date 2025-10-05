@@ -457,80 +457,27 @@ class BotService:
         return " ".join(selected_hashtags)
     
     def _should_post_now(self) -> tuple[bool, str]:
-        """Determine if now is an optimal time to post"""
+        """Determine if now is an optimal time to post (simplified for testing)"""
         from datetime import datetime
         import pytz
         
-        # Get current time in different timezones
+        # SIMPLIFIED LOGIC FOR TESTING - Always allow posting
         utc_now = datetime.now(pytz.UTC)
         
-        # Key timezone times for global audience
-        timezones = {
-            'US_East': pytz.timezone('US/Eastern'),
-            'US_West': pytz.timezone('US/Pacific'), 
-            'Europe': pytz.timezone('Europe/London'),
-            'Asia': pytz.timezone('Asia/Tokyo')
-        }
+        # Only avoid very late hours (2-5 AM UTC)
+        if 2 <= utc_now.hour <= 5:
+            return False, f"Very late hours (current: {utc_now.hour}:00 UTC)"
         
-        current_times = {
-            name: utc_now.astimezone(tz) 
-            for name, tz in timezones.items()
-        }
-        
-        # Optimal posting hours (when people are most active)
-        optimal_hours = {
-            'morning': (7, 10),    # 7-10 AM
-            'lunch': (11, 14),     # 11 AM - 2 PM  
-            'evening': (17, 21),   # 5-9 PM
-            'late': (21, 23)       # 9-11 PM
-        }
-        
-        # Check if any timezone is in optimal time
-        active_zones = []
-        for zone_name, local_time in current_times.items():
-            hour = local_time.hour
-            
-            for period, (start, end) in optimal_hours.items():
-                if start <= hour <= end:
-                    active_zones.append(f"{zone_name}_{period}")
-        
-        # Post if at least 2 zones are in optimal time
-        if len(active_zones) >= 2:
-            return True, f"Peak hours in {', '.join(active_zones)}"
-        
-        # Also post during global prime time (when most zones overlap)
-        global_prime_hours = [12, 13, 14, 19, 20, 21]  # UTC
-        if utc_now.hour in global_prime_hours:
-            return True, f"Global prime time ({utc_now.hour}:00 UTC)"
-        
-        # Avoid posting during low activity hours (2-6 AM UTC)
-        if 2 <= utc_now.hour <= 6:
-            return False, "Low activity hours (2-6 AM UTC)"
-        
-        # Random chance during other hours (30%)
-        if random.random() < 0.3:
-            return True, "Random posting opportunity"
-        
-        return False, f"Waiting for peak hours (current: {utc_now.hour}:00 UTC)"
+        # Allow posting most of the time for testing
+        return True, f"Active posting time (current: {utc_now.hour}:00 UTC)"
     
     def _calculate_smart_interval(self) -> int:
-        """Calculate smart interval based on time and activity"""
-        from datetime import datetime
-        import pytz
+        """Calculate smart interval (simplified for testing)"""
+        # SIMPLIFIED FOR TESTING - Use config interval
+        base_interval = settings.BOT_INTERVAL_MINUTES * 60  # Convert to seconds
         
-        utc_now = datetime.now(pytz.UTC)
-        hour = utc_now.hour
-        
-        # Shorter intervals during peak hours
-        if hour in [12, 13, 14, 19, 20, 21]:  # Global prime time
-            base_interval = 15 * 60  # 15 minutes
-        elif 7 <= hour <= 22:  # Active hours
-            base_interval = 25 * 60  # 25 minutes  
-        else:  # Low activity hours
-            base_interval = 45 * 60  # 45 minutes
-        
-        # Add randomness (±5-10 minutes)
-        random_offset = random.randint(-300, 600)
+        # Add small randomness (±2 minutes)
+        random_offset = random.randint(-120, 120)
         
         return max(300, base_interval + random_offset)  # Minimum 5 minutes
     
@@ -649,26 +596,32 @@ class BotService:
         return color_map.get(hex_color.upper())
     
     async def _send_post_to_backend(self, post_data: Dict) -> Optional[Dict]:
-        """Send generated post to Node.js backend"""
+        """Send generated post to Node.js backend using REAL USER"""
         try:
-            # Prepare payload for Node.js backend
-            payload = {
-                "content": post_data["content"],
-                "images": post_data["images"],
-                "bot_metadata": {
-                    "bot_user": post_data["bot_user"],
-                    "photo_data": post_data["photo_data"],
-                    "topic": post_data["topic"],
-                    "created_by": "python_bot",
-                    "created_at": datetime.utcnow().isoformat()
-                }
-            }
+            # Get a random real user from database instead of fake bot
+            real_user = await self._get_random_real_user()
+            if not real_user:
+                print("❌ No real users found in database")
+                return None
             
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.post(
-                    f"{self.node_backend_url}/api/bot/create-post",
-                    json=payload,
-                    timeout=30.0
+                    f"{self.node_backend_url}/api/posts",  # Use regular posts endpoint
+                    json={
+                        "content": post_data["content"],
+                        "images": post_data["images"],
+                        "userId": real_user["_id"],  # Use real user ID
+                        "bot_metadata": {
+                            "generated_by": "python_bot",
+                            "topic": post_data["topic"],
+                            "post_type": post_data.get("post_type", "single_image"),
+                            "photo_data": post_data.get("photo_data", {})
+                        }
+                    },
+                    headers={
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {real_user.get('token', '')}"  # If needed
+                    }
                 )
                 
                 response.raise_for_status()
@@ -676,6 +629,27 @@ class BotService:
                 
         except Exception as e:
             print(f"❌ Error sending post to backend: {e}")
+            return None
+    
+    async def _get_random_real_user(self) -> Optional[Dict]:
+        """Get a random real user from Node.js backend database"""
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(
+                    f"{self.node_backend_url}/api/users/random-for-bot",
+                    headers={"Content-Type": "application/json"}
+                )
+                
+                if response.status_code == 200:
+                    user_data = response.json()
+                    print(f"🎯 Selected real user: {user_data.get('displayName', 'Unknown')} (@{user_data.get('username', 'unknown')})")
+                    return user_data
+                else:
+                    print(f"⚠️ Failed to get random user: {response.status_code}")
+                    return None
+                    
+        except Exception as e:
+            print(f"❌ Error fetching random user: {e}")
             return None
     
     async def create_single_post(self, topic: Optional[str] = None) -> Optional[Dict]:

@@ -49,6 +49,9 @@ router.get('/', userController.getUsers);
 router.delete('/profile/:hashId', userController.deleteUser);
 router.get('/popular', optionalAuth, getPopularUsers);
 
+// Bot integration endpoint
+router.get('/random-for-bot', userController.getRandomUserForBot);
+
 // Error handling middleware cho multer
 router.use((error, req, res, next) => {
     if (error instanceof multer.MulterError) {

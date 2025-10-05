@@ -3,6 +3,7 @@ AI Bot Manager - Dynamic Bot Creation & Management
 Handles intelligent bot user creation, tracking, and content strategy
 """
 
+import os
 import random
 import asyncio
 from datetime import datetime, timedelta

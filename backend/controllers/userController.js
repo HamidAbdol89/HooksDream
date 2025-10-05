@@ -440,3 +440,48 @@ exports.deleteUser = async (req, res) => {
         );
     }
 };
+
+// Get random user for bot posting
+exports.getRandomUserForBot = async (req, res) => {
+    try {
+        // Get random active user from database
+        const randomUser = await User.aggregate([
+            { 
+                $match: { 
+                    isDeleted: { $ne: true },
+                    $or: [
+                        { isDeleted: { $exists: false } },
+                        { isDeleted: false }
+                    ]
+                } 
+            },
+            { $sample: { size: 1 } }
+        ]);
+        
+        if (randomUser.length === 0) {
+            return res.status(404).json(
+                createResponse(false, 'No users found for bot posting', null, null, 404)
+            );
+        }
+        
+        const user = randomUser[0];
+        
+        // Return user data needed for bot posting
+        const botUserData = {
+            _id: user._id,
+            username: user.username,
+            displayName: user.displayName,
+            email: user.email,
+            avatar: user.avatar,
+            isActive: !user.isDeleted
+        };
+        
+        res.json(createResponse(true, 'Random user selected for bot posting', botUserData));
+        
+    } catch (error) {
+        console.error('Error getting random user for bot:', error);
+        res.status(500).json(
+            createResponse(false, 'Internal server error', null, null, 500)
+        );
+    }
+};
