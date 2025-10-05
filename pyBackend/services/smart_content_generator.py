@@ -18,6 +18,7 @@ from services.social_graph_service import social_graph_service
 from services.multimedia_expansion_service import multimedia_expansion_service
 from services.engagement_strategy_service import engagement_strategy_service
 from services.unsplash_service import UnsplashService
+from services.bot_accounts import get_topics_for_islamic_bot
 
 # Create dummy health monitoring service to avoid import errors
 class DummyHealthMonitoringService:
@@ -307,6 +308,47 @@ class SmartContentGenerator:
                 f"🏔️ Mountain wisdom: {topic} teaches us that the most beautiful views come after the hardest climbs.",
                 f"🌳 Forest bathing with {topic} vibes. Nature is the ultimate therapist and teacher.",
                 f"⭐ Under the stars thinking about {topic}... The universe has a way of making our problems feel smaller."
+            ],
+            # Islamic bot templates
+            'islamic_scholar': [
+                f"📖 Reflecting on {topic} today... SubhanAllah, the wisdom in our deen never ceases to amaze me.",
+                f"🤲 Been contemplating {topic} after Fajr prayer. Allah's guidance is truly profound.",
+                f"✨ A beautiful reminder about {topic}: Every verse in the Quran has layers of meaning waiting to be discovered.",
+                f"🕌 Studying {topic} reminds me why seeking knowledge is every Muslim's duty. Alhamdulillah for this blessing.",
+                f"💫 Today's reflection on {topic}: The Prophet ﷺ showed us the perfect example in every aspect of life.",
+                f"🌙 Late night thoughts on {topic}... May Allah increase us all in beneficial knowledge. Ameen."
+            ],
+            'islamic_news': [
+                f"📰 Important update about {topic} in our Ummah today. Stay informed, stay connected.",
+                f"🌍 Breaking: {topic} developments affecting Muslim communities worldwide. Unity is our strength.",
+                f"🕌 Community spotlight: Amazing {topic} initiative happening in our local mosque. MashaAllah!",
+                f"📢 Don't miss: {topic} conference bringing scholars and community leaders together this weekend.",
+                f"🤝 Inspiring news: {topic} project shows the power of Muslim community collaboration.",
+                f"📅 Mark your calendars: {topic} event that every Muslim should know about. Spread the word!"
+            ],
+            'islamic_lifestyle': [
+                f"🏡 Halal living tip: How {topic} can transform your family's daily routine. Simple but powerful changes!",
+                f"👨‍👩‍👧‍👦 Parenting reflection: Teaching children about {topic} through our actions, not just words.",
+                f"🍽️ Kitchen wisdom: {topic} reminds me that even cooking can be an act of worship when done with intention.",
+                f"✨ Home sweet home: Creating a {topic} environment that brings barakah to our family life.",
+                f"🧕 Modest fashion meets {topic}: Looking good while staying true to our values. It's possible!",
+                f"💚 Sustainable living: How {topic} aligns perfectly with Islamic teachings on caring for Earth."
+            ],
+            'islamic_historian': [
+                f"📚 History lesson: The fascinating story of {topic} during the Islamic Golden Age. Knowledge is light!",
+                f"🏛️ Did you know? {topic} played a crucial role in Islamic civilization's greatest achievements.",
+                f"⚔️ Courage and wisdom: How our ancestors approached {topic} with both strength and compassion.",
+                f"🌟 Forgotten heroes: The Muslim pioneers who revolutionized {topic} and changed the world.",
+                f"🕌 Architectural marvel: The stunning {topic} that showcases Islamic artistic genius. SubhanAllah!",
+                f"📖 From the archives: {topic} stories that every Muslim should know about our rich heritage."
+            ],
+            'islamic_motivational': [
+                f"💪 Daily motivation: {topic} reminds us that Allah tests those He loves. Stay strong, believer!",
+                f"🤲 Dua of the day: May Allah grant us strength in {topic} and make it easy for us. Ameen.",
+                f"✨ Beautiful reminder: {topic} is mentioned in the Quran as a source of peace for the believers.",
+                f"🌅 Morning inspiration: Start your day with gratitude for {topic}. Alhamdulillahi Rabbil Alameen.",
+                f"💫 Faith boost: When {topic} feels overwhelming, remember Allah is always with the patient ones.",
+                f"🌙 Night reflection: End your day by making dua about {topic}. Allah hears every whisper of your heart."
             ]
         }
         
@@ -404,7 +446,13 @@ class SmartContentGenerator:
             'artist': ['#ArtisticJourney', '#CreativeProcess', '#ArtLife'],
             'traveler': ['#TravelThoughts', '#Wanderlust', '#ExploreMore'],
             'lifestyle': ['#MindfulLiving', '#LifeReflections', '#WellnessJourney'],
-            'nature': ['#NatureLovers', '#EcoThoughts', '#WildlifeWisdom']
+            'nature': ['#NatureLovers', '#EcoThoughts', '#WildlifeWisdom'],
+            # Islamic bot types
+            'islamic_scholar': ['#IslamicWisdom', '#QuranTafsir', '#HadithStudies'],
+            'islamic_news': ['#UmmahNews', '#IslamicNews', '#MuslimCommunity'],
+            'islamic_lifestyle': ['#HalalLifestyle', '#IslamicParenting', '#MuslimFamily'],
+            'islamic_historian': ['#IslamicHistory', '#MuslimHeritage', '#IslamicCivilization'],
+            'islamic_motivational': ['#IslamicInspiration', '#FaithMotivation', '#SpiritualGrowth']
         }
         
         base_tags = type_hashtags.get(bot_type, ['#Thoughts', '#Life'])
@@ -449,6 +497,32 @@ class SmartContentGenerator:
             'nature': [
                 'wildlife', 'conservation', 'forest', 'ocean waves', 
                 'mountain landscape', 'environmental protection', 'natural beauty'
+            ],
+            # Islamic bot types with specialized topics
+            'islamic_scholar': [
+                'quran tafsir', 'hadith wisdom', 'islamic jurisprudence', 'spiritual guidance',
+                'prayer importance', 'islamic morals', 'prophetic teachings', 'quranic verses',
+                'islamic ethics', 'dua collections', 'ramadan reflections', 'hajj wisdom'
+            ],
+            'islamic_news': [
+                'islamic world news', 'muslim community events', 'mosque activities', 
+                'islamic conferences', 'halal business news', 'ummah updates',
+                'islamic education news', 'muslim achievements', 'community service'
+            ],
+            'islamic_lifestyle': [
+                'halal recipes', 'islamic parenting', 'muslim family life', 'halal products',
+                'modest fashion', 'islamic home decor', 'halal travel', 'muslim women empowerment',
+                'islamic wellness', 'family bonding', 'children islamic education'
+            ],
+            'islamic_historian': [
+                'islamic history', 'muslim scientists', 'islamic golden age', 'great caliphs',
+                'islamic architecture', 'historical mosques', 'muslim inventions', 
+                'islamic civilization', 'prophetic biography', 'companions stories'
+            ],
+            'islamic_motivational': [
+                'quranic inspiration', 'islamic motivation', 'faith strengthening', 'spiritual growth',
+                'daily duas', 'islamic poetry', 'prophetic quotes', 'patience in islam',
+                'gratitude in islam', 'trust in allah', 'islamic mindfulness'
             ]
         }
         

@@ -9,6 +9,8 @@ from typing import Optional
 from services.bot_service import BotService
 from services.unsplash_service import UnsplashService
 from services.smart_avatar_service import smart_avatar_service
+from services.islamic_bot_manager import islamic_bot_manager
+from services.bot_accounts import get_islamic_bot_accounts
 import main
 
 router = APIRouter()
@@ -233,3 +235,93 @@ async def reset_service_rate_limits():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error resetting rate limits: {str(e)}")
+
+# Islamic Bot Management Endpoints
+
+@router.post("/islamic/initialize")
+async def initialize_islamic_bots():
+    """Initialize all 5 Islamic bot accounts"""
+    try:
+        success = await islamic_bot_manager.initialize_islamic_bots()
+        
+        if success:
+            return {
+                "success": True,
+                "message": "All 5 Islamic bot accounts initialized successfully",
+                "bots": [bot['displayName'] for bot in get_islamic_bot_accounts()]
+            }
+        else:
+            return {
+                "success": False,
+                "message": "Some Islamic bots failed to initialize",
+                "bots": [bot['displayName'] for bot in get_islamic_bot_accounts()]
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error initializing Islamic bots: {str(e)}")
+
+@router.post("/islamic/run-cycle")
+async def run_islamic_bot_cycle(background_tasks: BackgroundTasks):
+    """Run one cycle of Islamic bot posting"""
+    try:
+        # Run in background to avoid timeout
+        background_tasks.add_task(islamic_bot_manager.run_islamic_bot_cycle)
+        
+        return {
+            "success": True,
+            "message": "Islamic bot cycle started in background",
+            "bots": len(get_islamic_bot_accounts())
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error running Islamic bot cycle: {str(e)}")
+
+@router.get("/islamic/accounts")
+async def get_islamic_bot_accounts_info():
+    """Get information about all Islamic bot accounts"""
+    try:
+        accounts = get_islamic_bot_accounts()
+        
+        return {
+            "success": True,
+            "accounts": [
+                {
+                    "username": bot["username"],
+                    "displayName": bot["displayName"],
+                    "botType": bot["botType"],
+                    "bio": bot["bio"],
+                    "specialties": bot["specialties"],
+                    "content_focus": bot["content_focus"]
+                }
+                for bot in accounts
+            ],
+            "total": len(accounts)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting Islamic bot accounts: {str(e)}")
+
+@router.get("/islamic/schedules")
+async def get_islamic_bot_schedules():
+    """Get posting schedules for all Islamic bots"""
+    try:
+        schedules = islamic_bot_manager.get_bot_schedules()
+        
+        return {
+            "success": True,
+            "schedules": schedules,
+            "total_bots": len(schedules)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting Islamic bot schedules: {str(e)}")
+
+@router.get("/islamic/stats")
+async def get_islamic_bot_stats():
+    """Get statistics for Islamic bots from Node.js backend"""
+    try:
+        stats = await islamic_bot_manager.get_islamic_bot_stats()
+        
+        return {
+            "success": True,
+            "islamic_stats": stats,
+            "bot_count": len(get_islamic_bot_accounts())
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting Islamic bot stats: {str(e)}")
