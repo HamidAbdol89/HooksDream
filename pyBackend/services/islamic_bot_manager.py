@@ -11,6 +11,7 @@ from services.bot_accounts import get_islamic_bot_accounts, ISLAMIC_BOT_ACCOUNTS
 from services.smart_content_generator import SmartContentGenerator
 from services.hybrid_image_service import HybridImageService
 from services.unsplash_service import UnsplashService
+from services.bot_interaction_service import BotInteractionService
 import requests
 import os
 

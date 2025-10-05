@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     
     # Node.js backend URL
-    NODE_BACKEND_URL: str = "http://localhost:5000"
+    NODE_BACKEND_URL: str = "https://just-solace-production.up.railway.app"
     
     # Unsplash API
     UNSPLASH_ACCESS_KEY: str = ""

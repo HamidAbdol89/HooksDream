@@ -297,14 +297,35 @@ class BotInteractionService:
         """Perform like action via API"""
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
-                response = await client.post(
-                    f"{self.node_backend_url}/api/posts/{post_id}/like",
-                    headers={
-                        "Content-Type": "application/json",
-                        "X-Bot-ID": bot_id  # Custom header to identify bot actions
-                    }
-                )
-                return response.status_code == 200
+                # Try different endpoints that might work
+                endpoints_to_try = [
+                    f"/api/posts/{post_id}/like",
+                    f"/api/posts/{post_id}/likes", 
+                    f"/api/posts/like/{post_id}",
+                    f"/api/posts/toggle-like/{post_id}"
+                ]
+                
+                for endpoint in endpoints_to_try:
+                    response = await client.post(
+                        f"{self.node_backend_url}{endpoint}",
+                        headers={
+                            "Content-Type": "application/json",
+                            "X-Bot-ID": bot_id,
+                            "User-Agent": "HooksDream-Bot/1.0"
+                        }
+                    )
+                    
+                    if response.status_code in [200, 201]:
+                        print(f"✅ Like successful via {endpoint}")
+                        return True
+                    elif response.status_code == 401:
+                        print(f"🔐 Authentication required for {endpoint}")
+                        continue
+                    elif response.status_code == 404:
+                        continue  # Try next endpoint
+                
+                print(f"❌ All like endpoints failed for post {post_id}")
+                return False
                 
         except Exception as e:
             print(f"❌ Error performing like action: {e}")
@@ -331,15 +352,35 @@ class BotInteractionService:
         """Perform comment action via API"""
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
-                response = await client.post(
-                    f"{self.node_backend_url}/api/posts/{post_id}/comments",
-                    json={"content": comment_text},
-                    headers={
-                        "Content-Type": "application/json",
-                        "X-Bot-ID": bot_id  # Custom header to identify bot actions
-                    }
-                )
-                return response.status_code == 200
+                # Try different comment endpoints
+                endpoints_to_try = [
+                    f"/api/posts/{post_id}/comments",
+                    f"/api/posts/{post_id}/comment",
+                    f"/api/comments/{post_id}"
+                ]
+                
+                for endpoint in endpoints_to_try:
+                    response = await client.post(
+                        f"{self.node_backend_url}{endpoint}",
+                        json={"content": comment_text},
+                        headers={
+                            "Content-Type": "application/json",
+                            "X-Bot-ID": bot_id,
+                            "User-Agent": "HooksDream-Bot/1.0"
+                        }
+                    )
+                    
+                    if response.status_code in [200, 201]:
+                        print(f"✅ Comment successful via {endpoint}")
+                        return True
+                    elif response.status_code == 401:
+                        print(f"🔐 Authentication required for {endpoint}")
+                        continue
+                    elif response.status_code == 404:
+                        continue  # Try next endpoint
+                
+                print(f"❌ All comment endpoints failed for post {post_id}")
+                return False
                 
         except Exception as e:
             print(f"❌ Error performing comment action: {e}")
