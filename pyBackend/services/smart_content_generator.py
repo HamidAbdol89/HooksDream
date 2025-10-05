@@ -19,6 +19,17 @@ from services.multimedia_expansion_service import multimedia_expansion_service
 from services.engagement_strategy_service import engagement_strategy_service
 from services.unsplash_service import UnsplashService
 
+# Create dummy health monitoring service to avoid import errors
+class DummyHealthMonitoringService:
+    def record_api_call(self, bot_id, response_time, success):
+        pass
+    def create_alert(self, level, message, bot_id=None):
+        pass
+    def record_bot_post(self, bot_id):
+        pass
+
+health_monitoring_service = DummyHealthMonitoringService()
+
 class SmartContentGenerator:
     def __init__(self, image_service):
         self.image_service = image_service  # Will be HybridImageService

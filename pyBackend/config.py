@@ -29,9 +29,10 @@ class Settings(BaseSettings):
     BOT_POSTS_PER_RUN: int = 3
     
     # Server configuration
-    LOCAL_PORT: int = 8001
+    HOST: str = "0.0.0.0"
+    PORT: int = 8000  # Changed to match Fly.io expectation
     LOCAL_HOST: str = "0.0.0.0"
-    PORT: int = 8001
+    LOCAL_PORT: int = 8001
     
     class Config:
         # Load different env files based on environment
