@@ -8,7 +8,7 @@ from typing import Optional
 
 class Settings(BaseSettings):
     # Environment
-    ENVIRONMENT: str = "development"
+    ENVIRONMENT: str = "production"
     
     # Node.js backend URL
     NODE_BACKEND_URL: str = "https://just-solace-production.up.railway.app"
@@ -25,8 +25,12 @@ class Settings(BaseSettings):
     
     # Bot configuration
     BOT_ENABLED: bool = True
-    BOT_INTERVAL_MINUTES: int = 30
-    BOT_POSTS_PER_RUN: int = 3
+    BOT_INTERVAL_MINUTES: int = 60  # Reduced to every 1 hour (save Cloudinary)
+    BOT_POSTS_PER_RUN: int = 5      # Moderate posting (5 bots per hour)
+    
+    # Cloudinary limits (Free tier protection)
+    MAX_IMAGES_PER_DAY: int = 100   # Max 100 images per day (free tier = 25GB/month)
+    MAX_IMAGES_PER_HOUR: int = 10   # Max 10 images per hour
     
     # Server configuration
     HOST: str = "0.0.0.0"

@@ -14,7 +14,7 @@ class SocketServer {
                     "http://localhost:5173",
                     "https://hooksdream.vercel.app",
                     "https://hooksdream.netlify.app",
-                    "https://hooks-dream-bot.vercel.app",
+                    "https://bot-hooksdream-production.up.railway.app",
                     "https://just-solace-production.up.railway.app",
                     /^https:\/\/.*\.vercel\.app$/,
                     /^https:\/\/.*\.netlify\.app$/,

@@ -10,7 +10,12 @@ const {
   getBotStats, 
   deleteBotPost, 
   updateBotUser,
-  getBotHealthDashboard
+  getBotHealthDashboard,
+  createPremiumBotUser,
+  uploadBotAvatar,
+  deletePremiumBotUser,
+  deleteAllBots,
+  getPremiumBotStatus
 } = require('../controllers/botController');
 
 // Create post from Python bot
@@ -27,5 +32,12 @@ router.put('/users/:username', updateBotUser);
 
 // Get bot health dashboard
 router.get('/health-dashboard', getBotHealthDashboard);
+
+// Premium bot management
+router.post('/create-user', createPremiumBotUser);
+router.post('/upload-avatar', uploadBotAvatar);
+router.delete('/delete-user/:username', deletePremiumBotUser);
+router.delete('/delete-all-bots', deleteAllBots);
+router.get('/premium-status', getPremiumBotStatus);
 
 module.exports = router;

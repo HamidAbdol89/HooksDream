@@ -82,6 +82,38 @@ const optionalAuth = async (req, res, next) => {
     }
 };
 
+// Middleware cho bot authentication
+const botAuthMiddleware = async (req, res, next) => {
+    try {
+        // Check for bot ID in header
+        const botId = req.header('X-Bot-ID');
+        
+        if (botId) {
+            // Verify bot exists and is active
+            const User = require('../models/User');
+            const bot = await User.findOne({ 
+                _id: botId, 
+                isBot: true
+            });
+            
+            if (bot) {
+                req.user = bot;
+                req.userId = botId;
+                req.isBot = true;
+                return next();
+            }
+        }
+        
+        // If no valid bot ID, fall back to regular auth
+        console.log('🔄 Falling back to regular auth');
+        return authMiddleware(req, res, next);
+        
+    } catch (error) {
+        console.log(`❌ Bot auth error: ${error.message}`);
+        return authMiddleware(req, res, next);
+    }
+};
+
 // Middleware kiểm tra quyền owner
 const requireOwnership = (resourceUserField = 'userId') => {
     return (req, res, next) => {
@@ -104,5 +136,6 @@ const requireOwnership = (resourceUserField = 'userId') => {
 module.exports = {
     authMiddleware,
     optionalAuth,
-    requireOwnership
+    requireOwnership,
+    botAuthMiddleware
 };

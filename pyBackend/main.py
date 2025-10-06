@@ -12,65 +12,74 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
 from services.unsplash_service import UnsplashService
-from services.pexels_service import pexels_service
-from services.hybrid_image_service import HybridImageService
 from services.bot_service import BotService
-from services.bot_interaction_service import BotInteractionService
-from services.smart_avatar_service import smart_avatar_service
-from routers import bot_router, unsplash_router
+from routers import bot_router
 from config import settings, get_host, get_port
 
 # Load environment variables
 load_dotenv()
 
+async def keep_alive_task():
+    """Keep the service alive by making periodic requests to prevent Railway sleep"""
+    import httpx
+    
+    while True:
+        try:
+            # Wait 8 minutes between keep-alive pings (Railway sleeps after 10 min)
+            await asyncio.sleep(480)  # 8 minutes
+            
+            # Ping self to prevent sleep
+            port = get_port()
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                try:
+                    response = await client.get(f"http://localhost:{port}/health")
+                    if response.status_code == 200:
+                        print("💓 Keep-alive ping successful")
+                    else:
+                        print(f"⚠️ Keep-alive ping returned {response.status_code}")
+                except Exception as ping_error:
+                    print(f"⚠️ Keep-alive ping failed: {ping_error}")
+                    
+        except Exception as e:
+            print(f"❌ Keep-alive task error: {e}")
+            await asyncio.sleep(60)  # Wait 1 minute on error
+
 # Global services
 unsplash_service = None
-hybrid_image_service = None
 bot_service = None
-bot_interaction_service = None
 
 @asynccontextmanager
 async def Lifecycle(app: FastAPI):
     """Application Lifecycle management"""
-    global unsplash_service, hybrid_image_service, bot_service, bot_interaction_service
+    global unsplash_service, bot_service
     
     # Startup
     print("🚀 Starting HooksDream Python Backend...")
     print(f"📊 Environment: {settings.ENVIRONMENT}")
-    print(f"🌐 Server will run on {get_host()}:{get_port()}")
     print(f"🔗 Backend URL: {settings.NODE_BACKEND_URL}")
     
     # Initialize services
-    print("🔧 Initializing image services...")
+    print("🔧 Initializing services...")
     unsplash_service = UnsplashService()
     print("✅ Unsplash service initialized")
-    print("✅ Pexels service initialized")
     
-    # Initialize hybrid image service
-    hybrid_image_service = HybridImageService(unsplash_service)
-    print("🎯 Hybrid image service initialized (Unsplash + Pexels)")
+    # Initialize bot service for Marcin
+    bot_service = BotService()
+    print("🤖 Marcin bot service initialized")
     
-    # Initialize bot service with hybrid images
-    bot_service = BotService(hybrid_image_service)
-    print("🤖 Bot service initialized")
-    
-    # Initialize bot interaction service
-    bot_interaction_service = BotInteractionService(settings.NODE_BACKEND_URL)
-    print("💬 Bot interaction service initialized")
-    
-    # Initialize smart avatar service with hybrid images
-    smart_avatar_service.image_service = hybrid_image_service
-    print("👤 Smart avatar service initialized")
+    # Set global variables for routers
+    import routers.bot_router as bot_router_module
+    bot_router_module.bot_service = bot_service
     
     # Start bot services if enabled
     if settings.BOT_ENABLED:
-        print("🚀 Starting automated bot services...")
+        print("🚀 Starting Marcin bot scheduler...")
         asyncio.create_task(bot_service.start_scheduler())
-        print("📝 Bot posting scheduler started")
+        print("📝 Marcin bot scheduler started")
         
-        # Start bot interaction scheduler
-        asyncio.create_task(bot_interaction_service.start_scheduler())
-        print("💬 Bot interaction scheduler started")
+        # Start keep-alive task to prevent Railway sleep
+        asyncio.create_task(keep_alive_task())
+        print("💓 Keep-alive service started")
     
     print("Python Backend ready!")
     
@@ -80,8 +89,7 @@ async def Lifecycle(app: FastAPI):
     print("🛑 Shutting down Python Backend...")
     if bot_service:
         await bot_service.stop_scheduler()
-    if bot_interaction_service:
-        await bot_interaction_service.stop_scheduler()
+    # Note: bot_interaction_service doesn't have stop_scheduler method
 
 # Create FastAPI app
 app = FastAPI(
@@ -101,8 +109,7 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(bot_router.router, prefix="/api/bot", tags=["Bot"])
-app.include_router(unsplash_router.router, prefix="/api/unsplash", tags=["Unsplash"])
+app.include_router(bot_router.router, prefix="/api/bot", tags=["Marcin Bot"])
 
 @app.get("/")
 async def root():
@@ -111,23 +118,20 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint to prevent Fly.io autostop"""
-    global bot_service, bot_interaction_service, hybrid_image_service
+    """Health check endpoint to prevent Railway sleep"""
+    global bot_service, unsplash_service
     
     bot_status = "running" if bot_service and bot_service.is_running else "stopped"
-    interaction_status = "running" if bot_interaction_service and bot_interaction_service.is_running else "stopped"
     
     return {
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
-        "bot_service": bot_status,
-        "bot_interactions": interaction_status,
-        "hybrid_images": "available" if hybrid_image_service else "unavailable",
+        "marcin_bot": bot_status,
         "services": {
             "unsplash": "available" if unsplash_service else "unavailable",
-            "pexels": "available",
             "bot_scheduler": bot_status,
-            "interaction_scheduler": interaction_status
+            "schedule_tracker": "active",
+            "photo_tracker": "active"
         }
     }
 

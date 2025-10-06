@@ -40,7 +40,7 @@ app.use(cors({
       'https://hooksdream.vercel.app',
       'https://hooksdream.netlify.app',
       'https://just-solace-production.up.railway.app',
-      'https://hooks-dream-bot.vercel.app'
+      'https://bot-hooksdream-production.up.railway.app'
     ];
     
     const allowedPatterns = [

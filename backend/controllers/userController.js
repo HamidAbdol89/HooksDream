@@ -161,8 +161,12 @@ exports.updateProfile = async (req, res) => {
 
                     const optimizedAvatar = await optimizeImage(req.files.avatar[0].buffer, 'avatar');
                 
+                // Determine folder based on user type
+                const isBot = user.isBot;
+                const avatarFolder = isBot ? `bots/${user.username}/avatars` : 'uploads/images';
+                
                 const newAvatarUrl = await uploadImageToCloudinary(optimizedAvatar, {
-                    folder: 'uploads/images',
+                    folder: avatarFolder,
                     resource_type: 'image',
                     public_id: `avatar_${hashId}_${Date.now()}`,
                     format: 'jpg',
@@ -207,8 +211,11 @@ exports.updateProfile = async (req, res) => {
 
                     const optimizedCover = await optimizeImage(req.files.coverImage[0].buffer, 'cover');
                 
+                // Determine folder based on user type
+                const coverFolder = isBot ? `bots/${user.username}/covers` : 'uploads/images';
+                
                 const newCoverUrl = await uploadImageToCloudinary(optimizedCover, {
-                    folder: 'uploads/images',
+                    folder: coverFolder,
                     resource_type: 'image',
                     public_id: `cover_${hashId}_${Date.now()}`,
                     format: 'jpg',

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Comment = require('../models/Comment');
-const { authMiddleware, optionalAuth } = require('../middleware/auth');
+const { authMiddleware, optionalAuth, botAuthMiddleware } = require('../middleware/auth');
 
 // GET /api/comments/:id/replies - Lấy replies của một comment
 router.get('/:id/replies', optionalAuth, async (req, res) => {
@@ -210,7 +210,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 });
 
 // POST /api/comments/:id/like - Like/Unlike comment
-router.post('/:id/like', authMiddleware, async (req, res) => {
+router.post('/:id/like', botAuthMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         

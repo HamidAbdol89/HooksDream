@@ -80,9 +80,12 @@ const createBotPost = async (req, res) => {
     if (!isTextOnlyPost && images && images.length > 0) {
       for (const imageUrl of images) {
         try {
-          // Upload Unsplash image to our Cloudinary
+          // Determine bot-specific Cloudinary folder
+          const botFolder = `bots/${botUser.username}/posts`;
+          
+          // Upload Unsplash image to bot's Cloudinary folder
           const uploadResult = await cloudinary.uploader.upload(imageUrl, {
-            folder: 'posts/bot-generated',
+            folder: botFolder,
             transformation: [
               { width: 1080, height: 1080, crop: 'limit', quality: 'auto' }
             ]
@@ -102,9 +105,10 @@ const createBotPost = async (req, res) => {
     if (multimedia) {
       if (multimedia.type === 'generated_image' && multimedia.image_data) {
         try {
-          // Upload generated image to Cloudinary
+          // Upload generated image to bot's Cloudinary folder
+          const botMultimediaFolder = `bots/${botUser.username}/multimedia`;
           const uploadResult = await cloudinary.uploader.upload(`data:image/png;base64,${multimedia.image_data}`, {
-            folder: 'posts/bot-multimedia',
+            folder: botMultimediaFolder,
             transformation: [
               { width: 1080, height: 1080, crop: 'limit', quality: 'auto' }
             ]
@@ -491,12 +495,410 @@ const getBotHealthDashboard = async (req, res) => {
   }
 };
 
+/**
+ * Create premium bot user
+ */
+const createPremiumBotUser = async (req, res) => {
+  try {
+    const botUserData = req.body;
+    
+    // Validate required fields
+    if (!botUserData.username || !botUserData.displayName || !botUserData.email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username, displayName, and email are required'
+      });
+    }
+
+    // Check if bot user already exists
+    const existingUser = await User.findOne({ 
+      $or: [
+        { username: botUserData.username },
+        { _id: botUserData._id }
+      ]
+    });
+
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: `Bot user with username ${botUserData.username} already exists`
+      });
+    }
+
+    // Create new bot user
+    const newBotUser = new User({
+      _id: botUserData._id,
+      googleId: botUserData.googleId,
+      username: botUserData.username,
+      displayName: botUserData.displayName,
+      email: botUserData.email,
+      bio: botUserData.bio || '',
+      location: botUserData.location || '',
+      website: botUserData.website || '',
+      avatar: botUserData.avatar || '',
+      coverImage: botUserData.coverImage || '',
+      isBot: true,
+      botType: botUserData.botType,
+      isVerified: false,
+      hasCustomAvatar: botUserData.hasCustomAvatar || false,
+      hasCustomDisplayName: botUserData.hasCustomDisplayName || false,
+      isSetupComplete: true,
+      specialBadge: botUserData.specialBadge,
+      followerCount: botUserData.followerCount || 0,
+      followingCount: botUserData.followingCount || 0,
+      postCount: botUserData.postCount || 0
+    });
+
+    await newBotUser.save();
+
+    console.log(`✅ Premium bot user created: ${newBotUser.username} (${newBotUser.displayName})`);
+
+    res.status(201).json({
+      success: true,
+      message: 'Premium bot user created successfully',
+      user: newBotUser
+    });
+
+  } catch (error) {
+    console.error('❌ Error creating premium bot user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Upload bot avatar to Cloudinary
+ */
+const uploadBotAvatar = async (req, res) => {
+  try {
+    const { username, avatar_url, cloudinary_folder } = req.body;
+
+    if (!username || !avatar_url || !cloudinary_folder) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username, avatar_url, and cloudinary_folder are required'
+      });
+    }
+
+    // Find bot user
+    const botUser = await User.findOne({ username, isBot: true });
+    if (!botUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'Bot user not found'
+      });
+    }
+
+    // Upload to Cloudinary with bot-specific avatar folder
+    const avatarFolder = `${cloudinary_folder}/avatars`;
+    const uploadResult = await cloudinary.uploader.upload(avatar_url, {
+      folder: avatarFolder,
+      public_id: `${username}_avatar`,
+      transformation: [
+        { width: 400, height: 400, crop: 'fill', gravity: 'face' },
+        { quality: 'auto', format: 'auto' }
+      ],
+      overwrite: true
+    });
+
+    // Update bot user avatar
+    botUser.avatar = uploadResult.secure_url;
+    botUser.hasCustomAvatar = true;
+    await botUser.save();
+
+    console.log(`✅ Bot avatar uploaded for ${username}: ${uploadResult.secure_url}`);
+
+    res.json({
+      success: true,
+      message: 'Bot avatar uploaded successfully',
+      avatar_url: uploadResult.secure_url,
+      cloudinary_folder: cloudinary_folder,
+      public_id: uploadResult.public_id
+    });
+
+  } catch (error) {
+    console.error('❌ Error uploading bot avatar:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Delete premium bot user
+ */
+const deletePremiumBotUser = async (req, res) => {
+  try {
+    const { username } = req.params;
+
+    if (!username) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username is required'
+      });
+    }
+
+    // Find and delete bot user
+    const botUser = await User.findOneAndDelete({ 
+      username: username, 
+      isBot: true 
+    });
+
+    if (!botUser) {
+      return res.status(404).json({
+        success: false,
+        message: `Bot user '${username}' not found`
+      });
+    }
+
+    // Also delete all posts by this bot
+    const deletedPosts = await Post.deleteMany({ 
+      userId: botUser._id,
+      isBot: true 
+    });
+
+    console.log(`✅ Deleted bot user: ${username} and ${deletedPosts.deletedCount} posts`);
+
+    res.json({
+      success: true,
+      message: `Bot user '${username}' deleted successfully`,
+      deleted_posts: deletedPosts.deletedCount,
+      bot_info: {
+        username: botUser.username,
+        displayName: botUser.displayName,
+        botType: botUser.botType
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error deleting bot user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Delete all bot users (bulk deletion) including Cloudinary cleanup
+ */
+const deleteAllBots = async (req, res) => {
+  try {
+    console.log('🗑️ Starting bulk bot deletion with Cloudinary cleanup...');
+
+    // Find all bot users
+    const botUsers = await User.find({ isBot: true });
+    
+    if (botUsers.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No bot users found to delete',
+        deleted_bots: 0,
+        deleted_posts: 0,
+        deleted_cloudinary_images: 0
+      });
+    }
+
+    console.log(`🔍 Found ${botUsers.length} bot users to delete`);
+
+    // Get bot user IDs and usernames
+    const botUserIds = botUsers.map(bot => bot._id);
+    const botUsernames = botUsers.map(bot => bot.username);
+
+    // Find all posts by bots to get image URLs
+    const botPosts = await Post.find({ 
+      userId: { $in: botUserIds },
+      isBot: true 
+    });
+
+    console.log(`📸 Found ${botPosts.length} bot posts to process`);
+
+    // Collect all image URLs from bot posts and avatars
+    let imageUrls = [];
+    
+    // Add post images
+    botPosts.forEach(post => {
+      if (post.images && post.images.length > 0) {
+        imageUrls.push(...post.images);
+      }
+    });
+
+    // Add bot avatars
+    botUsers.forEach(bot => {
+      if (bot.avatar && bot.avatar.includes('cloudinary.com')) {
+        imageUrls.push(bot.avatar);
+      }
+      if (bot.coverImage && bot.coverImage.includes('cloudinary.com')) {
+        imageUrls.push(bot.coverImage);
+      }
+    });
+
+    console.log(`🖼️ Found ${imageUrls.length} Cloudinary images to delete`);
+
+    // Delete images from Cloudinary
+    let deletedCloudinaryImages = 0;
+    const { deleteImageFromCloudinary } = require('../utils/cloudinary');
+
+    for (const imageUrl of imageUrls) {
+      try {
+        const result = await deleteImageFromCloudinary(imageUrl);
+        if (result.result === 'success') {
+          deletedCloudinaryImages++;
+        }
+      } catch (error) {
+        console.error(`⚠️ Failed to delete image ${imageUrl}:`, error.message);
+      }
+    }
+
+    // Delete bot folders from Cloudinary
+    let deletedBotFolders = 0;
+    for (const username of botUsernames) {
+      try {
+        console.log(`🗂️ Deleting Cloudinary folder for bot: ${username}`);
+        
+        // Delete entire bot folder (bots/{username}/)
+        const folderResult = await cloudinary.api.delete_resources_by_prefix(`bots/${username}/`, {
+          resource_type: 'image'
+        });
+        
+        if (folderResult.deleted && folderResult.deleted.length > 0) {
+          deletedBotFolders++;
+          console.log(`   ✅ Deleted ${folderResult.deleted.length} images from bots/${username}/`);
+        }
+
+        // Also delete video/raw resources if any
+        try {
+          await cloudinary.api.delete_resources_by_prefix(`bots/${username}/`, {
+            resource_type: 'video'
+          });
+          await cloudinary.api.delete_resources_by_prefix(`bots/${username}/`, {
+            resource_type: 'raw'
+          });
+        } catch (e) {
+          // Ignore errors for video/raw cleanup
+        }
+
+      } catch (error) {
+        console.error(`⚠️ Failed to delete folder for ${username}:`, error.message);
+      }
+    }
+
+    // Delete all posts by bots from database
+    const deletedPosts = await Post.deleteMany({ 
+      userId: { $in: botUserIds },
+      isBot: true 
+    });
+
+    // Delete all bot users from database
+    const deletedUsers = await User.deleteMany({ isBot: true });
+
+    console.log(`✅ Bulk deletion completed:`);
+    console.log(`   - Deleted ${deletedUsers.deletedCount} bot users`);
+    console.log(`   - Deleted ${deletedPosts.deletedCount} bot posts`);
+    console.log(`   - Deleted ${deletedCloudinaryImages} individual Cloudinary images`);
+    console.log(`   - Cleaned ${deletedBotFolders} bot folders from Cloudinary`);
+
+    res.json({
+      success: true,
+      message: `Successfully deleted ${deletedUsers.deletedCount} bot users, ${deletedPosts.deletedCount} posts, and cleaned up Cloudinary images`,
+      deleted_bots: deletedUsers.deletedCount,
+      deleted_posts: deletedPosts.deletedCount,
+      deleted_cloudinary_images: deletedCloudinaryImages,
+      cleaned_bot_folders: deletedBotFolders,
+      bot_usernames: botUsernames
+    });
+
+  } catch (error) {
+    console.error('❌ Error in bulk bot deletion:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error during bulk deletion',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get premium bot status
+ */
+const getPremiumBotStatus = async (req, res) => {
+  try {
+    // Get all premium bots (bots with custom avatars and display names)
+    const premiumBots = await User.find({ 
+      isBot: true,
+      hasCustomAvatar: true,
+      hasCustomDisplayName: true
+    }).select('username displayName avatar botType specialBadge followerCount postCount createdAt');
+
+    // Get premium bot usernames for filtering
+    const premiumBotIds = premiumBots.map(bot => bot._id);
+
+    // Get premium bot posts count
+    const premiumBotPosts = await Post.countDocuments({ 
+      userId: { $in: premiumBotIds },
+      isBot: true 
+    });
+
+    // Get recent premium bot posts
+    const recentPosts = await Post.find({ 
+      userId: { $in: premiumBotIds },
+      isBot: true 
+    })
+    .populate('userId', 'username displayName avatar')
+    .sort({ createdAt: -1 })
+    .limit(10);
+
+    const status = {
+      success: true,
+      total_premium_bots: premiumBots.length,
+      total_premium_posts: premiumBotPosts,
+      premium_bots: premiumBots.map(bot => ({
+        username: bot.username,
+        displayName: bot.displayName,
+        avatar: bot.avatar,
+        botType: bot.botType,
+        specialBadge: bot.specialBadge,
+        followerCount: bot.followerCount,
+        postCount: bot.postCount,
+        createdAt: bot.createdAt,
+        cloudinary_folder: `bots/${bot.username}`
+      })),
+      recent_posts: recentPosts,
+      cloudinary_structure: {
+        base_folder: "bots/",
+        bot_folders: premiumBots.map(bot => `bots/${bot.username}`)
+      }
+    };
+
+    res.json(status);
+
+  } catch (error) {
+    console.error('❌ Error getting premium bot status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   createBotPost,
   getBotStats,
   deleteBotPost,
   updateBotUser,
   getBotHealthDashboard,
+  createPremiumBotUser,
+  uploadBotAvatar,
+  deletePremiumBotUser,
+  deleteAllBots,
+  getPremiumBotStatus,
   setSocketServer,
   _getBotAvatar,
   _getBotBadge

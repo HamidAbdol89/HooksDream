@@ -68,18 +68,38 @@ const storage = new CloudinaryStorage({
     
     let folder, resourceType;
     
+    // Check if this is a bot post by looking at request body or headers
+    const isBot = req.body?.isBot === 'true' || req.body?.bot_metadata || req.headers['x-bot-user'];
+    const botUsername = req.body?.botUsername || req.headers['x-bot-username'];
+    
     if (isVideo) {
-      folder = 'uploads/videos';
+      if (isBot && botUsername) {
+        folder = `bots/${botUsername}/videos`;
+      } else {
+        folder = 'uploads/videos';
+      }
       resourceType = 'video';
     } else if (isImage) {
-      folder = 'uploads/images';
+      if (isBot && botUsername) {
+        folder = `bots/${botUsername}/posts`;
+      } else {
+        folder = 'uploads/images';
+      }
       resourceType = 'image';
     } else if (isAudio) {
-      folder = 'uploads/audio';
+      if (isBot && botUsername) {
+        folder = `bots/${botUsername}/audio`;
+      } else {
+        folder = 'uploads/audio';
+      }
       resourceType = 'video'; // Cloudinary treats audio as video resource type
     } else {
       // For documents and other files
-      folder = 'uploads/files';
+      if (isBot && botUsername) {
+        folder = `bots/${botUsername}/files`;
+      } else {
+        folder = 'uploads/files';
+      }
       resourceType = 'raw'; // Raw resource type for documents
     }
     
