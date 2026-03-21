@@ -73,37 +73,57 @@ const createStory = async (req, res) => {
             mediaData = {
                 type: mediaType,
                 url: uploadResult.secure_url,
-                thumbnail: uploadResult.eager?.[0]?.secure_url || uploadResult.secure_url,
-                duration: uploadResult.duration || null,
-                dimensions: {
+                thumbnail: uploadResult.eager?.[0]?.secure_url || uploadResult.secure_url
+            };
+            const dur = uploadResult.duration;
+            if (typeof dur === 'number' && dur >= 1 && dur <= 60) {
+                mediaData.duration = dur;
+            }
+            if (uploadResult.width && uploadResult.height) {
+                mediaData.dimensions = {
                     width: uploadResult.width,
                     height: uploadResult.height
-                }
-            };
+                };
+            }
         } else if (mediaType === 'text') {
-            mediaData = {
-                type: 'text',
-                url: null,
-                thumbnail: null,
-                duration: null,
-                dimensions: null
+            // Only required subfield is media.type; omit nulls (schema rejects null on duration/url)
+            mediaData = { type: 'text' };
+        }
+
+        if (!mediaData) {
+            return res.status(400).json({
+                success: false,
+                message: 'Upload a media file for image, video, or audio stories'
+            });
+        }
+
+        // FormData sends position as JSON string
+        let storyPosition;
+        if (position) {
+            if (typeof position === 'string') {
+                try {
+                    storyPosition = JSON.parse(position);
+                } catch (e) {
+                    storyPosition = null;
+                }
+            } else if (typeof position === 'object') {
+                storyPosition = position;
+            }
+        }
+        if (!storyPosition || typeof storyPosition !== 'object') {
+            storyPosition = {
+                x: 20 + Math.random() * 60,
+                y: 20 + Math.random() * 60,
+                z: Math.random() * 10,
+                velocity: {
+                    x: (Math.random() - 0.5) * 1,
+                    y: (Math.random() - 0.5) * 1
+                },
+                scale: 0.9 + Math.random() * 0.2
             };
         }
 
-        // Generate better distributed position for multiple bubbles
-        const storyPosition = position || {
-            x: 20 + Math.random() * 60, // Keep bubbles more centered (20-80%)
-            y: 20 + Math.random() * 60, // Keep bubbles more centered (20-80%)
-            z: Math.random() * 10,
-            velocity: {
-                x: (Math.random() - 0.5) * 1, // Reduced initial velocity
-                y: (Math.random() - 0.5) * 1
-            },
-            scale: 0.9 + Math.random() * 0.2 // Smaller scale range (0.9-1.1)
-        };
-
-        // Parse visual effects
-        const parsedVisualEffects = visualEffects ? JSON.parse(visualEffects) : {
+        const defaultVisualEffects = {
             bubbleStyle: 'glass',
             colorTheme: {
                 primary: '#3B82F6',
@@ -117,13 +137,28 @@ const createStory = async (req, res) => {
                 intensity: 5
             }
         };
+        let parsedVisualEffects = defaultVisualEffects;
+        if (visualEffects && typeof visualEffects === 'string') {
+            try {
+                parsedVisualEffects = { ...defaultVisualEffects, ...JSON.parse(visualEffects) };
+            } catch (e) {
+                console.warn('Invalid visualEffects JSON, using defaults');
+            }
+        }
 
-        // Parse settings
-        const parsedSettings = settings ? JSON.parse(settings) : {
+        const defaultSettings = {
             visibility: 'followers',
             allowReplies: true,
             allowReactions: true
         };
+        let parsedSettings = defaultSettings;
+        if (settings && typeof settings === 'string') {
+            try {
+                parsedSettings = { ...defaultSettings, ...JSON.parse(settings) };
+            } catch (e) {
+                console.warn('Invalid settings JSON, using defaults');
+            }
+        }
 
         // Create story
         const story = new Story({
@@ -156,6 +191,15 @@ const createStory = async (req, res) => {
 
     } catch (error) {
         console.error('Create story error:', error);
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({
+                success: false,
+                message: 'Story validation failed',
+                errors: Object.fromEntries(
+                    Object.entries(error.errors || {}).map(([k, v]) => [k, v.message])
+                )
+            });
+        }
         res.status(500).json({
             success: false,
             message: 'Failed to create story',
@@ -198,11 +242,13 @@ const getActiveStories = async (req, res) => {
         
         for (const story of stories) {
             if (await canUserViewStory(story, userId)) {
-                // Add view status
-                const hasViewed = story.views.some(view => view.userId === userId);
+                const hasViewed = story.views.some(
+                    (view) => String(view.userId) === String(userId)
+                );
                 const storyObj = story.toObject();
                 storyObj.hasViewed = hasViewed;
-                storyObj.isOwn = story.userId._id === userId || story.userId.toString() === userId;
+                const ownerId = getStoryOwnerIdString(story);
+                storyObj.isOwn = ownerId != null && ownerId === String(userId);
                 filteredStories.push(storyObj);
             }
         }
@@ -584,28 +630,45 @@ const updateStoryPosition = async (req, res) => {
     }
 };
 
+/** Normalize owner id whether userId is populated doc, ObjectId, or string */
+const getStoryOwnerIdString = (story) => {
+    const uid = story.userId;
+    if (uid == null) return null;
+    if (typeof uid === 'object' && uid._id != null) return String(uid._id);
+    return String(uid);
+};
+
 // Helper function to check if user can view story
 const canUserViewStory = async (story, viewerUserId) => {
+    const ownerId = getStoryOwnerIdString(story);
+    const viewerId = String(viewerUserId);
+
+    if (!ownerId) {
+        return false;
+    }
+
     // Story owner can always view
-    if (story.userId._id === viewerUserId || story.userId.toString() === viewerUserId) {
+    if (ownerId === viewerId) {
         return true;
     }
-    
-    // Check visibility settings
-    switch (story.settings.visibility) {
+
+    const visibility = story.settings?.visibility || 'followers';
+    const closeFriends = story.settings?.closeFriends || [];
+
+    switch (visibility) {
         case 'public':
             return true;
         case 'private':
             return false;
         case 'close_friends':
-            return story.settings.closeFriends.includes(viewerUserId);
-        case 'followers':
-            // Check if viewer follows the story owner
+            return Array.isArray(closeFriends) && closeFriends.map(String).includes(viewerId);
+        case 'followers': {
             const follow = await Follow.findOne({
-                follower: viewerUserId,
-                following: story.userId._id || story.userId
+                follower: viewerId,
+                following: ownerId
             });
             return !!follow;
+        }
         default:
             return false;
     }

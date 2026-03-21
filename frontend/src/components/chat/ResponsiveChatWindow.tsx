@@ -22,9 +22,10 @@ export const ResponsiveChatWindow: React.FC<ResponsiveChatWindowProps> = ({
   return (
     <>
       {/* Desktop version */}
-      <div className="hidden md:flex flex-1 overflow-y-auto scrollbar-custom">
+      <div className="hidden md:flex min-h-0 flex-1 flex-col">
         <ChatWindow 
           conversationId={conversationId}
+          onBack={onBack}
           replyingTo={replyingTo}
           onReply={onReply}
           onCancelReply={onCancelReply}
@@ -32,7 +33,7 @@ export const ResponsiveChatWindow: React.FC<ResponsiveChatWindowProps> = ({
       </div>
       
       {/* Mobile version */}
-      <div className="md:hidden flex-1">
+      <div className="flex min-h-0 flex-1 flex-col md:hidden">
         <MobileChatWindow 
           conversationId={conversationId} 
           onBack={onBack}

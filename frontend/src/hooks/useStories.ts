@@ -6,7 +6,7 @@ import { useSocket } from '@/hooks/useSocket';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
   (import.meta.env.MODE === 'development' 
-    ? 'http://localhost:5000' 
+    ? 'http://localhost:8080' 
     : 'https://just-solace-production.up.railway.app');
 
 export interface GetStoriesParams {

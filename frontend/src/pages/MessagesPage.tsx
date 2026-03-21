@@ -1,9 +1,9 @@
 // pages/MessagesPage.tsx - Messages Page
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, Search, Plus, UserCheck } from 'lucide-react';
+import { MessageSquare, Search, Plus, UserCheck, ArrowLeft } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useChat } from '@/hooks/useChat';
 import { useSocial } from '@/hooks/useSocial';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
@@ -30,6 +30,7 @@ interface User {
 
 const MessagesPage: React.FC = () => {
   const { t } = useTranslation('common');
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { conversationId } = useParams<{ conversationId?: string }>();
   const { useConversations, useDirectConversation, currentUserId } = useChat();
@@ -301,27 +302,39 @@ const MessagesPage: React.FC = () => {
   };
 
   return (
-    <div className="w-full h-full flex bg-background">
+    <div className="flex h-full min-h-0 w-full flex-1 bg-background">
       {/* Mobile: Show either sidebar or chat, Desktop: Show both */}
       <div className={`${
         selectedConversationId 
-          ? 'hidden md:flex md:w-80 lg:w-96' 
-          : 'flex w-full md:w-80 lg:w-96'
-      } border-r border-border bg-background md:bg-card/50 md:backdrop-blur-sm flex-col`}>
+          ? 'hidden min-h-0 md:flex md:w-80 lg:w-96' 
+          : 'flex min-h-0 w-full md:w-80 lg:w-96'
+      } flex-col border-r border-border bg-background md:bg-card/50 md:backdrop-blur-sm`}>
         
         {/* Mobile Header */}
         <MobileHeader 
           title={t('chat.messages')}
           showEdit={true}
           showSearch={true}
+          showBack
+          onBack={() => navigate('/feed')}
         />
         
         {/* Desktop Header */}
         <div className="hidden md:block p-4 border-b">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <MessageSquare className="w-6 h-6 text-primary" />
-              <h1 className="text-xl font-bold">{t('chat.messages')}</h1>
+            <div className="flex items-center gap-2 min-w-0">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="shrink-0"
+                onClick={() => navigate('/feed')}
+                aria-label={t('nav.home')}
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <MessageSquare className="w-6 h-6 shrink-0 text-primary" />
+              <h1 className="text-xl font-bold truncate">{t('chat.messages')}</h1>
             </div>
             <Button size="sm" variant="ghost" className="p-2">
               <Plus className="w-4 h-4" />
@@ -587,8 +600,8 @@ const MessagesPage: React.FC = () => {
       {/* Chat Area */}
       <div className={`${
         selectedConversationId 
-          ? 'flex w-full md:flex-1' 
-          : 'hidden md:flex md:flex-1'
+          ? 'flex w-full min-h-0 md:flex-1' 
+          : 'hidden min-h-0 md:flex md:flex-1'
       } flex-col bg-background relative`}>
         {selectedConversationId ? (
           <ResponsiveChatWindow 

@@ -91,7 +91,7 @@ export const FollowButton: React.FC<FollowButtonProps> = ({
         ) : null}
         
         <span>
-          {isFollowing ? 'Đã theo dõi' : 'Theo dõi'}
+          {isFollowing ? t('postCard.following') : t('postCard.follow')}
           {showCount && followerCount > 0 && (
             <span className="ml-1 text-xs opacity-75">
               ({followerCount})

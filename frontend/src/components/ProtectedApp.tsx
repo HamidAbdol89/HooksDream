@@ -2,7 +2,6 @@
 import React, { Suspense, useState, useEffect, startTransition } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useIsMobile } from "@/hooks/useIsMobile";
 import { useAppStore } from "@/store/useAppStore";
 import { useSocket } from "@/hooks/useSocket";
 import ModernAuthConnect from "@/components/auth/ModernAuthConnect";
@@ -31,7 +30,6 @@ const StoriesPage = React.lazy(() => import("@/pages/StoriesPage").then(module =
 const ProtectedAppContent: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const isMobile = useIsMobile();
   const { isConnected, user, profile } = useAppStore();
   const { selectedConversationId } = useChatContext();
   const { isConnected: socketConnected, connectionError } = useSocket();
@@ -74,15 +72,12 @@ const ProtectedAppContent: React.FC = () => {
   const isEditProfilePage = location.pathname === '/edit-profile' || location.pathname.startsWith('/edit-profile/');
   const isCreatePostPage = location.pathname === '/post';
   const isMessagesPage = location.pathname.startsWith('/messages');
-  const isMessagesListPage = location.pathname === '/messages'; // Only the main messages page
-  const hasConversationId = Boolean(location.pathname.match(/^\/messages\/[^?]+/)); // Check if URL has conversationId
-  const isInChat = isMessagesPage && hasConversationId; // Individual chat = full-screen
   
   const isSearchPage = location.pathname === '/search';
   const isStoriesPage = location.pathname === '/stories'; // Stories = full-screen
   
-  // MobileHeader only shows on feed page (not on search page or in individual chats)
-  const shouldShowMobileHeader = (location.pathname === '/feed' || location.pathname === '/') && !isSearchPage && !isInChat;
+  // MobileHeader only shows on feed (hide on messages, search, etc.)
+  const shouldShowMobileHeader = (location.pathname === '/feed' || location.pathname === '/') && !isSearchPage && !isMessagesPage;
 
   // Show loading while checking session
   if (isCheckingSession) {
@@ -111,15 +106,15 @@ const ProtectedAppContent: React.FC = () => {
     <UnfollowConfirmProvider>
       <div className="min-h-screen bg-background text-foreground transition-colors duration-200">
         {/* Desktop Header */}
-        {!isEditProfilePage && !isCreatePostPage && !isSearchPage && !isStoriesPage && <Header isInChat={isInChat} />}
+        {!isEditProfilePage && !isCreatePostPage && !isSearchPage && !isStoriesPage && !isMessagesPage && <Header />}
         
         {/* Mobile Header - Only show on specific pages */}
         {shouldShowMobileHeader && <MobileHeader />}
         
         {/* Mobile Bottom Navigation - Hide on search page and in individual chats */}
-        {!isEditProfilePage && !isCreatePostPage && !isSearchPage && !isInChat && !isStoriesPage && <BottomNav isInChat={isInChat} />}
+        {!isEditProfilePage && !isCreatePostPage && !isSearchPage && !isMessagesPage && !isStoriesPage && <BottomNav />}
         
-        <main className={`w-full ${shouldShowMobileHeader ? 'pt-16' : ''} ${isMessagesPage || isInChat || isEditProfilePage || isCreatePostPage || isSearchPage || isStoriesPage ? 'px-0 py-0' : 'px-0 py-6'}`}>
+        <main className={`w-full ${shouldShowMobileHeader ? 'pt-16' : ''} ${isMessagesPage || isEditProfilePage || isCreatePostPage || isSearchPage || isStoriesPage ? 'px-0 py-0' : 'px-0 py-6'}`}>
           {isStoriesPage ? (
             // Full screen layout for Stories page
             <div className="w-full h-screen overflow-hidden">
@@ -181,38 +176,37 @@ const ProtectedAppContent: React.FC = () => {
                 </TooltipProvider>
               </ToastProvider>
             </div>
-          ) : isInChat ? (
-            // Full width layout for Messages page and individual chats
-            <div className={`w-full ${isInChat && isMobile ? 'h-screen' : 'h-[calc(100vh-64px)]'}`}>
+          ) : isMessagesPage ? (
+            // Fullscreen messenger (mobile + desktop): no app header / sidebars
+            <div className="flex h-[100dvh] max-h-[100dvh] w-full flex-col overflow-hidden bg-background">
               <TooltipProvider>
-                <Suspense fallback={
-                  <div className="flex items-center justify-center min-h-screen">
-                    <div className="text-center space-y-4">
-                      <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-                      <p className="text-muted-foreground">Loading...</p>
+                <div className="flex min-h-0 flex-1 flex-col">
+                  <Suspense fallback={
+                    <div className="flex flex-1 items-center justify-center bg-background">
+                      <div className="text-center space-y-4">
+                        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+                        <p className="text-muted-foreground">Loading...</p>
+                      </div>
                     </div>
-                  </div>
-                }>
-                  <Routes>
-                    <Route path="/messages/*" element={<MessagesPage />} />
-                  </Routes>
-                </Suspense>
+                  }>
+                    <Routes>
+                      <Route path="/messages/*" element={<MessagesPage />} />
+                    </Routes>
+                  </Suspense>
+                </div>
               </TooltipProvider>
             </div>
           ) : (
             // Standard layout with sidebars for other pages - ADD GESTURE SUPPORT HERE
             <div className="w-full lg:grid lg:grid-cols-12 lg:gap-6 lg:px-8">
-              {/* Left Sidebar - Hidden when in chat */}
-              {!isInChat && (
-                <aside className="hidden lg:block lg:col-span-3">
-                  <div className="sticky top-16 h-[calc(100vh-64px)] overflow-y-auto">
-                    <SidebarLeft />
-                  </div>
-                </aside>
-              )}
+              <aside className="hidden lg:block lg:col-span-3">
+                <div className="sticky top-16 h-[calc(100vh-64px)] overflow-y-auto">
+                  <SidebarLeft />
+                </div>
+              </aside>
 
               {/* Main Content - WITH GESTURE SUPPORT */}
-              <section className={`w-full ${!isInChat ? 'lg:col-span-6' : 'lg:col-span-9'}`}>
+              <section className="w-full lg:col-span-6">
                 <TooltipProvider>
                   <AnimatePresence mode="wait">
                     <Routes location={location} key={location.pathname}>

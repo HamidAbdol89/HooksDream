@@ -18,11 +18,7 @@ interface UserType {
   profileImage?: string;
 }
 
-interface HeaderProps {
-  isInChat?: boolean;
-}
-
-export const Header: React.FC<HeaderProps> = ({ isInChat = false }) => {
+export const Header: React.FC = () => {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
   const { profile, user, isConnected } = useAppStore();

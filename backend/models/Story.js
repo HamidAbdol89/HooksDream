@@ -262,13 +262,14 @@ const StorySchema = new mongoose.Schema({
     
     archivedAt: {
         type: Date,
-        default: null
+        required: false
     },
     
+    // Do not use default: null with enum — Mongoose rejects null as invalid enum value
     archiveType: {
         type: String,
         enum: ['manual', 'auto'],
-        default: null
+        required: false
     },
     
     // Soft delete for highlights

@@ -177,8 +177,8 @@ export const UserProfileSheet: React.FC<UserProfileSheetProps> = ({
             >
               <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 flex-shrink-0" />
               <div className="text-left min-w-0">
-                <div className="font-medium text-sm sm:text-base">Lưu trữ Stories</div>
-                <div className="text-xs text-muted-foreground hidden sm:block">Xem lại stories đã lưu trữ</div>
+                <div className="font-medium text-sm sm:text-base">{t('userSheet.archivedStories')}</div>
+                <div className="text-xs text-muted-foreground hidden sm:block">{t('userSheet.archivedStoriesDesc')}</div>
               </div>
             </Button>
 

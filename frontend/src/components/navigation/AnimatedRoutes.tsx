@@ -7,7 +7,6 @@ import { useIsMobile } from '@/hooks/useIsMobile';
 import { Feed } from '@/pages/FeedPage';
 import FriendPage from '@/pages/MobileFriendPage';
 import NotificationsPage from '@/pages/NotificationsPage';
-import MessagesPage from '@/pages/MessagesPage';
 import { StoriesPage } from '@/pages/StoriesPage';
 
 const PAGES = [
@@ -15,7 +14,6 @@ const PAGES = [
   { path: '/feed', component: Feed, title: 'Feed' },
   { path: '/friend', component: FriendPage, title: 'Bạn bè' },
   { path: '/notifications', component: NotificationsPage, title: 'Thông báo' },
-  { path: '/messages', component: MessagesPage, title: 'Chat' },
 ];
 
 // Slide animation variants

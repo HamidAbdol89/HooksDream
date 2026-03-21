@@ -10,13 +10,15 @@ import { MessageInput } from '@/components/chat/shared/MessageInput';
 
 interface ChatWindowProps {
   conversationId: string;
+  onBack?: () => void;
   replyingTo?: Message | null;
   onReply?: (message: Message) => void;
   onCancelReply?: () => void;
 }
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({ 
-  conversationId, 
+  conversationId,
+  onBack,
   replyingTo, 
   onReply, 
   onCancelReply 
@@ -99,11 +101,11 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     <div className="flex-1 flex flex-col bg-background h-full">
       {/* Fixed Header */}
       <div className="flex-shrink-0">
-        <ChatHeader user={otherParticipant} />
+        <ChatHeader user={otherParticipant} onBack={onBack} />
       </div>
       
       {/* Scrollable Messages Area */}
-      <div className="flex-1 overflow-y-auto scrollbar-desktop">
+      <div className="min-h-0 flex-1 overflow-y-auto scrollbar-desktop">
         <MessagesList 
           messages={messages}
           currentUserId={currentUserId || ''}

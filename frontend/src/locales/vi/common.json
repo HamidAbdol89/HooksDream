@@ -59,6 +59,8 @@
     "profileDesc": "Xem và chỉnh sửa hồ sơ của bạn",
     "archivedPosts": "Bài Viết Đã Lưu Trữ",
     "archivedPostsDesc": "Xem và khôi phục bài viết đã lưu trữ",
+    "archivedStories": "Lưu trữ Stories",
+    "archivedStoriesDesc": "Xem lại stories đã lưu trữ",
     "settings": "Cài Đặt",
     "settingsDesc": "Tùy chọn ứng dụng và cấu hình",
     "disconnect": "Đăng Xuất",
@@ -386,6 +388,7 @@
   "chat": {
     "messages": "Tin nhắn",
     "chats": "Trò chuyện",
+    "backToList": "Quay lại danh sách",
     "following": "Đang theo dõi",
     "searchConversations": "Tìm kiếm cuộc trò chuyện...",
     "searchFollowing": "Tìm kiếm người theo dõi...",

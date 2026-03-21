@@ -22,11 +22,7 @@ interface UserType {
   profileImage?: string;
 }
 
-interface BottomNavProps {
-  isInChat?: boolean;
-}
-
-export const BottomNav: React.FC<BottomNavProps> = ({ isInChat = false }) => {
+export const BottomNav: React.FC = () => {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
   const location = useLocation();
@@ -72,11 +68,6 @@ export const BottomNav: React.FC<BottomNavProps> = ({ isInChat = false }) => {
     button.appendChild(circle);
     setTimeout(() => circle.remove(), 600);
   };
-
-  // Nếu đang trong chat, ẩn bottom nav
-  if (isInChat) {
-    return null;
-  }
 
   return (
     <>
